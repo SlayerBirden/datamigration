@@ -7,10 +7,5 @@ interface WorkerBagInterface extends \IteratorAggregate, \Countable
     /**
      * @param WorkerInterface $worker
      */
-    public function addWorker(WorkerInterface $worker);
-
-    /**
-     * @param array|WorkerInterface[] $workers
-     */
-    public function addWorkers(array $workers);
+    public function add(WorkerInterface $worker);
 }

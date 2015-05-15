@@ -1,6 +1,6 @@
 <?php
 
-namespace Maketok\DataMigration\Worker\Operation\Expression;
+namespace Maketok\DataMigration\Expression\Operation;
 
 class Lexer
 {
