@@ -13,28 +13,28 @@ interface WorkerInterface
 
     /**
      * set condition that would determine if current row is Entity one for current worker
-     * @param string $condition
+     * @param string|callable $condition
      * @return self
      */
     public function setIsEntityCondition($condition);
 
     /**
      * add directive that should be executed for each row
-     * @param string $contribution
+     * @param string|callable $contribution
      * @return self
      */
     public function addContribution($contribution);
 
     /**
      * add condition based on which it would be clear if we should add current entity
-     * @param string $condition
+     * @param string|callable $condition
      * @return self
      */
     public function addWriteCondition($condition);
 
     /**
      * set current mapping
-     * @param array $mapping hashmap
+     * @param array|string[] $mapping hashmap
      * @return self
      */
     public function setMapping(array $mapping);
