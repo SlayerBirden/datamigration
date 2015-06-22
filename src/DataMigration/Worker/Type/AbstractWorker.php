@@ -72,4 +72,3 @@ abstract class AbstractWorker implements WorkerInterface
         return $this;
     }
 }
- 

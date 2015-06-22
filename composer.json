@@ -17,7 +17,7 @@
             "email": "olegkulik1985@gmail.com"
         }
     ],
-    "homepage": "http://maketok.com/",
+    "homepage": "https://github.com/SlayerBirden/datamigration",
     "require": {
         "php": ">=5.4.0",
         "symfony/expression-language": "2.*"
@@ -28,8 +28,9 @@
     },
     "autoload": {
         "psr-4": {
-            "Maketok\\DataMigration\\": "src/Maketok/DataMigration",
-            "Tests\\": "Tests"
+            "psr-4": {
+                "Maketok\\": ["src/", "tests/"]
+            }
         }
     }
 }

@@ -12,7 +12,7 @@ interface WorkerInterface
     public function setTable($tableName);
 
     /**
-     * set condition that would determine if current row is Entity one for current worker
+     * set condition that would determine if current row is Entity for current worker
      * @param string|callable $condition
      * @return self
      */
