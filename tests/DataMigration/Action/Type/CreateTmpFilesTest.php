@@ -77,7 +77,7 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
         $config = $this->getMockBuilder('\Maketok\DataMigration\Action\ConfigInterface')->getMock();
         $config->expects($this->any())->method('get')->willReturnMap([
             ['tmp_folder', $this->root->url() . '/tmp'],
-            ['mask', '%1$s.csv'], // fname, date
+            ['tmp_file_mask', '%1$s.csv'], // fname, date
         ]);
         return $config;
     }
