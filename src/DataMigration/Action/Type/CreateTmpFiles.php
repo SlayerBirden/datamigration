@@ -3,6 +3,7 @@
 namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ActionInterface;
+use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Input\InputResourceInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 
@@ -15,11 +16,12 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
 
     /**
      * @param UnitBagInterface $bag
+     * @param ConfigInterface $config
      * @param InputResourceInterface $input
      */
-    public function __construct(UnitBagInterface $bag, InputResourceInterface $input)
+    public function __construct(UnitBagInterface $bag, ConfigInterface $config, InputResourceInterface $input)
     {
-        parent::__construct($bag);
+        parent::__construct($bag, $config);
         $this->input = $input;
     }
 
