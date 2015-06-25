@@ -2,55 +2,100 @@
 
 namespace Maketok\DataMigration\Action\Type;
 
+use Maketok\DataMigration\Action\ConfigInterface;
+use Maketok\DataMigration\Input\InputResourceInterface;
 use Maketok\DataMigration\Unit\AbstractUnit;
+use Maketok\DataMigration\Unit\UnitBagInterface;
 use org\bovigo\vfs\vfsStream;
+use org\bovigo\vfs\vfsStreamDirectory;
 
 class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
 {
+    /**
+     * @var vfsStreamDirectory
+     */
+    private $root;
+
+    /**
+     * setup
+     */
+    public function setUp()
+    {
+        $this->root = vfsStream::setup();
+    }
+
     public function testGetCode()
     {
-        $action = new CreateTmpFiles($this->getMockBuilder('\Maketok\DataMigration\Unit\UnitBagInterface')->getMock(),
-            $this->getMockBuilder('\Maketok\DataMigration\Action\ConfigInterface')->getMock(),
-            $this->getMockBuilder('\Maketok\DataMigration\Input\InputResourceInterface')->getMock());
+        $action = new CreateTmpFiles($this->getUnitBag(), $this->getConfig(), $this->getInputResource([]));
         $this->assertEquals('create_tmp_files', $action->getCode());
     }
 
-    public function testProcess()
+    /**
+     * @return AbstractUnit
+     */
+    protected function getUnit()
     {
-        // set up Unit mock
         /** @var AbstractUnit $unit */
         $unit = $this->getMockBuilder('\Maketok\DataMigration\Unit\AbstractUnit')
             ->getMockForAbstractClass();
         $unit->setTable('test_table1');
-        // set up bag
+        return $unit;
+    }
+
+    /**
+     * @return UnitBagInterface
+     */
+    protected function getUnitBag()
+    {
         $unitBag = $this->getMockBuilder('\Maketok\DataMigration\Unit\UnitBagInterface')->getMock();
         $unitBag->expects($this->any())->method('add')->willReturnSelf();
-        $unitBag->expects($this->any())->method('getIterator')->willReturn(new \ArrayIterator([$unit]));
-        // set up input mock
-        // 2 entities returned
+        $unitBag->expects($this->any())->method('getIterator')->willReturn(new \ArrayIterator([$this->getUnit()]));
+        return $unitBag;
+    }
+
+    /**
+     * @param array $data
+     * @return InputResourceInterface
+     */
+    protected function getInputResource(array $data)
+    {
+        $input = $this->getMockBuilder('\Maketok\DataMigration\Input\InputResourceInterface')->getMock();
+        for ($i = 0; $i < count($data); ++$i) {
+            $input->expects($this->at($i))->method('get')->willReturn($data[$i]);
+        }
+        if ($i > 0) {
+            $input->expects($this->at($i + 1))->method('get')->willReturn(false);
+        }
+        return $input;
+    }
+
+    /**
+     * @return ConfigInterface
+     */
+    protected function getConfig()
+    {
+        $config = $this->getMockBuilder('\Maketok\DataMigration\Action\ConfigInterface')->getMock();
+        $config->expects($this->any())->method('get')->willReturnMap([
+            ['tmp_folder', $this->root->url() . '/tmp'],
+            ['mask', '%1$s.csv'], // fname, date
+        ]);
+        return $config;
+    }
+
+    public function testProcess()
+    {
         $expected = [
             ['1', 'someField', 'otherField'],
             ['2', 'someField2', 'otherField2']
         ];
-        $input = $this->getMockBuilder('\Maketok\DataMigration\Input\InputResourceInterface')->getMock();
-        $input->expects($this->at(0))->method('get')->willReturn($expected[0]);
-        $input->expects($this->at(1))->method('get')->willReturn($expected[1]);
-        $input->expects($this->at(2))->method('get')->willReturn(false);
-        // set up config
-        $root = vfsStream::setup();
-        $config = $this->getMockBuilder('\Maketok\DataMigration\Action\ConfigInterface')->getMock();
-        $config->expects($this->any())->method('get')->willReturnMap([
-            ['tmp_folder', $root->url() . '/tmp'],
-            ['mask', '%1$s.csv'], // fname, date
-        ]);
 
-        $action = new CreateTmpFiles($unitBag, $config, $input);
+        $action = new CreateTmpFiles($this->getUnitBag(), $this->getConfig(), $this->getInputResource($expected));
         $action->process();
 
-        $this->assertTrue(file_exists($root->url() . '/tmp/test_table1.csv'));
+        $this->assertTrue(file_exists($this->root->url() . '/tmp/test_table1.csv'));
 
         $actual = [];
-        $readFile = new \SplFileObject($root->url() . '/tmp/test_table1.csv');
+        $readFile = new \SplFileObject($this->root->url() . '/tmp/test_table1.csv');
         while (($row = $readFile->fgetcsv()) !== false) {
             $actual[] = $row;
         }
