@@ -3,23 +3,9 @@
 namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ActionInterface;
-use Maketok\DataMigration\Worker\WorkerBagInterface;
 
-class Dump implements ActionInterface
+class Dump extends AbstractAction implements ActionInterface
 {
-    /**
-     * @var WorkerBagInterface
-     */
-    private $bag;
-
-    /**
-     * @param WorkerBagInterface $bag
-     */
-    public function __construct(WorkerBagInterface $bag)
-    {
-        $this->bag = $bag;
-    }
-
     /**
      * {@inheritdoc}
      */

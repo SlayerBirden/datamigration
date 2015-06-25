@@ -4,26 +4,22 @@ namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ActionInterface;
 use Maketok\DataMigration\Input\InputResourceInterface;
-use Maketok\DataMigration\Worker\WorkerBagInterface;
+use Maketok\DataMigration\Unit\UnitBagInterface;
 
-class CreateTmpFiles implements ActionInterface
+class CreateTmpFiles extends AbstractAction implements ActionInterface
 {
-    /**
-     * @var WorkerBagInterface
-     */
-    private $bag;
     /**
      * @var InputResourceInterface
      */
     private $input;
 
     /**
-     * @param WorkerBagInterface $bag
+     * @param UnitBagInterface $bag
      * @param InputResourceInterface $input
      */
-    public function __construct(WorkerBagInterface $bag, InputResourceInterface $input)
+    public function __construct(UnitBagInterface $bag, InputResourceInterface $input)
     {
-        $this->bag = $bag;
+        parent::__construct($bag);
         $this->input = $input;
     }
 

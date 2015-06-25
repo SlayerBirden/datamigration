@@ -1,8 +1,8 @@
 <?php
 
-namespace Maketok\DataMigration\Worker;
+namespace Maketok\DataMigration\Unit;
 
-interface WorkerInterface
+interface UnitInterface
 {
     /**
      * set main table worker is working with

@@ -1,10 +1,8 @@
 <?php
 
-namespace Maketok\DataMigration\Worker\Type;
+namespace Maketok\DataMigration\Unit;
 
-use Maketok\DataMigration\Worker\WorkerInterface;
-
-abstract class AbstractWorker implements WorkerInterface
+abstract class AbstractUnit implements UnitInterface
 {
     /**
      * @var string

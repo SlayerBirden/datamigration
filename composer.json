@@ -28,9 +28,7 @@
     },
     "autoload": {
         "psr-4": {
-            "psr-4": {
-                "Maketok\\": ["src/", "tests/"]
-            }
+            "Maketok\\": ["src/", "tests/"]
         }
     }
 }
