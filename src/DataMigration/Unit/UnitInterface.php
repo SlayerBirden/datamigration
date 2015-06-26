@@ -38,4 +38,17 @@ interface UnitInterface
      * @return self
      */
     public function setMapping(array $mapping);
+
+    /**
+     * set Temporary file name generated for this unit
+     * @param string $name
+     * @return mixed
+     */
+    public function setTmpFileName($name);
+
+    /**
+     * get tmp file name
+     * @return string
+     */
+    public function getTmpFileName();
 }

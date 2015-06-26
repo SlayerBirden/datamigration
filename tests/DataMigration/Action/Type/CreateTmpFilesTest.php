@@ -15,6 +15,10 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
      * @var vfsStreamDirectory
      */
     private $root;
+    /**
+     * @var AbstractUnit
+     */
+    private $unit;
 
     /**
      * setup
@@ -35,11 +39,13 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
      */
     protected function getUnit()
     {
-        /** @var AbstractUnit $unit */
-        $unit = $this->getMockBuilder('\Maketok\DataMigration\Unit\AbstractUnit')
-            ->getMockForAbstractClass();
-        $unit->setTable('test_table1');
-        return $unit;
+        if (is_null($this->unit)) {
+            /** @var AbstractUnit $unit */
+            $this->unit = $this->getMockBuilder('\Maketok\DataMigration\Unit\AbstractUnit')
+                ->getMockForAbstractClass();
+            $this->unit->setTable('test_table1');
+        }
+        return $this->unit;
     }
 
     /**
@@ -93,6 +99,8 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
         $action->process();
 
         $this->assertTrue(file_exists($this->root->url() . '/tmp/test_table1.csv'));
+        //assert name is assigned to unit
+        $this->assertEquals($this->root->url() . '/tmp/test_table1.csv', $this->getUnit()->getTmpFileName());
 
         $actual = [];
         $readFile = new \SplFileObject($this->root->url() . '/tmp/test_table1.csv');

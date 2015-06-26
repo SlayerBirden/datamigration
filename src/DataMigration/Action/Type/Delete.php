@@ -4,6 +4,7 @@ namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ActionInterface;
 use Maketok\DataMigration\Action\ConfigInterface;
+use Maketok\DataMigration\Action\Exception\WrongContextException;
 use Maketok\DataMigration\Storage\ResourceInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 
@@ -27,6 +28,7 @@ class Delete extends AbstractAction implements ActionInterface
 
     /**
      * {@inheritdoc}
+     * @throws WrongContextException
      */
     public function process()
     {
