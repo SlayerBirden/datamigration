@@ -4,7 +4,7 @@ namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ActionInterface;
 
-class Move extends AbstractAction implements ActionInterface
+class Move extends AbstractDbAction implements ActionInterface
 {
     /**
      * {@inheritdoc}

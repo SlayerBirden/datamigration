@@ -4,7 +4,7 @@ namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ActionInterface;
 
-class Load extends AbstractAction implements ActionInterface
+class Load extends AbstractDbAction implements ActionInterface
 {
     /**
      * {@inheritdoc}

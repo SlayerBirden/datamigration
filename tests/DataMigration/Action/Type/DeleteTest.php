@@ -7,24 +7,9 @@ use Maketok\DataMigration\Action\Exception\WrongContextException;
 use Maketok\DataMigration\Storage\ResourceInterface;
 use Maketok\DataMigration\Unit\AbstractUnit;
 use Maketok\DataMigration\Unit\UnitBagInterface;
-use org\bovigo\vfs\vfsStream;
-use org\bovigo\vfs\vfsStreamDirectory;
 
 class DeleteTest extends \PHPUnit_Framework_TestCase
 {
-    /**
-     * @var vfsStreamDirectory
-     */
-    private $root;
-
-    /**
-     * setup
-     */
-    public function setUp()
-    {
-        $this->root = vfsStream::setup();
-    }
-
     public function testGetCode()
     {
         $action = new Delete($this->getUnitBag(), $this->getConfig(), $this->getResource());
@@ -72,7 +57,9 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
     {
         $unitBag = $this->getMockBuilder('\Maketok\DataMigration\Unit\UnitBagInterface')->getMock();
         $unitBag->expects($this->any())->method('add')->willReturnSelf();
-        $unitBag->expects($this->any())->method('getIterator')->willReturn(new \ArrayIterator([$this->getUnit()]));
+        $unitBag->expects($this->any())
+            ->method('getIterator')
+            ->willReturn(new \ArrayIterator([$this->getUnit()]));
         return $unitBag;
     }
 
@@ -83,7 +70,9 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
     {
         $unitBag = $this->getMockBuilder('\Maketok\DataMigration\Unit\UnitBagInterface')->getMock();
         $unitBag->expects($this->any())->method('add')->willReturnSelf();
-        $unitBag->expects($this->any())->method('getIterator')->willReturn(new \ArrayIterator([$this->getWrongUnit()]));
+        $unitBag->expects($this->any())
+            ->method('getIterator')
+            ->willReturn(new \ArrayIterator([$this->getWrongUnit()]));
         return $unitBag;
     }
 

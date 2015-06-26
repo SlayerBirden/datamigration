@@ -30,7 +30,11 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
 
     public function testGetCode()
     {
-        $action = new CreateTmpFiles($this->getUnitBag(), $this->getConfig(), $this->getInputResource([]));
+        $action = new CreateTmpFiles(
+            $this->getUnitBag(),
+            $this->getConfig(),
+            $this->getInputResource([])
+        );
         $this->assertEquals('create_tmp_files', $action->getCode());
     }
 
@@ -55,7 +59,9 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
     {
         $unitBag = $this->getMockBuilder('\Maketok\DataMigration\Unit\UnitBagInterface')->getMock();
         $unitBag->expects($this->any())->method('add')->willReturnSelf();
-        $unitBag->expects($this->any())->method('getIterator')->willReturn(new \ArrayIterator([$this->getUnit()]));
+        $unitBag->expects($this->any())
+            ->method('getIterator')
+            ->willReturn(new \ArrayIterator([$this->getUnit()]));
         return $unitBag;
     }
 
@@ -65,7 +71,8 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
      */
     protected function getInputResource(array $data)
     {
-        $input = $this->getMockBuilder('\Maketok\DataMigration\Input\InputResourceInterface')->getMock();
+        $input = $this->getMockBuilder('\Maketok\DataMigration\Input\InputResourceInterface')
+            ->getMock();
         for ($i = 0; $i < count($data); ++$i) {
             $input->expects($this->at($i))->method('get')->willReturn($data[$i]);
         }
@@ -95,12 +102,17 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
             ['2', 'someField2', 'otherField2']
         ];
 
-        $action = new CreateTmpFiles($this->getUnitBag(), $this->getConfig(), $this->getInputResource($expected));
+        $action = new CreateTmpFiles(
+            $this->getUnitBag(),
+            $this->getConfig(),
+            $this->getInputResource($expected)
+        );
         $action->process();
 
         $this->assertTrue(file_exists($this->root->url() . '/tmp/test_table1.csv'));
         //assert name is assigned to unit
-        $this->assertEquals($this->root->url() . '/tmp/test_table1.csv', $this->getUnit()->getTmpFileName());
+        $this->assertEquals($this->root->url() . '/tmp/test_table1.csv',
+            $this->getUnit()->getTmpFileName());
 
         $actual = [];
         $readFile = new \SplFileObject($this->root->url() . '/tmp/test_table1.csv');
