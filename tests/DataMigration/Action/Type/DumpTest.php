@@ -51,6 +51,7 @@ class DumpTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * @param bool $expects
      * @return InputResourceInterface
      */
     protected function getInputResource($expects = false)
