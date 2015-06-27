@@ -5,7 +5,8 @@ namespace Maketok\DataMigration\Action\Type;
 use Maketok\DataMigration\Action\ActionInterface;
 use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Input\InputResourceInterface;
-use Maketok\DataMigration\Storage\ResourceInterface;
+use Maketok\DataMigration\Storage\Db\ResourceInterface as DbResourceInterface;
+use Maketok\DataMigration\Storage\Filesystem\ResourceInterface as FsResourceInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 
 class Dump extends AbstractDbAction implements ActionInterface
@@ -18,15 +19,17 @@ class Dump extends AbstractDbAction implements ActionInterface
     /**
      * @param UnitBagInterface $bag
      * @param ConfigInterface $config
-     * @param ResourceInterface $resource
+     * @param FsResourceInterface $filesystem
+     * @param DbResourceInterface $resource
      * @param InputResourceInterface $input
      */
     public function __construct(UnitBagInterface $bag,
                                 ConfigInterface $config,
-                                ResourceInterface $resource,
+                                FsResourceInterface $filesystem,
+                                DbResourceInterface $resource,
                                 InputResourceInterface $input)
     {
-        parent::__construct($bag, $config, $resource);
+        parent::__construct($bag, $config, $filesystem, $resource);
         $this->input = $input;
     }
 

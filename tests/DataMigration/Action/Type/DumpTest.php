@@ -4,7 +4,8 @@ namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Input\InputResourceInterface;
-use Maketok\DataMigration\Storage\ResourceInterface;
+use Maketok\DataMigration\Storage\Db\ResourceInterface;
+use Maketok\DataMigration\Storage\Filesystem\ResourceInterface as FsResourceInterface;
 use Maketok\DataMigration\Unit\AbstractUnit;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 use org\bovigo\vfs\vfsStream;
@@ -30,6 +31,7 @@ class DumpTest extends \PHPUnit_Framework_TestCase
         $action = new Dump(
             $this->getUnitBag(),
             $this->getConfig(),
+            $this->getFS(),
             $this->getResource(),
             $this->getInputResource()
         );
@@ -96,7 +98,7 @@ class DumpTest extends \PHPUnit_Framework_TestCase
      */
     protected function getResource($expects = false)
     {
-        $resource = $this->getMockBuilder('\Maketok\DataMigration\Storage\ResourceInterface')
+        $resource = $this->getMockBuilder('\Maketok\DataMigration\Storage\Db\ResourceInterface')
             ->getMock();
         if ($expects) {
             $resource->expects($this->atLeastOnce())
@@ -110,11 +112,28 @@ class DumpTest extends \PHPUnit_Framework_TestCase
         return $resource;
     }
 
+    /**
+     * @param bool $expects
+     * @return FsResourceInterface
+     */
+    protected function getFS($expects = false)
+    {
+        $filesystem = $this->getMockBuilder('\Maketok\DataMigration\Storage\Filesystem\ResourceInterface')
+            ->getMock();
+        if ($expects) {
+            $filesystem->expects($this->once())->method('open');
+            $filesystem->expects($this->exactly(2))->method('readRow');
+            $filesystem->expects($this->once())->method('close');
+        }
+        return $filesystem;
+    }
+
     public function testProcess()
     {
         $action = new Dump(
             $this->getUnitBag(),
             $this->getConfig(),
+            $this->getFS(true),
             $this->getResource(true),
             $this->getInputResource(true)
         );

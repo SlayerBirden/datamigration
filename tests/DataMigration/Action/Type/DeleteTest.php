@@ -4,7 +4,8 @@ namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Action\Exception\WrongContextException;
-use Maketok\DataMigration\Storage\ResourceInterface;
+use Maketok\DataMigration\Storage\Db\ResourceInterface;
+use Maketok\DataMigration\Storage\Filesystem\ResourceInterface as FsResourceInterface;
 use Maketok\DataMigration\Unit\AbstractUnit;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 
@@ -12,7 +13,12 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
 {
     public function testGetCode()
     {
-        $action = new Delete($this->getUnitBag(), $this->getConfig(), $this->getResource());
+        $action = new Delete(
+            $this->getUnitBag(),
+            $this->getConfig(),
+            $this->getFS(),
+            $this->getResource()
+        );
         $this->assertEquals('delete', $action->getCode());
     }
 
@@ -82,16 +88,31 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
      */
     protected function getResource($expects = false)
     {
-        $resource = $this->getMockBuilder('\Maketok\DataMigration\Storage\ResourceInterface')->getMock();
+        $resource = $this->getMockBuilder('\Maketok\DataMigration\Storage\Db\ResourceInterface')->getMock();
         if ($expects) {
             $resource->expects($this->atLeastOnce())->method('delete');
         }
         return $resource;
     }
 
+    /**
+     * @return FsResourceInterface
+     */
+    protected function getFS()
+    {
+        $filesystem = $this->getMockBuilder('\Maketok\DataMigration\Storage\Filesystem\ResourceInterface')
+            ->getMock();
+        return $filesystem;
+    }
+
     public function testProcess()
     {
-        $action = new Delete($this->getUnitBag(), $this->getConfig(), $this->getResource(true));
+        $action = new Delete(
+            $this->getUnitBag(),
+            $this->getConfig(),
+            $this->getFS(),
+            $this->getResource(true)
+        );
         $action->process();
     }
 
@@ -100,7 +121,12 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
      */
     public function testWrongProcess()
     {
-        $action = new Delete($this->getWrongUnitBag(), $this->getConfig(), $this->getResource());
+        $action = new Delete(
+            $this->getWrongUnitBag(),
+            $this->getConfig(),
+            $this->getFS(),
+            $this->getResource()
+        );
         $action->process();
     }
 }

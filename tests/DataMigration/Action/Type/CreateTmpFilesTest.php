@@ -4,6 +4,7 @@ namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Input\InputResourceInterface;
+use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
 use Maketok\DataMigration\Unit\AbstractUnit;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 use org\bovigo\vfs\vfsStream;
@@ -33,6 +34,7 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
         $action = new CreateTmpFiles(
             $this->getUnitBag(),
             $this->getConfig(),
+            $this->getFS(),
             $this->getInputResource([])
         );
         $this->assertEquals('create_tmp_files', $action->getCode());
@@ -87,12 +89,31 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
      */
     protected function getConfig()
     {
-        $config = $this->getMockBuilder('\Maketok\DataMigration\Action\ConfigInterface')->getMock();
+        $config = $this->getMockBuilder('\Maketok\DataMigration\Action\ConfigInterface')
+            ->getMock();
         $config->expects($this->any())->method('get')->willReturnMap([
             ['tmp_folder', $this->root->url() . '/tmp'],
             ['tmp_file_mask', '%1$s.csv'], // fname, date
         ]);
         return $config;
+    }
+
+    /**
+     * @param bool $expect
+     * @return ResourceInterface
+     */
+    protected function getFS($expect = false)
+    {
+        $filesystem = $this->getMockBuilder('\Maketok\DataMigration\Storage\Filesystem\ResourceInterface')
+            ->getMock();
+        if ($expect) {
+            $filesystem->expects($this->once())
+                ->method('open')
+                ->with($this->equalTo($this->root->url() . '/tmp/test_table1.csv'));
+            $filesystem->expects($this->exactly(2))->method('writeRow');
+            $filesystem->expects($this->once())->method('close');
+        }
+        return $filesystem;
     }
 
     public function testProcess()
@@ -105,21 +126,13 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
         $action = new CreateTmpFiles(
             $this->getUnitBag(),
             $this->getConfig(),
+            $this->getFS(true),
             $this->getInputResource($expected)
         );
         $action->process();
 
-        $this->assertTrue(file_exists($this->root->url() . '/tmp/test_table1.csv'));
         //assert name is assigned to unit
         $this->assertEquals($this->root->url() . '/tmp/test_table1.csv',
             $this->getUnit()->getTmpFileName());
-
-        $actual = [];
-        $readFile = new \SplFileObject($this->root->url() . '/tmp/test_table1.csv');
-        while (($row = $readFile->fgetcsv()) !== false) {
-            $actual[] = $row;
-        }
-
-        $this->assertEquals($expected, $actual);
     }
 }

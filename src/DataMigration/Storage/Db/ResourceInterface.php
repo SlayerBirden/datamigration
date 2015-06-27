@@ -1,6 +1,6 @@
 <?php
 
-namespace Maketok\DataMigration\Storage;
+namespace Maketok\DataMigration\Storage\Db;
 
 interface ResourceInterface
 {
