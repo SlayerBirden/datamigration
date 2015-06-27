@@ -51,4 +51,17 @@ interface UnitInterface
      * @return string
      */
     public function getTmpFileName();
+
+    /**
+     * set Temporary table name generated for this unit
+     * @param string $name
+     * @return mixed
+     */
+    public function setTmpTable($name);
+
+    /**
+     * get tmp table name
+     * @return string
+     */
+    public function getTmpTable();
 }
