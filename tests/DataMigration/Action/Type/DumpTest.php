@@ -8,24 +8,9 @@ use Maketok\DataMigration\Storage\Db\ResourceInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface as FsResourceInterface;
 use Maketok\DataMigration\Unit\AbstractUnit;
 use Maketok\DataMigration\Unit\UnitBagInterface;
-use org\bovigo\vfs\vfsStream;
-use org\bovigo\vfs\vfsStreamDirectory;
 
 class DumpTest extends \PHPUnit_Framework_TestCase
 {
-    /**
-     * @var vfsStreamDirectory
-     */
-    private $root;
-
-    /**
-     * setup
-     */
-    public function setUp()
-    {
-        $this->root = vfsStream::setup();
-    }
-
     public function testGetCode()
     {
         $action = new Dump(
@@ -45,10 +30,6 @@ class DumpTest extends \PHPUnit_Framework_TestCase
     {
         $config = $this->getMockBuilder('\Maketok\DataMigration\Action\ConfigInterface')
             ->getMock();
-        $config->expects($this->any())->method('get')->willReturnMap([
-            ['dump_folder', $this->root->url()],
-            ['dump_mask', '%1$s.csv'],
-        ]);
         return $config;
     }
 
@@ -103,28 +84,21 @@ class DumpTest extends \PHPUnit_Framework_TestCase
         if ($expects) {
             $resource->expects($this->atLeastOnce())
                 ->method('dumpData')
-                ->willReturnCallback(function () {
-                    vfsStream::newFile('test_table1.csv')
-                        ->setContent("1,value1\n2,value2\n")
-                        ->at($this->root);
-                });
+                ->willReturn([
+                    [1, 'value1'],
+                    [2, 'value2'],
+                ]);
         }
         return $resource;
     }
 
     /**
-     * @param bool $expects
      * @return FsResourceInterface
      */
-    protected function getFS($expects = false)
+    protected function getFS()
     {
         $filesystem = $this->getMockBuilder('\Maketok\DataMigration\Storage\Filesystem\ResourceInterface')
             ->getMock();
-        if ($expects) {
-            $filesystem->expects($this->once())->method('open');
-            $filesystem->expects($this->exactly(2))->method('readRow');
-            $filesystem->expects($this->once())->method('close');
-        }
         return $filesystem;
     }
 
@@ -133,7 +107,7 @@ class DumpTest extends \PHPUnit_Framework_TestCase
         $action = new Dump(
             $this->getUnitBag(),
             $this->getConfig(),
-            $this->getFS(true),
+            $this->getFS(),
             $this->getResource(true),
             $this->getInputResource(true)
         );

@@ -57,11 +57,12 @@ interface ResourceInterface
     public function move($fromTable, $toTable, array $columns = null, array $conditions = null);
 
     /**
-     * Dump selected columns data to file
+     * Dump selected columns data to array
      * @param string $table
-     * @param string $file
      * @param array $columns
-     * @return mixed
+     * @param int $limit
+     * @param int $offset
+     * @return array
      */
-    public function dumpData($table, $file, array $columns = null);
+    public function dumpData($table, array $columns = null, $limit = 1000, $offset = 0);
 }
