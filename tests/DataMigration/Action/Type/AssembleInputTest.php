@@ -8,17 +8,17 @@ use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
 use Maketok\DataMigration\Unit\AbstractUnit;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 
-class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
+class AssembleInputTest extends \PHPUnit_Framework_TestCase
 {
     public function testGetCode()
     {
-        $action = new CreateTmpFiles(
-            $this->getUnitBag([$this->getUnit(['table1'])]),
+        $action = new AssembleInput(
+            $this->getUnitBag([$this->getUnit('table1')]),
             $this->getConfig(),
             $this->getFS(),
             $this->getInputResource([])
         );
-        $this->assertEquals('create_tmp_files', $action->getCode());
+        $this->assertEquals('assemble_input', $action->getCode());
     }
 
     /**
@@ -56,20 +56,11 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
     {
         $input = $this->getMockBuilder('\Maketok\DataMigration\Input\InputResourceInterface')
             ->getMock();
-        if (count($data)) {
-            $counts = 2;
-            $counter = 0;
-            while ($counts-- > 0) {
-                for ($i = 0; $i < count($data); ++$i) {
-                    $input->expects($this->at($counter))->method('get')->willReturn($data[$i]);
-                    $counter++;
-                }
-                $input->expects($this->at($counter))->method('get')->willReturn(false);
-                $counter++;
-                // reset internal counter method
-                $input->expects($this->at($counter))->method('reset')->willReturn(true);
-                $counter++;
-            }
+        for ($i = 0; $i < count($data); ++$i) {
+            $input->expects($this->at($i))->method('add')->with($data[$i]);
+        }
+        if ($i > 0) {
+            $input->expects($this->once())->method('assemble');
         }
         return $input;
     }
@@ -99,7 +90,20 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
         if ($expect) {
             $filesystem->expects($this->exactly(2))
                 ->method('open');
-            $filesystem->expects($this->exactly(3))->method('writeRow');
+            // open 0
+            $filesystem->expects($this->at(1))
+                ->method('readRow')
+                ->willReturn(['1', 'otherField', '1']);
+            $filesystem->expects($this->at(2))
+                ->method('readRow')
+                ->willReturn(['2', 'otherField2', '1']);
+            // close 3
+            // open 4
+            $filesystem->expects($this->at(5))
+                ->method('readRow')
+                ->willReturn(['3', 'someField2', '2']);
+            // close 6
+            $filesystem->expects($this->exactly(3))->method('readRow');
             $filesystem->expects($this->exactly(2))->method('close');
         }
         return $filesystem;
@@ -107,8 +111,8 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
 
     public function testProcess()
     {
-        $inputs = [
-            ['id' => '1', 'name' => 'someField', 'code' => 'otherField'],
+        $expected = [
+            ['id' => '1', 'name' => null, 'code' => 'otherField'],
             ['id' => '2', 'name' => 'someField2', 'code' => 'otherField2'],
         ];
         $unit1 = $this->getUnit('entity_table1');
@@ -132,18 +136,12 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
             return $row['id'] == 2;
         });
 
-        $action = new CreateTmpFiles(
+        $action = new AssembleInput(
             $this->getUnitBag([$unit1, $unit2]),
             $this->getConfig(),
             $this->getFS(true),
-            $this->getInputResource($inputs)
+            $this->getInputResource($expected)
         );
         $action->process();
-
-        //assert name is assigned to unit
-        $this->assertEquals('/tmp/entity_table1.csv',
-            $unit1->getTmpFileName());
-        $this->assertEquals('/tmp/data_table1.csv',
-            $unit2->getTmpFileName());
     }
 }

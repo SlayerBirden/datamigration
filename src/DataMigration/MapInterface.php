@@ -26,5 +26,12 @@ interface MapInterface
      * @param mixed $default
      * @return mixed
      */
-    public function getIncrement($key, $default);
+    public function incr($key, $default);
+
+    /**
+     * get value by key
+     * @param string $key
+     * @return mixed
+     */
+    public function get($key);
 }

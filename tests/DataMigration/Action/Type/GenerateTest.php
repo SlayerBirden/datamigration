@@ -6,27 +6,13 @@ use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface as FsResourceInterface;
 use Maketok\DataMigration\Unit\AbstractUnit;
 use Maketok\DataMigration\Unit\UnitBagInterface;
-use org\bovigo\vfs\vfsStream;
-use org\bovigo\vfs\vfsStreamDirectory;
 
 class GenerateTest extends \PHPUnit_Framework_TestCase
 {
     /**
-     * @var vfsStreamDirectory
-     */
-    private $root;
-    /**
      * @var AbstractUnit
      */
     private $unit;
-
-    /**
-     * setup
-     */
-    public function setUp()
-    {
-        $this->root = vfsStream::setup();
-    }
 
     public function testGetCode()
     {
@@ -58,7 +44,8 @@ class GenerateTest extends \PHPUnit_Framework_TestCase
      */
     protected function getUnitBag()
     {
-        $unitBag = $this->getMockBuilder('\Maketok\DataMigration\Unit\UnitBagInterface')->getMock();
+        $unitBag = $this->getMockBuilder('\Maketok\DataMigration\Unit\UnitBagInterface')
+            ->getMock();
         $unitBag->expects($this->any())->method('add')->willReturnSelf();
         $unitBag->expects($this->any())
             ->method('getIterator')
@@ -74,8 +61,8 @@ class GenerateTest extends \PHPUnit_Framework_TestCase
         $config = $this->getMockBuilder('\Maketok\DataMigration\Action\ConfigInterface')
             ->getMock();
         $config->expects($this->any())->method('get')->willReturnMap([
-            ['generate_folder', $this->root->url() . '/tmp'],
-            ['generate_file_mask', '%1$s.csv'], // fname, date
+            ['tmp_folder', '/tmp'],
+            ['tmp_file_mask', '%1$s.csv'], // fname, date
         ]);
         return $config;
     }
@@ -91,7 +78,7 @@ class GenerateTest extends \PHPUnit_Framework_TestCase
         if ($expect) {
             $filesystem->expects($this->once())
                 ->method('open')
-                ->with($this->equalTo($this->root->url() . '/tmp/test_table1.csv'));
+                ->with($this->equalTo('/tmp/test_table1.csv'));
             $filesystem->expects($this->exactly(2))->method('writeRow');
             $filesystem->expects($this->once())->method('close');
         }

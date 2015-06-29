@@ -17,19 +17,13 @@ interface ResourceInterface
     public function close();
 
     /**
-     * Delete rows in table using conditions
-     * @param string $table
-     * @param array $condition
+     * Delete rows in table using PK from temp table
+     * @param string $deleteTable
+     * @param string $tmpTable
+     * @param string|string[] $pk
      * @return bool
      */
-    public function delete($table, array $condition);
-
-    /**
-     * Get last increment value for given table
-     * @param string $table
-     * @return mixed
-     */
-    public function getLastIncrement($table);
+    public function deleteUsingTempPK($deleteTable, $tmpTable, $pk = 'id');
 
     /**
      * Load data from file to table

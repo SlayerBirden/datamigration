@@ -8,6 +8,9 @@ use Maketok\DataMigration\Unit\UnitBagInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface as FsResourceInterface;
 use Maketok\DataMigration\Storage\Db\ResourceInterface as DbResourceInterface;
 
+/**
+ * Move data from one db table to another
+ */
 class Move extends AbstractDbAction implements ActionInterface
 {
     /**

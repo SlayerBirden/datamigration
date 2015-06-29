@@ -33,6 +33,10 @@ abstract class AbstractUnit implements UnitInterface
      * @var string
      */
     protected $tmpFileName;
+    /**
+     * @var string|string[]
+     */
+    protected $pk;
 
     /**
      * {@inheritdoc}
@@ -151,5 +155,22 @@ abstract class AbstractUnit implements UnitInterface
     public function getWriteConditions()
     {
         return $this->writeConditions;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getPk()
+    {
+        return $this->pk;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setPk($pk)
+    {
+        $this->pk = $pk;
+        return $this;
     }
 }

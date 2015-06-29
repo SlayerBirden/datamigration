@@ -3,7 +3,6 @@
 namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ConfigInterface;
-use Maketok\DataMigration\Action\Exception\WrongContextException;
 use Maketok\DataMigration\Storage\Db\ResourceInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface as FsResourceInterface;
 use Maketok\DataMigration\Unit\AbstractUnit;
@@ -118,7 +117,7 @@ class LoadTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException WrongContextException
+     * @expectedException \Maketok\DataMigration\Action\Exception\WrongContextException
      */
     public function testWrongProcess()
     {

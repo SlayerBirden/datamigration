@@ -3,7 +3,6 @@
 namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ConfigInterface;
-use Maketok\DataMigration\Action\Exception\WrongContextException;
 use Maketok\DataMigration\Storage\Db\ResourceInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface as FsResourceInterface;
 use Maketok\DataMigration\Unit\AbstractUnit;
@@ -27,7 +26,8 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
      */
     protected function getConfig()
     {
-        $config = $this->getMockBuilder('\Maketok\DataMigration\Action\ConfigInterface')->getMock();
+        $config = $this->getMockBuilder('\Maketok\DataMigration\Action\ConfigInterface')
+            ->getMock();
         return $config;
     }
 
@@ -40,7 +40,7 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
         $unit = $this->getMockBuilder('\Maketok\DataMigration\Unit\AbstractUnit')
             ->getMockForAbstractClass();
         $unit->setTable('test_table1');
-        $unit->setTmpFileName('test_table1.csv');
+        $unit->setTmpTable('test_table1_tmp');
         return $unit;
     }
 
@@ -61,7 +61,8 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
      */
     protected function getUnitBag()
     {
-        $unitBag = $this->getMockBuilder('\Maketok\DataMigration\Unit\UnitBagInterface')->getMock();
+        $unitBag = $this->getMockBuilder('\Maketok\DataMigration\Unit\UnitBagInterface')
+            ->getMock();
         $unitBag->expects($this->any())->method('add')->willReturnSelf();
         $unitBag->expects($this->any())
             ->method('getIterator')
@@ -74,7 +75,8 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
      */
     protected function getWrongUnitBag()
     {
-        $unitBag = $this->getMockBuilder('\Maketok\DataMigration\Unit\UnitBagInterface')->getMock();
+        $unitBag = $this->getMockBuilder('\Maketok\DataMigration\Unit\UnitBagInterface')
+            ->getMock();
         $unitBag->expects($this->any())->method('add')->willReturnSelf();
         $unitBag->expects($this->any())
             ->method('getIterator')
@@ -88,9 +90,10 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
      */
     protected function getResource($expects = false)
     {
-        $resource = $this->getMockBuilder('\Maketok\DataMigration\Storage\Db\ResourceInterface')->getMock();
+        $resource = $this->getMockBuilder('\Maketok\DataMigration\Storage\Db\ResourceInterface')
+            ->getMock();
         if ($expects) {
-            $resource->expects($this->atLeastOnce())->method('delete');
+            $resource->expects($this->atLeastOnce())->method('deleteUsingTempPK');
         }
         return $resource;
     }
@@ -117,7 +120,7 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException WrongContextException
+     * @expectedException \Maketok\DataMigration\Action\Exception\WrongContextException
      */
     public function testWrongProcess()
     {

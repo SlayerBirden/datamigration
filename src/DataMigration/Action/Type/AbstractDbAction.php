@@ -12,7 +12,7 @@ class AbstractDbAction extends AbstractAction
     /**
      * @var DbResourceInterface
      */
-    private $resource;
+    protected $resource;
 
     /**
      * @param UnitBagInterface $bag

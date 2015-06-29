@@ -9,9 +9,9 @@ use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 
 /**
- * Disperse base input stream into separate units (tmp csv files) for further processing
+ * Create Base Input stream from separate units
  */
-class CreateTmpFiles extends AbstractAction implements ActionInterface
+class AssembleInput extends AbstractAction implements ActionInterface
 {
     /**
      * @var InputResourceInterface
@@ -38,23 +38,7 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
      */
     public function process()
     {
-        foreach ($this->bag as $unit) {
-            $name = rtrim($this->config->get('tmp_folder'), '/') .
-                '/' .
-                sprintf(
-                    $this->config->get('tmp_file_mask'),
-                    $unit->getTable(),
-                    date('Y-m-d_H:i:s')
-                );
-            $this->filesystem->open($name, 'w');
-            while (($row = $this->input->get()) !== false) {
-                // TODO add mapping, contributions, hashtables
-                $this->filesystem->writeRow($row);
-            }
-            $unit->setTmpFileName($name);
-            $this->filesystem->close();
-            $this->input->reset();
-        }
+        // TODO implement
     }
 
     /**
@@ -62,6 +46,6 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
      */
     public function getCode()
     {
-        return 'create_tmp_files';
+        return 'assemble_input';
     }
 }

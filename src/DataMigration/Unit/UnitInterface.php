@@ -70,4 +70,17 @@ interface UnitInterface
      * @return string
      */
     public function getTable();
+
+    /**
+     * Definition of PK for current unit/table: can be sting or array
+     * @param mixed $definition
+     * @return self
+     */
+    public function setPk($definition);
+
+    /**
+     * Get PK def
+     * @return mixed
+     */
+    public function getPk();
 }

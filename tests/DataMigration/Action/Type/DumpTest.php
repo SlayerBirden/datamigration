@@ -3,7 +3,6 @@
 namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ConfigInterface;
-use Maketok\DataMigration\Input\InputResourceInterface;
 use Maketok\DataMigration\Storage\Db\ResourceInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface as FsResourceInterface;
 use Maketok\DataMigration\Unit\AbstractUnit;
@@ -17,8 +16,7 @@ class DumpTest extends \PHPUnit_Framework_TestCase
             $this->getUnitBag(),
             $this->getConfig(),
             $this->getFS(),
-            $this->getResource(),
-            $this->getInputResource()
+            $this->getResource()
         );
         $this->assertEquals('dump', $action->getCode());
     }
@@ -30,21 +28,11 @@ class DumpTest extends \PHPUnit_Framework_TestCase
     {
         $config = $this->getMockBuilder('\Maketok\DataMigration\Action\ConfigInterface')
             ->getMock();
+        $config->expects($this->any())->method('get')->willReturnMap([
+            ['tmp_folder', '/tmp'],
+            ['tmp_file_mask', '%1$s.csv'], // fname, date
+        ]);
         return $config;
-    }
-
-    /**
-     * @param bool $expects
-     * @return InputResourceInterface
-     */
-    protected function getInputResource($expects = false)
-    {
-        $input = $this->getMockBuilder('\Maketok\DataMigration\Input\InputResourceInterface')
-            ->getMock();
-        if ($expects) {
-            $input->expects($this->exactly(2))->method('add');
-        }
-        return $input;
     }
 
     /**
@@ -93,12 +81,17 @@ class DumpTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * @param bool $expects
      * @return FsResourceInterface
      */
-    protected function getFS()
+    protected function getFS($expects = false)
     {
         $filesystem = $this->getMockBuilder('\Maketok\DataMigration\Storage\Filesystem\ResourceInterface')
             ->getMock();
+        if ($expects) {
+            $filesystem->expects($this->exactly(2))
+                ->method('writeRow');
+        }
         return $filesystem;
     }
 
@@ -107,10 +100,13 @@ class DumpTest extends \PHPUnit_Framework_TestCase
         $action = new Dump(
             $this->getUnitBag(),
             $this->getConfig(),
-            $this->getFS(),
-            $this->getResource(true),
-            $this->getInputResource(true)
+            $this->getFS(true),
+            $this->getResource(true)
         );
         $action->process();
+
+        //assert name is assigned to unit
+        $this->assertEquals('/tmp/test_table1.csv',
+            $this->getUnit()->getTmpFileName());
     }
 }
