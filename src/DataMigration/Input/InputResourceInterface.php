@@ -21,4 +21,10 @@ interface InputResourceInterface
      * @return mixed
      */
     public function assemble();
+
+    /**
+     * reset internal counter
+     * @return mixed
+     */
+    public function reset();
 }

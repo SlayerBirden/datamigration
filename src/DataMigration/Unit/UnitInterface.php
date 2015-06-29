@@ -64,4 +64,10 @@ interface UnitInterface
      * @return string
      */
     public function getTmpTable();
+
+    /**
+     * get main table name
+     * @return string
+     */
+    public function getTable();
 }

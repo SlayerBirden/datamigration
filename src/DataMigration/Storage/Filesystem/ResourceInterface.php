@@ -5,36 +5,26 @@ namespace Maketok\DataMigration\Storage\Filesystem;
 interface ResourceInterface
 {
     /**
-     * create new file
-     * @param string $name
-     * @param int $permissions
-     * @return bool
-     */
-    public function newFile($name, $permissions = 0755);
-
-    /**
      * open file
      * @param string $name
      * @param string $mode
-     * @return resource
+     * @return bool
      */
     public function open($name, $mode);
 
     /**
-     * @param resource $handle
      * @param array $row
      * @return bool
      */
-    public function writeRow($handle, array $row);
+    public function writeRow(array $row);
 
     /**
-     * @param resource $handle
+     * close connection
      */
-    public function close($handle);
+    public function close();
 
     /**
-     * @param resource $handle
      * @return array|bool (false)
      */
-    public function readRow($handle);
+    public function readRow();
 }

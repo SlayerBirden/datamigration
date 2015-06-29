@@ -59,7 +59,8 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
      */
     protected function getUnitBag()
     {
-        $unitBag = $this->getMockBuilder('\Maketok\DataMigration\Unit\UnitBagInterface')->getMock();
+        $unitBag = $this->getMockBuilder('\Maketok\DataMigration\Unit\UnitBagInterface')
+            ->getMock();
         $unitBag->expects($this->any())->method('add')->willReturnSelf();
         $unitBag->expects($this->any())
             ->method('getIterator')
@@ -79,7 +80,7 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
             $input->expects($this->at($i))->method('get')->willReturn($data[$i]);
         }
         if ($i > 0) {
-            $input->expects($this->at($i + 1))->method('get')->willReturn(false);
+            $input->expects($this->at($i))->method('get')->willReturn(false);
         }
         return $input;
     }

@@ -5,11 +5,12 @@ namespace Maketok\DataMigration\Action\Type;
 use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
+use Maketok\DataMigration\Unit\UnitInterface;
 
 class AbstractAction
 {
     /**
-     * @var UnitBagInterface
+     * @var UnitBagInterface|UnitInterface[]
      */
     protected $bag;
     /**

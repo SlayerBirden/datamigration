@@ -11,7 +11,7 @@ abstract class AbstractUnit implements UnitInterface
     /**
      * @var string|callable
      */
-    protected $entityCondition;
+    protected $isEntityCondition;
     /**
      * @var array|string[]|callable[]
      */
@@ -26,6 +26,57 @@ abstract class AbstractUnit implements UnitInterface
     protected $mapping;
 
     /**
+     * @var string
+     */
+    protected $tmpTable;
+    /**
+     * @var string
+     */
+    protected $tmpFileName;
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getTmpTable()
+    {
+        return $this->tmpTable;
+    }
+
+    /**
+     * @return string[]
+     */
+    public function getMapping()
+    {
+        return $this->mapping;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setTmpTable($tmpTable)
+    {
+        $this->tmpTable = $tmpTable;
+        return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getTmpFileName()
+    {
+        return $this->tmpFileName;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setTmpFileName($tmpFileName)
+    {
+        $this->tmpFileName = $tmpFileName;
+        return $this;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function setTable($tableName)
@@ -37,9 +88,17 @@ abstract class AbstractUnit implements UnitInterface
     /**
      * {@inheritdoc}
      */
+    public function getTable()
+    {
+        return $this->tableName;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function setIsEntityCondition($condition)
     {
-        $this->entityCondition = $condition;
+        $this->isEntityCondition = $condition;
         return $this;
     }
 
@@ -68,5 +127,29 @@ abstract class AbstractUnit implements UnitInterface
     {
         $this->mapping = $mapping;
         return $this;
+    }
+
+    /**
+     * @return callable|string
+     */
+    public function getIsEntityCondition()
+    {
+        return $this->isEntityCondition;
+    }
+
+    /**
+     * @return array|callable[]|string[]
+     */
+    public function getContributions()
+    {
+        return $this->contributions;
+    }
+
+    /**
+     * @return array|callable[]|string[]
+     */
+    public function getWriteConditions()
+    {
+        return $this->writeConditions;
     }
 }
