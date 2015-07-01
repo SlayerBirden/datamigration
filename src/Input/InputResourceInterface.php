@@ -12,15 +12,9 @@ interface InputResourceInterface
     /**
      * add row to input resource
      * @param array $entity
-     * @return mixed
+     * @return self
      */
     public function add(array $entity);
-
-    /**
-     * create input resource based on current set of entities
-     * @return mixed
-     */
-    public function assemble();
 
     /**
      * reset internal counter

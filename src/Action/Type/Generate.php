@@ -59,7 +59,7 @@ class Generate extends AbstractAction implements ActionInterface
             $this->filesystem->open($unit->getTmpFileName(), 'w');
             while ($this->count > 0) {
                 $row = array_map(function ($el) {
-                    return $this->generator->$el;
+                    return call_user_func($el, $this->generator);
                 }, $unit->getGeneratorMapping());
                 $this->filesystem->writeRow($row);
                 $this->count--;

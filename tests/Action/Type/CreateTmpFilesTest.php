@@ -4,6 +4,8 @@ namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Input\InputResourceInterface;
+use Maketok\DataMigration\MapInterface;
+use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
 use Maketok\DataMigration\Unit\AbstractUnit;
 use Maketok\DataMigration\Unit\UnitBagInterface;
@@ -16,7 +18,9 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
             $this->getUnitBag([$this->getUnit(['table1'])]),
             $this->getConfig(),
             $this->getFS(),
-            $this->getInputResource([])
+            $this->getInputResource([]),
+            $this->getMap([]),
+            $this->getResourceHelper()
         );
         $this->assertEquals('create_tmp_files', $action->getCode());
     }
@@ -50,6 +54,32 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @param array $data
+     * @return MapInterface
+     */
+    protected function getMap($data)
+    {
+        $map = $this->getMockBuilder('\Maketok\DataMigration\MapInterface')
+            ->getMock();
+        if (count($data)) {
+            $map->expects($this->any())
+                ->method('dumpState')
+                ->willReturnOnConsecutiveCalls($data[0], $data[1], $data[2]);
+        }
+        return $map;
+    }
+
+    /**
+     * @return ResourceHelperInterface
+     */
+    protected function getResourceHelper()
+    {
+        $rh = $this->getMockBuilder('\Maketok\DataMigration\Storage\Db\ResourceHelperInterface')
+            ->getMock();
+        return $rh;
+    }
+
+    /**
+     * @param array $data
      * @return InputResourceInterface
      */
     protected function getInputResource(array $data)
@@ -57,19 +87,9 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
         $input = $this->getMockBuilder('\Maketok\DataMigration\Input\InputResourceInterface')
             ->getMock();
         if (count($data)) {
-            $counts = 2;
-            $counter = 0;
-            while ($counts-- > 0) {
-                for ($i = 0; $i < count($data); ++$i) {
-                    $input->expects($this->at($counter))->method('get')->willReturn($data[$i]);
-                    $counter++;
-                }
-                $input->expects($this->at($counter))->method('get')->willReturn(false);
-                $counter++;
-                // reset internal counter method
-                $input->expects($this->at($counter))->method('reset')->willReturn(true);
-                $counter++;
-            }
+            $input->expects($this->any())
+                ->method('get')
+                ->willReturnOnConsecutiveCalls($data[0], $data[1], false, $data[0], $data[1], false);
         }
         return $input;
     }
@@ -111,6 +131,11 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
             ['id' => '1', 'name' => 'someField', 'code' => 'otherField'],
             ['id' => '2', 'name' => 'someField2', 'code' => 'otherField2'],
         ];
+        $dumpStates = [
+            ['1', 'otherField', '1'],
+            ['2', 'otherField2', '1'],
+            ['3', 'someField2', '2'],
+        ];
         $unit1 = $this->getUnit('entity_table1');
         $unit1->setMapping([
             'entity_id' => 'id',
@@ -128,7 +153,7 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
             },
             'name' => 'name',
             'parent_id' => 'id',
-        ])->setIsEntityCondition(function (array $row) {
+        ])->setIsEntityCondition(function (MapInterface $map, ResourceHelperInterface $rh, array $row) {
             return $row['id'] == 2;
         });
 
@@ -136,7 +161,9 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
             $this->getUnitBag([$unit1, $unit2]),
             $this->getConfig(),
             $this->getFS(true),
-            $this->getInputResource($inputs)
+            $this->getInputResource($inputs),
+            $this->getMap($dumpStates),
+            $this->getResourceHelper()
         );
         $action->process();
 

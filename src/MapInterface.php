@@ -2,20 +2,24 @@
 
 namespace Maketok\DataMigration;
 
-interface MapInterface
+interface MapInterface extends \ArrayAccess, \IteratorAggregate
 {
     /**
+     * Feed new row to map
      * @param array $row
+     * @return self
      */
     public function feed(array $row);
 
     /**
+     * Check is row is fresh (don't need to feed row multiple times)
      * @param array $row
      * @return bool
      */
     public function isFresh(array $row);
 
     /**
+     * Clear internal data array
      * clean data
      */
     public function clear();
@@ -34,4 +38,10 @@ interface MapInterface
      * @return mixed
      */
     public function get($key);
+
+    /**
+     * Dump current image of an internal data array
+     * @return array
+     */
+    public function dumpState();
 }

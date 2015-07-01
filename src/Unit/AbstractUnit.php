@@ -21,7 +21,7 @@ abstract class AbstractUnit implements UnitInterface
      */
     protected $writeConditions = [];
     /**
-     * @var string[]
+     * @var array
      */
     protected $mapping;
 
@@ -29,6 +29,11 @@ abstract class AbstractUnit implements UnitInterface
      * @var array
      */
     protected $generatorMapping;
+
+    /**
+     * @var array
+     */
+    protected $reversedMapping;
 
     /**
      * @var string
@@ -194,6 +199,24 @@ abstract class AbstractUnit implements UnitInterface
     public function setGeneratorMapping($generatorMapping)
     {
         $this->generatorMapping = $generatorMapping;
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getReversedMapping()
+    {
+        return $this->reversedMapping;
+    }
+
+    /**
+     * @param array $reversedMapping
+     * @return $this
+     */
+    public function setReversedMapping($reversedMapping)
+    {
+        $this->reversedMapping = $reversedMapping;
         return $this;
     }
 }

@@ -5,6 +5,8 @@ namespace Maketok\DataMigration\Action\Type;
 use Maketok\DataMigration\Action\ActionInterface;
 use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Input\InputResourceInterface;
+use Maketok\DataMigration\MapInterface;
+use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 
@@ -17,20 +19,34 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
      * @var InputResourceInterface
      */
     private $input;
+    /**
+     * @var MapInterface
+     */
+    private $map;
+    /**
+     * @var ResourceHelperInterface
+     */
+    private $helperResource;
 
     /**
      * @param UnitBagInterface $bag
      * @param ConfigInterface $config
      * @param ResourceInterface $filesystem
      * @param InputResourceInterface $input
+     * @param MapInterface $map
+     * @param ResourceHelperInterface $helperResource
      */
     public function __construct(UnitBagInterface $bag,
                                 ConfigInterface $config,
                                 ResourceInterface $filesystem,
-                                InputResourceInterface $input)
+                                InputResourceInterface $input,
+                                MapInterface $map,
+                                ResourceHelperInterface $helperResource)
     {
         parent::__construct($bag, $config, $filesystem);
         $this->input = $input;
+        $this->map = $map;
+        $this->helperResource = $helperResource;
     }
 
     /**
@@ -42,8 +58,16 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
             $unit->setTmpFileName($this->getTmpFileName($unit));
             $this->filesystem->open($unit->getTmpFileName(), 'w');
             while (($row = $this->input->get()) !== false) {
-                // TODO add mapping, contributions, hashtables
-                $this->filesystem->writeRow($row);
+                if (call_user_func_array($unit->getIsEntityCondition(), [
+                    'map' => $this->map,
+                    'resource' => $this->helperResource,
+                    'row' => $row,
+                ])) {
+                    if ($this->map->isFresh($row)) {
+                        $this->map->feed($row);
+                    }
+                    $this->filesystem->writeRow($this->map->dumpState());
+                }
             }
             $this->filesystem->close();
             $this->input->reset();
