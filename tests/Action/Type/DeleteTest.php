@@ -13,7 +13,7 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
     public function testGetCode()
     {
         $action = new Delete(
-            $this->getUnitBag(),
+            $this->getUnitBag([$this->getUnit()]),
             $this->getConfig(),
             $this->getFS(),
             $this->getResource()
@@ -57,30 +57,17 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * @param array $units
      * @return UnitBagInterface
      */
-    protected function getUnitBag()
+    protected function getUnitBag(array $units)
     {
         $unitBag = $this->getMockBuilder('\Maketok\DataMigration\Unit\UnitBagInterface')
             ->getMock();
         $unitBag->expects($this->any())->method('add')->willReturnSelf();
         $unitBag->expects($this->any())
             ->method('getIterator')
-            ->willReturn(new \ArrayIterator([$this->getUnit()]));
-        return $unitBag;
-    }
-
-    /**
-     * @return UnitBagInterface
-     */
-    protected function getWrongUnitBag()
-    {
-        $unitBag = $this->getMockBuilder('\Maketok\DataMigration\Unit\UnitBagInterface')
-            ->getMock();
-        $unitBag->expects($this->any())->method('add')->willReturnSelf();
-        $unitBag->expects($this->any())
-            ->method('getIterator')
-            ->willReturn(new \ArrayIterator([$this->getWrongUnit()]));
+            ->willReturn(new \ArrayIterator($units));
         return $unitBag;
     }
 
@@ -111,7 +98,7 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
     public function testProcess()
     {
         $action = new Delete(
-            $this->getUnitBag(),
+            $this->getUnitBag([$this->getUnit()]),
             $this->getConfig(),
             $this->getFS(),
             $this->getResource(true)
@@ -125,7 +112,7 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
     public function testWrongProcess()
     {
         $action = new Delete(
-            $this->getWrongUnitBag(),
+            $this->getUnitBag([$this->getWrongUnit()]),
             $this->getConfig(),
             $this->getFS(),
             $this->getResource()

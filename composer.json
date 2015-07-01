@@ -20,7 +20,8 @@
     "homepage": "https://github.com/SlayerBirden/datamigration",
     "require": {
         "php": ">=5.4.0",
-        "symfony/expression-language": "2.*"
+        "symfony/expression-language": "2.*",
+        "fzaninotto/faker": "~1"
     },
     "require-dev": {
         "phpunit/PHPUnit": "4.*",

@@ -39,19 +39,12 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
     public function process()
     {
         foreach ($this->bag as $unit) {
-            $name = rtrim($this->config->get('tmp_folder'), '/') .
-                '/' .
-                sprintf(
-                    $this->config->get('tmp_file_mask'),
-                    $unit->getTable(),
-                    date('Y-m-d_H:i:s')
-                );
-            $this->filesystem->open($name, 'w');
+            $unit->setTmpFileName($this->getTmpFileName($unit));
+            $this->filesystem->open($unit->getTmpFileName(), 'w');
             while (($row = $this->input->get()) !== false) {
                 // TODO add mapping, contributions, hashtables
                 $this->filesystem->writeRow($row);
             }
-            $unit->setTmpFileName($name);
             $this->filesystem->close();
             $this->input->reset();
         }

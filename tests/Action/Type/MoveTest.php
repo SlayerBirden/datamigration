@@ -16,10 +16,7 @@ class MoveTest extends \PHPUnit_Framework_TestCase
             $this->getUnitBag(),
             $this->getConfig(),
             $this->getFS(),
-            $this->getResource(),
-            'from_table',
-            'to_table',
-            ['col1', 'col2']
+            $this->getResource()
         );
         $this->assertEquals('move', $action->getCode());
     }
@@ -72,11 +69,7 @@ class MoveTest extends \PHPUnit_Framework_TestCase
             ->getMock();
         if ($expects) {
             $resource->expects($this->atLeastOnce())
-                ->method('move')
-                ->with($this->equalTo('from_table'),
-                    $this->equalTo('to_table'),
-                    $this->equalTo(['col1', 'col2'])
-                );
+                ->method('move');
         }
         return $resource;
     }
@@ -97,10 +90,7 @@ class MoveTest extends \PHPUnit_Framework_TestCase
             $this->getUnitBag(),
             $this->getConfig(),
             $this->getFS(),
-            $this->getResource(true),
-            'from_table',
-            'to_table',
-            ['col1', 'col2']
+            $this->getResource(true)
         );
         $action->process();
     }

@@ -16,7 +16,24 @@ class Load extends AbstractDbAction implements ActionInterface
      */
     public function process()
     {
-        // TODO: Implement process() method.
+        foreach ($this->bag as $unit) {
+            if ($unit->getTmpFileName() === null) {
+                throw new WrongContextException(sprintf(
+                    "Action can not be used for current unit %s. Tmp file is missing.",
+                    $unit->getTable()
+                ));
+            }
+            $unit->setTmpTable($this->getTmpTableName($unit));
+            $this->resource->createTmpTable(
+                $unit->getTmpTable(),
+                array_keys($unit->getMapping())
+            );
+            $this->resource->loadData(
+                $unit->getTmpTable(),
+                $unit->getTmpFileName(),
+                $this->config->get('local_infile')
+            );
+        }
     }
 
     /**

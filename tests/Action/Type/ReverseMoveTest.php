@@ -2,24 +2,36 @@
 
 namespace Maketok\DataMigration\Action\Type;
 
-use Faker\Generator;
 use Maketok\DataMigration\Action\ConfigInterface;
+use Maketok\DataMigration\Storage\Db\ResourceInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface as FsResourceInterface;
 use Maketok\DataMigration\Unit\AbstractUnit;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 
-class GenerateTest extends \PHPUnit_Framework_TestCase
+class ReverseMoveTest extends \PHPUnit_Framework_TestCase
 {
     public function testGetCode()
     {
-        $action = new Generate(
+        $action = new ReverseMove(
             $this->getUnitBag([$this->getUnit()]),
             $this->getConfig(),
             $this->getFS(),
-            new Generator(),
-            2
+            $this->getResource()
         );
-        $this->assertEquals('generate', $action->getCode());
+        $this->assertEquals('reverse_move', $action->getCode());
+    }
+
+    /**
+     * @return ConfigInterface
+     */
+    protected function getConfig()
+    {
+        $config = $this->getMockBuilder('\Maketok\DataMigration\Action\ConfigInterface')
+            ->getMock();
+        $config->expects($this->any())->method('get')->willReturnMap([
+            ['tmp_table_mask', 'tmp_%1$s%2$s'], // fname, microtime
+        ]);
+        return $config;
     }
 
     /**
@@ -30,9 +42,9 @@ class GenerateTest extends \PHPUnit_Framework_TestCase
         /** @var AbstractUnit $unit */
         $unit = $this->getMockBuilder('\Maketok\DataMigration\Unit\AbstractUnit')
             ->getMockForAbstractClass();
-        $unit->setTable('test_table1')
-            ->setMapping([])
-            ->setGeneratorMapping([]);
+        $unit->setTable('test_table1');
+        $unit->setTmpFileName('test_table1.csv');
+        $unit->setTmpTable('tmp_test_table1');
         return $unit;
     }
 
@@ -52,50 +64,41 @@ class GenerateTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @return ConfigInterface
+     * @param bool $expects
+     * @return ResourceInterface
      */
-    protected function getConfig()
+    protected function getResource($expects = false)
     {
-        $config = $this->getMockBuilder('\Maketok\DataMigration\Action\ConfigInterface')
+        $resource = $this->getMockBuilder('\Maketok\DataMigration\Storage\Db\ResourceInterface')
             ->getMock();
-        $config->expects($this->any())->method('get')->willReturnMap([
-            ['tmp_folder', '/tmp'],
-            ['tmp_file_mask', '%1$s.csv'], // fname, date
-        ]);
-        return $config;
+        if ($expects) {
+            $resource->expects($this->atLeastOnce())
+                ->method('move');
+        }
+        return $resource;
     }
 
     /**
-     * @param bool $expect
      * @return FsResourceInterface
      */
-    protected function getFS($expect = false)
+    protected function getFS()
     {
         $filesystem = $this->getMockBuilder('\Maketok\DataMigration\Storage\Filesystem\ResourceInterface')
             ->getMock();
-        if ($expect) {
-            $filesystem->expects($this->once())
-                ->method('open')
-                ->with($this->equalTo('/tmp/test_table1.csv'));
-            $filesystem->expects($this->exactly(2))->method('writeRow');
-            $filesystem->expects($this->once())->method('close');
-        }
         return $filesystem;
     }
 
     public function testProcess()
     {
         $unit = $this->getUnit();
-        $action = new Generate(
+        $action = new ReverseMove(
             $this->getUnitBag([$unit]),
             $this->getConfig(),
-            $this->getFS(true),
-            new Generator(),
-            2
+            $this->getFS(),
+            $this->getResource(true)
         );
         $action->process();
 
-        $this->assertEquals('/tmp/test_table1.csv',
-            $unit->getTmpFileName());
+        $this->assertNotEmpty($unit->getTmpTable());
     }
 }

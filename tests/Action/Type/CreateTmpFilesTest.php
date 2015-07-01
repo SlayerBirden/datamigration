@@ -140,7 +140,6 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
         );
         $action->process();
 
-        //assert name is assigned to unit
         $this->assertEquals('/tmp/entity_table1.csv',
             $unit1->getTmpFileName());
         $this->assertEquals('/tmp/data_table1.csv',

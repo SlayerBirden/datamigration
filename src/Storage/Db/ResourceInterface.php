@@ -56,7 +56,14 @@ interface ResourceInterface
      * @param array $columns
      * @param int $limit
      * @param int $offset
-     * @return array
+     * @return array|false
      */
     public function dumpData($table, array $columns = null, $limit = 1000, $offset = 0);
+
+    /**
+     * @param string $name
+     * @param array $columns
+     * @return bool
+     */
+    public function createTmpTable($name, array $columns);
 }

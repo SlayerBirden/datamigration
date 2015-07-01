@@ -26,6 +26,11 @@ abstract class AbstractUnit implements UnitInterface
     protected $mapping;
 
     /**
+     * @var array
+     */
+    protected $generatorMapping;
+
+    /**
      * @var string
      */
     protected $tmpTable;
@@ -171,6 +176,24 @@ abstract class AbstractUnit implements UnitInterface
     public function setPk($pk)
     {
         $this->pk = $pk;
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getGeneratorMapping()
+    {
+        return $this->generatorMapping;
+    }
+
+    /**
+     * @param array $generatorMapping
+     * @return $this
+     */
+    public function setGeneratorMapping($generatorMapping)
+    {
+        $this->generatorMapping = $generatorMapping;
         return $this;
     }
 }
