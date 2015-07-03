@@ -59,7 +59,7 @@ class ConflictException extends \Exception
     }
 
     /**
-     * @param array $conflictedKey
+     * @param string $conflictedKey
      * @return $this
      */
     public function setConflictedKey($conflictedKey)
