@@ -20,11 +20,12 @@ class AbstractDbAction extends AbstractAction
      * @param FsResourceInterface $filesystem
      * @param DbResourceInterface $resource
      */
-    public function __construct(UnitBagInterface $bag,
-                                ConfigInterface $config,
-                                FsResourceInterface $filesystem,
-                                DbResourceInterface $resource)
-    {
+    public function __construct(
+        UnitBagInterface $bag,
+        ConfigInterface $config,
+        FsResourceInterface $filesystem,
+        DbResourceInterface $resource
+    ) {
         parent::__construct($bag, $config, $filesystem);
         $this->resource = $resource;
     }

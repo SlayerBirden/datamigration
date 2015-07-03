@@ -34,11 +34,13 @@ interface ResourceInterface
      * @param array $set
      * @return mixed
      */
-    public function loadData($table,
-                             $file,
-                             $local = false,
-                             array $columns = null,
-                             array $set = null);
+    public function loadData(
+        $table,
+        $file,
+        $local = false,
+        array $columns = null,
+        array $set = null
+    );
 
     /**
      * Move specified columns data from table a to table b using conditions

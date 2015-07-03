@@ -30,12 +30,13 @@ class Generate extends AbstractAction implements ActionInterface
      * @param Generator $generator
      * @param int $count
      */
-    public function __construct(UnitBagInterface $bag,
-                                ConfigInterface $config,
-                                ResourceInterface $filesystem,
-                                Generator $generator,
-                                $count)
-    {
+    public function __construct(
+        UnitBagInterface $bag,
+        ConfigInterface $config,
+        ResourceInterface $filesystem,
+        Generator $generator,
+        $count
+    ) {
         parent::__construct($bag, $config, $filesystem);
         $this->count = $count;
         $this->generator = $generator;

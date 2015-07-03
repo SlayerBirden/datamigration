@@ -20,8 +20,13 @@ class ConflictException extends \Exception
      * @param int $code
      * @param \Exception $previous
      */
-    public function __construct($message, array $unitsInConflict, $conflictedKey, $code = 0, \Exception $previous = null)
-    {
+    public function __construct(
+        $message,
+        array $unitsInConflict,
+        $conflictedKey,
+        $code = 0,
+        \Exception $previous = null
+    ) {
         $this->unitsInConflict = $unitsInConflict;
         parent::__construct($message, $code, $previous);
         $this->conflictedKey = $conflictedKey;

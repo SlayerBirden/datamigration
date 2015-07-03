@@ -27,10 +27,11 @@ class AbstractAction
      * @param ConfigInterface $config
      * @param ResourceInterface $filesystem
      */
-    public function __construct(UnitBagInterface $bag,
-                                ConfigInterface $config,
-                                ResourceInterface $filesystem)
-    {
+    public function __construct(
+        UnitBagInterface $bag,
+        ConfigInterface $config,
+        ResourceInterface $filesystem
+    ) {
         $this->bag = $bag;
         $this->config = $config;
         $this->filesystem = $filesystem;

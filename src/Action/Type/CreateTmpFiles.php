@@ -36,13 +36,14 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
      * @param MapInterface $map
      * @param ResourceHelperInterface $helperResource
      */
-    public function __construct(UnitBagInterface $bag,
-                                ConfigInterface $config,
-                                ResourceInterface $filesystem,
-                                InputResourceInterface $input,
-                                MapInterface $map,
-                                ResourceHelperInterface $helperResource)
-    {
+    public function __construct(
+        UnitBagInterface $bag,
+        ConfigInterface $config,
+        ResourceInterface $filesystem,
+        InputResourceInterface $input,
+        MapInterface $map,
+        ResourceHelperInterface $helperResource
+    ) {
         parent::__construct($bag, $config, $filesystem);
         $this->input = $input;
         $this->map = $map;
