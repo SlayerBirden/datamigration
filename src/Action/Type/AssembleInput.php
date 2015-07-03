@@ -113,7 +113,8 @@ class AssembleInput extends AbstractAction implements ActionInterface
                     $row = $this->assemble($data);
                     break;
                 } catch (ConflictException $e) {
-                    $unitToBuffer = array_pop($e->getUnitsInConflict());
+                    $conflicted = $e->getUnitsInConflict();
+                    $unitToBuffer = array_pop($conflicted);
                     if (isset($buffer[$unitToBuffer])) {
                         throw new \LogicException("Unhandled logic issue", 0, $e);
                     }
