@@ -9,6 +9,12 @@ Some of the influences:
 
 ## Installation
 
+Use composer to include it in your project:
+
+```
+composer require maketok/datamigration
+```
+
 ## Structure
 
 ## Extension
