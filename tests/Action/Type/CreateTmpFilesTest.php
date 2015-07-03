@@ -153,7 +153,7 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
             },
             'name' => 'name',
             'parent_id' => 'id',
-        ])->setIsEntityCondition(function (MapInterface $map, ResourceHelperInterface $rh, array $row) {
+        ])->setIsEntityCondition(function (array $row) {
             return $row['id'] == 2;
         });
 

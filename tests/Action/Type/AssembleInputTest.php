@@ -87,7 +87,7 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         $input = $this->getMockBuilder('\Maketok\DataMigration\Input\InputResourceInterface')
             ->getMock();
         if (count($data)) {
-            $input->expects($this->exactly(2))->method('add')->withConsecutive($data[0], $data[1]);
+            $input->expects($this->exactly(2))->method('add')->withConsecutive([$data[0]], [$data[1]]);
         }
         return $input;
     }
@@ -117,12 +117,14 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         if ($expect) {
             $filesystem->expects($this->exactly(2))
                 ->method('open');
-            $filesystem->expects($this->exactly(3))
+            $filesystem->expects($this->exactly(5))
                 ->method('readRow')
                 ->willReturnOnConsecutiveCalls(
                     ['1', 'otherField', '1'],
+                    ['3', 'someField2', '2'],
                     ['2', 'otherField2', '1'],
-                    ['3', 'someField2', '2']
+                    false,
+                    false
                 );
             $filesystem->expects($this->exactly(2))
                 ->method('close');
@@ -146,7 +148,7 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         })->setReversedMapping([
             'id' => 'entity_id',
             'code' => 'code',
-        ]);
+        ])->setTmpFileName('entity_table1.csv');
         $unit2 = $this->getUnit('data_table1');
         $counter = new \stdClass();
         $counter->count = 2;
@@ -156,12 +158,12 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
             },
             'name' => 'name',
             'parent_id' => 'id',
-        ])->setIsEntityCondition(function (MapInterface $map, ResourceHelperInterface $rh, array $row) {
+        ])->setIsEntityCondition(function (array $row) {
             return $row['id'] == 2;
         })->setReversedMapping([
             'name' => 'name',
             'id' => 'parent_id',
-        ]);
+        ])->setTmpFileName('data_table1.csv');
 
         $action = new AssembleInput(
             $this->getUnitBag([$unit1, $unit2]),

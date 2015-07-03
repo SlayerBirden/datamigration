@@ -59,8 +59,6 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
             $this->filesystem->open($unit->getTmpFileName(), 'w');
             while (($row = $this->input->get()) !== false) {
                 if (call_user_func_array($unit->getIsEntityCondition(), [
-                    'map' => $this->map,
-                    'resource' => $this->helperResource,
                     'row' => $row,
                 ])) {
                     if ($this->map->isFresh($row)) {
