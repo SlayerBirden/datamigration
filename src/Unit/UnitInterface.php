@@ -5,14 +5,14 @@ namespace Maketok\DataMigration\Unit;
 interface UnitInterface
 {
     /**
-     * set main table worker is working with
+     * set main table unit is working with
      * @param string $tableName
      * @return self
      */
     public function setTable($tableName);
 
     /**
-     * set condition that would determine if current row is Entity for current worker
+     * set condition that would determine if current row is Entity for current unit
      * @param string|callable $condition
      * @return self
      */
@@ -83,4 +83,11 @@ interface UnitInterface
      * @return mixed
      */
     public function getPk();
+
+    /**
+     * add condition based on which it would be clear if we should add current entity
+     * @param string|callable $condition
+     * @return self
+     */
+    public function addValidationRule($condition);
 }

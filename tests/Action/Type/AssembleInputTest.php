@@ -110,7 +110,7 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @param bool $expect
+     * @param string $expect
      * @return ResourceInterface
      */
     protected function getFS($expect = null)

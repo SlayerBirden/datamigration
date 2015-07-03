@@ -62,8 +62,13 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
             ->getMock();
         if (count($data)) {
             $map->expects($this->any())
-                ->method('dumpState')
-                ->willReturnOnConsecutiveCalls($data[0], $data[1], $data[2]);
+                ->method('doMapping')
+                ->willReturnOnConsecutiveCalls($data[0], $data[1], $data[2], $data[3]);
+            $map->expects($this->any())
+                ->method('get')
+                ->willReturnMap([
+                    ['id', 2]
+                ]);
         }
         return $map;
     }
@@ -110,16 +115,17 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @param bool $expect
+     * @param int $number
      * @return ResourceInterface
      */
-    protected function getFS($expect = false)
+    protected function getFS($expect = false, $number = 4)
     {
         $filesystem = $this->getMockBuilder('\Maketok\DataMigration\Storage\Filesystem\ResourceInterface')
             ->getMock();
         if ($expect) {
             $filesystem->expects($this->exactly(2))
                 ->method('open');
-            $filesystem->expects($this->exactly(3))->method('writeRow');
+            $filesystem->expects($this->exactly($number))->method('writeRow');
             $filesystem->expects($this->exactly(2))->method('close');
         }
         return $filesystem;
@@ -133,8 +139,9 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
         ];
         $dumpStates = [
             ['1', 'otherField', '1'],
+            ['3', 'someField', '1'],
             ['2', 'otherField2', '1'],
-            ['3', 'someField2', '2'],
+            ['4', 'someField2', '2'],
         ];
         $unit1 = $this->getUnit('entity_table1');
         $unit1->setMapping([
@@ -153,14 +160,116 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
             },
             'name' => 'name',
             'parent_id' => 'id',
-        ])->setIsEntityCondition(function (array $row) {
-            return $row['id'] == 2;
+        ])->setIsEntityCondition(function (MapInterface $map) {
+            return $map->get('id') == 2;
         });
 
         $action = new CreateTmpFiles(
             $this->getUnitBag([$unit1, $unit2]),
             $this->getConfig(),
             $this->getFS(true),
+            $this->getInputResource($inputs),
+            $this->getMap($dumpStates),
+            $this->getResourceHelper()
+        );
+        $action->process();
+
+        $this->assertEquals('/tmp/entity_table1.csv',
+            $unit1->getTmpFileName());
+        $this->assertEquals('/tmp/data_table1.csv',
+            $unit2->getTmpFileName());
+    }
+
+    public function testProcessWriteCond()
+    {
+        $inputs = [
+            ['id' => '1', 'name' => 'someField', 'code' => 'otherField'],
+            ['id' => '2', 'name' => 'someField2', 'code' => 'otherField2'],
+        ];
+        $dumpStates = [
+            ['1', 'otherField', '1'],
+            ['3', 'someField', '1'],
+            ['4', 'someField2', '2'],
+            false,
+        ];
+        $unit1 = $this->getUnit('entity_table1');
+        $unit1->setMapping([
+            'entity_id' => 'id',
+            'code' => 'code',
+            'const' => '1',
+        ])->setIsEntityCondition(function () {
+            return true;
+        });
+        $unit2 = $this->getUnit('data_table1');
+        $counter = new \stdClass();
+        $counter->count = 2;
+        $unit2->setMapping([
+            'new_id' => function ($counter) {
+                return ++$counter->count;
+            },
+            'name' => 'name',
+            'parent_id' => 'id',
+        ])->setIsEntityCondition(function (MapInterface $map) {
+            return $map->get('id') == 2;
+        })->addWriteCondition(function (array $row) {
+            return $row['id'] == 2;
+        });
+
+        $action = new CreateTmpFiles(
+            $this->getUnitBag([$unit1, $unit2]),
+            $this->getConfig(),
+            $this->getFS(true, 3), // CALLED 3 TIMES!!!
+            $this->getInputResource($inputs),
+            $this->getMap($dumpStates),
+            $this->getResourceHelper()
+        );
+        $action->process();
+
+        $this->assertEquals('/tmp/entity_table1.csv',
+            $unit1->getTmpFileName());
+        $this->assertEquals('/tmp/data_table1.csv',
+            $unit2->getTmpFileName());
+    }
+
+    public function testProcessInvalid()
+    {
+        $inputs = [
+            ['id' => '1', 'name' => 'someField', 'code' => 'otherField'],
+            ['id' => '2', 'name' => 'someField2', 'code' => 'otherField2'],
+        ];
+        $dumpStates = [
+            ['1', 'otherField', '1'],
+            ['3', 'someField', '1'],
+            ['2', 'otherField2', '1'],
+            ['4', 'someField2', '2'],
+        ];
+        $unit1 = $this->getUnit('entity_table1');
+        $unit1->setMapping([
+            'entity_id' => 'id',
+            'code' => 'code',
+            'const' => '1',
+        ])->setIsEntityCondition(function () {
+            return true;
+        })->addValidationRule(function (array $row) {
+            return $row['id'] != 1;
+        });
+        $unit2 = $this->getUnit('data_table1');
+        $counter = new \stdClass();
+        $counter->count = 2;
+        $unit2->setMapping([
+            'new_id' => function ($counter) {
+                return ++$counter->count;
+            },
+            'name' => 'name',
+            'parent_id' => 'id',
+        ])->setIsEntityCondition(function (MapInterface $map) {
+            return $map->get('id') == 2;
+        });
+
+        $action = new CreateTmpFiles(
+            $this->getUnitBag([$unit1, $unit2]),
+            $this->getConfig(),
+            $this->getFS(true, 2), // CALLED 2 TIMES!!!
             $this->getInputResource($inputs),
             $this->getMap($dumpStates),
             $this->getResourceHelper()

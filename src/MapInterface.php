@@ -2,6 +2,8 @@
 
 namespace Maketok\DataMigration;
 
+use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
+
 interface MapInterface extends \ArrayAccess, \IteratorAggregate
 {
     /**
@@ -44,4 +46,30 @@ interface MapInterface extends \ArrayAccess, \IteratorAggregate
      * @return array
      */
     public function dumpState();
+
+    /**
+     * Set current state (without feed's work)
+     * @param array $state
+     * @return mixed
+     */
+    public function setState(array $state);
+
+    /**
+     * Refresh all internal data, pointers, counters etc
+     * @return mixed
+     */
+    public function refresh();
+
+    /**
+     * @param array $row
+     * @param array $mapping
+     * @param ResourceHelperInterface $helperResource
+     * @return string[]
+     */
+    public function doMapping(array $row, array $mapping, ResourceHelperInterface $helperResource);
+
+    /**
+     * @return string[]
+     */
+    public function doReverse();
 }

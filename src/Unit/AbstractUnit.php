@@ -21,6 +21,10 @@ abstract class AbstractUnit implements UnitInterface
      */
     protected $writeConditions = [];
     /**
+     * @var array|string[]|callable[]
+     */
+    protected $validationRules = [];
+    /**
      * @var array
      */
     protected $mapping;
@@ -218,5 +222,22 @@ abstract class AbstractUnit implements UnitInterface
     {
         $this->reversedMapping = $reversedMapping;
         return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function addValidationRule($condition)
+    {
+        $this->validationRules[] = $condition;
+        return $this;
+    }
+
+    /**
+     * @return array|callable[]|string[]
+     */
+    public function getValidationRules()
+    {
+        return $this->validationRules;
     }
 }

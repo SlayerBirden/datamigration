@@ -8,6 +8,7 @@ use Maketok\DataMigration\Input\InputResourceInterface;
 use Maketok\DataMigration\MapInterface;
 use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
+use Maketok\DataMigration\Unit\AbstractUnit;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 
 /**
@@ -24,9 +25,25 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
      */
     private $map;
     /**
+     * @var MapInterface
+     */
+    private $oldmap;
+    /**
      * @var ResourceHelperInterface
      */
     private $helperResource;
+    /**
+     * @var ResourceInterface[]
+     */
+    private $handlers = [];
+    /**
+     * @var array
+     */
+    private $buffer = [];
+    /**
+     * @var bool
+     */
+    private $ignoreValidation = false;
 
     /**
      * @param UnitBagInterface $bag
@@ -55,21 +72,136 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
      */
     public function process()
     {
-        foreach ($this->bag as $unit) {
-            $unit->setTmpFileName($this->getTmpFileName($unit));
-            $this->filesystem->open($unit->getTmpFileName(), 'w');
-            while (($row = $this->input->get()) !== false) {
+        // TODO add hashtables
+        $this->start();
+        $valid = true;
+        while (($row = $this->input->get()) !== false) {
+            if ($this->map->isFresh($row)) {
+                $this->map->feed($row);
+            }
+            foreach ($this->bag as $unit) {
                 if (call_user_func_array($unit->getIsEntityCondition(), [
-                    'row' => $row,
+                    'map' => $this->map,
+                    'resource' => $this->helperResource,
+                    'oldmap' => $this->oldmap,
                 ])) {
-                    if ($this->map->isFresh($row)) {
-                        $this->map->feed($row);
-                    }
-                    $this->filesystem->writeRow($this->map->dumpState());
+                    $this->dumpBuffer($valid, $unit);
                 }
             }
-            $this->filesystem->close();
-            $this->input->reset();
+            $valid = true;
+            foreach ($this->bag as $unit) {
+                $this->processAdditions($unit, $row);
+                $valid &= $this->validate($unit, $row);
+                $this->writeRowBuffered($unit, $row);
+            }
+        }
+        $this->dumpBuffer($valid);
+        $this->close();
+    }
+    /**
+     * open handlers
+     */
+    private function start()
+    {
+        foreach ($this->bag as $unit) {
+            $unit->setTmpFileName($this->getTmpFileName($unit));
+            $handler = clone $this->filesystem;
+            $handler->open($unit->getTmpFileName(), 'w');
+            $this->handlers[$unit->getTable()] = $handler;
+        }
+    }
+
+    /**
+     * close all handlers
+     */
+    private function close()
+    {
+        foreach ($this->bag as $unit) {
+            $handler = $this->handlers[$unit->getTable()];
+            $handler->close();
+        }
+    }
+
+    /**
+     * @param AbstractUnit $unit
+     * @param $row
+     */
+    private function processAdditions(AbstractUnit $unit, $row)
+    {
+        foreach ($unit->getContributions() as $contribution) {
+            call_user_func_array($contribution, [
+                'row' => $row,
+                'map' => $this->map,
+                'resource' => $this->helperResource,
+            ]);
+        }
+    }
+
+    /**
+     * @param AbstractUnit $unit
+     * @param $row
+     */
+    private function writeRowBuffered(AbstractUnit $unit, $row)
+    {
+        $shouldAdd = true;
+        foreach ($unit->getWriteConditions() as $condition) {
+            $shouldAdd = call_user_func_array($condition, [
+                'row' => $row,
+                'map' => $this->map,
+                'resource' => $this->helperResource,
+            ]);
+            if (!$shouldAdd) {
+                break 1;
+            }
+        }
+        if ($shouldAdd) {
+            $this->buffer[$unit->getTable()] = $this->map->doMapping(
+                $row,
+                $unit->getMapping(),
+                $this->helperResource
+            );
+        }
+    }
+
+    /**
+     * @param $unit
+     * @param $row
+     * @return bool
+     */
+    private function validate(AbstractUnit $unit, $row)
+    {
+        $valid = true;
+        foreach ($unit->getValidationRules() as $validationRule) {
+            $valid = call_user_func_array($validationRule, [
+                'row' => $row,
+                'map' => $this->map,
+                'resource' => $this->helperResource,
+            ]);
+            if (!$valid) {
+                break 1;
+            }
+        }
+        return (bool) $valid;
+    }
+
+    /**
+     * @param AbstractUnit $unit
+     * @param bool $valid
+     */
+    private function dumpBuffer($valid, AbstractUnit $unit = null)
+    {
+        if ($valid || $this->ignoreValidation) {
+            foreach ($this->buffer as $key => $dataArray) {
+                if ($unit && $key != $unit->getTable()) {
+                    continue;
+                }
+                if (!isset($this->handlers[$key])) {
+                    throw new \LogicException(sprintf("No file handlers available for unit %s", $key));
+                }
+                $handler = $this->handlers[$key];
+                $handler->writeRow($dataArray);
+                unset($this->buffer[$key]);
+            }
         }
     }
 
@@ -79,5 +211,23 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
     public function getCode()
     {
         return 'create_tmp_files';
+    }
+
+    /**
+     * @return boolean
+     */
+    public function isIgnoreValidation()
+    {
+        return $this->ignoreValidation;
+    }
+
+    /**
+     * @param boolean $ignoreValidation
+     * @return $this
+     */
+    public function setIgnoreValidation($ignoreValidation)
+    {
+        $this->ignoreValidation = $ignoreValidation;
+        return $this;
     }
 }
