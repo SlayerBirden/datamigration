@@ -29,6 +29,18 @@ class AssembleInput extends AbstractAction implements ActionInterface
      * @var ResourceHelperInterface
      */
     private $resourceHelper;
+    /**
+     * @var ResourceInterface[]
+     */
+    private $handlers = [];
+    /**
+     * @var array
+     */
+    private $headers = [];
+    /**
+     * @var array
+     */
+    private $buffer = [];
 
     /**
      * @param UnitBagInterface $bag
@@ -55,15 +67,117 @@ class AssembleInput extends AbstractAction implements ActionInterface
     /**
      * {@inheritdoc}
      * Reversed process to create input resource
-     * It's dependent on order of the data in Units
-     * No mapping is done to map data in different positions
-     *
+     * THE ORDER OF UNITS MATTERS!
      * @throws \LogicException, WrongContextException
      */
     public function process()
     {
-        $handlers = [];
-        // preparation
+        $this->start();
+        while (true) {
+            $data = $this->getUnitRowData();
+            if ($this->isEmptyData($data)) {
+                break 1; // exit point
+            }
+            $this->addData($data);
+        }
+        $this->close();
+    }
+
+    /**
+     * procedure of adding data to input resource
+     * @param array $data
+     */
+    private function addData(array $data)
+    {
+        while (true) {
+            try {
+                $row = $this->assemble($data);
+                $this->input->add($row);
+                break 1;
+            } catch (ConflictException $e) {
+                $conflicted = $e->getUnitsInConflict();
+                $unitToBuffer = array_pop($conflicted);
+                if (isset($this->buffer[$unitToBuffer])) {
+                    throw new \LogicException("Unhandled logic issue", 0, $e);
+                }
+                $this->buffer[$unitToBuffer] = $data[$unitToBuffer];
+                foreach ($data[$unitToBuffer] as $k => $v) {
+                    if ($k != $e->getConflictedKey()) {
+                        $data[$unitToBuffer][$k] = null;
+                    } else {
+                        unset($data[$unitToBuffer][$k]);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * @return array
+     */
+    private function getUnitRowData()
+    {
+        $data = [];
+        foreach ($this->bag as $unit) {
+            if (isset($this->buffer[$unit->getTable()])) {
+                $data[$unit->getTable()] = $this->buffer[$unit->getTable()];
+                unset($this->buffer[$unit->getTable()]);
+            } else {
+                $handler = $this->handlers[$unit->getTable()];
+                $unitData = [];
+                if (($tmpReadRow = $handler->readRow()) !== false) {
+                    $tmpRow = array_combine(array_keys($unit->getMapping()), $tmpReadRow);
+                    foreach ($unit->getReversedMapping() as $k => $v) {
+                        if (isset($tmpRow[$v])) {
+                            if (is_callable($tmpRow[$v])) {
+                                // should return string
+                                $unitData[$k] = call_user_func($tmpRow[$v]);
+                            } else {
+                                $unitData[$k] = $tmpRow[$v];
+                            }
+                        }
+                    }
+                    if (false !== $unitData) {
+                        $data[$unit->getTable()] = $unitData;
+                        $this->headers[$unit->getTable()] = array_keys($unitData);
+                    }
+                } elseif (isset($this->headers[$unit->getTable()])) {
+                    $data[$unit->getTable()] = array_combine(
+                        $this->headers[$unit->getTable()],
+                        array_map(function () {
+                            return null;
+                        }, $this->headers[$unit->getTable()])
+                    );
+                } else {
+                    // this unit doesn't have any data?!?
+                    // in that case we don't have to use it
+                }
+            }
+        }
+        return $data;
+    }
+
+    /**
+     * @param array $data
+     * @return bool
+     */
+    public function isEmptyData(array $data)
+    {
+        $filteredData = array_filter($data, function ($var) {
+            if (is_array($var)) {
+                $var = array_filter($var);
+            }
+            return !empty($var);
+        });
+        return empty($filteredData);
+    }
+
+    /**
+     * open handlers
+     * @throws WrongContextException
+     */
+    private function start()
+    {
         foreach ($this->bag as $unit) {
             if ($unit->getTmpFileName() === null) {
                 throw new WrongContextException(sprintf(
@@ -73,67 +187,17 @@ class AssembleInput extends AbstractAction implements ActionInterface
             }
             $handler = clone $this->filesystem;
             $handler->open($unit->getTmpFileName(), 'r');
-            $handlers[$unit->getTable()] = $handler;
+            $this->handlers[$unit->getTable()] = $handler;
         }
-        $buffer = [];
-        while (true) {
-            $data = [];
-            foreach ($this->bag as $unit) {
-                if (isset($buffer[$unit->getTable()])) {
-                    $data[$unit->getTable()] = $buffer[$unit->getTable()];
-                    unset($buffer[$unit->getTable()]);
-                } else {
-                    /** @var ResourceInterface $handler */
-                    $handler = $handlers[$unit->getTable()];
-                    $unitData = [];
-                    if (($tmpReadRow = $handler->readRow()) !== false) {
-                        $tmpRow = array_combine(array_keys($unit->getMapping()), $tmpReadRow);
-                        foreach ($unit->getReversedMapping() as $k => $v) {
-                            if (isset($tmpRow[$v])) {
-                                if (is_callable($tmpRow[$v])) {
-                                    // should return string
-                                    $unitData[$k] = call_user_func($tmpRow[$v]);
-                                } else {
-                                    $unitData[$k] = $tmpRow[$v];
-                                }
-                            }
-                        }
-                        if (false !== $unitData) {
-                            $data[$unit->getTable()] = $unitData;
-                        }
-                    }
-                }
-            }
-            if (empty($data)) {
-                break; // exit point
-            }
+    }
 
-            // try to assemble data
-            while (true) {
-                try {
-                    $row = $this->assemble($data);
-                    break;
-                } catch (ConflictException $e) {
-                    $conflicted = $e->getUnitsInConflict();
-                    $unitToBuffer = array_pop($conflicted);
-                    if (isset($buffer[$unitToBuffer])) {
-                        throw new \LogicException("Unhandled logic issue", 0, $e);
-                    }
-                    $buffer[$unitToBuffer] = $data[$unitToBuffer];
-                    foreach ($data[$unitToBuffer] as $k => $v) {
-                        if ($k != $e->getConflictedKey()) {
-                            $data[$unitToBuffer][$k] = null;
-                        } else {
-                            unset($data[$unitToBuffer][$k]);
-                        }
-                    }
-                }
-            }
-            $this->input->add($row);
-        }
+    /**
+     * close all handlers
+     */
+    private function close()
+    {
         foreach ($this->bag as $unit) {
-            /** @var ResourceInterface $handler */
-            $handler = $handlers[$unit->getTable()];
+            $handler = $this->handlers[$unit->getTable()];
             $handler->close();
         }
     }

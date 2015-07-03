@@ -9,7 +9,7 @@ class ConflictException extends \Exception
      */
     private $unitsInConflict;
     /**
-     * @var array
+     * @var string
      */
     private $conflictedKey;
 
