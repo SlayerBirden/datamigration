@@ -1,5 +1,9 @@
 # Data-Migration
 
+[![Build Status](https://travis-ci.org/SlayerBirden/datamigration.svg?branch=master)](https://travis-ci.org/SlayerBirden/datamigration)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/SlayerBirden/datamigration/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/SlayerBirden/datamigration/?branch=master)
+[![Code Coverage](https://scrutinizer-ci.com/g/SlayerBirden/datamigration/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/SlayerBirden/datamigration/?branch=master)
+
 This package is aimed at migrating large chunks of data across different resources.
 
 Some of the influences:
