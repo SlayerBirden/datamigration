@@ -4,7 +4,6 @@ namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Storage\Db\ResourceInterface;
-use Maketok\DataMigration\Storage\Filesystem\ResourceInterface as FsResourceInterface;
 use Maketok\DataMigration\Unit\AbstractUnit;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 
@@ -13,9 +12,8 @@ class ReverseMoveTest extends \PHPUnit_Framework_TestCase
     public function testGetCode()
     {
         $action = new ReverseMove(
-            $this->getUnitBag([$this->getUnit()]),
+            $this->getUnitBag(),
             $this->getConfig(),
-            $this->getFS(),
             $this->getResource()
         );
         $this->assertEquals('reverse_move', $action->getCode());
@@ -42,9 +40,11 @@ class ReverseMoveTest extends \PHPUnit_Framework_TestCase
         /** @var AbstractUnit $unit */
         $unit = $this->getMockBuilder('\Maketok\DataMigration\Unit\AbstractUnit')
             ->getMockForAbstractClass();
-        $unit->setTable('test_table1');
-        $unit->setTmpFileName('test_table1.csv');
-        $unit->setTmpTable('tmp_test_table1');
+        $unit->setTable('test_table1')
+            ->setMapping([])
+            ->setTmpFileName('test_table1.csv')
+            ->setTmpTable('tmp_test_table1');
+
         return $unit;
     }
 
@@ -52,7 +52,7 @@ class ReverseMoveTest extends \PHPUnit_Framework_TestCase
      * @param array $units
      * @return UnitBagInterface
      */
-    protected function getUnitBag(array $units)
+    protected function getUnitBag(array $units = [])
     {
         $unitBag = $this->getMockBuilder('\Maketok\DataMigration\Unit\UnitBagInterface')
             ->getMock();
@@ -78,23 +78,12 @@ class ReverseMoveTest extends \PHPUnit_Framework_TestCase
         return $resource;
     }
 
-    /**
-     * @return FsResourceInterface
-     */
-    protected function getFS()
-    {
-        $filesystem = $this->getMockBuilder('\Maketok\DataMigration\Storage\Filesystem\ResourceInterface')
-            ->getMock();
-        return $filesystem;
-    }
-
     public function testProcess()
     {
         $unit = $this->getUnit();
         $action = new ReverseMove(
             $this->getUnitBag([$unit]),
             $this->getConfig(),
-            $this->getFS(),
             $this->getResource(true)
         );
         $action->process();

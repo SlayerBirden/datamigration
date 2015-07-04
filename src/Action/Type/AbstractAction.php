@@ -3,7 +3,6 @@
 namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ConfigInterface;
-use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 use Maketok\DataMigration\Unit\AbstractUnit;
 
@@ -18,23 +17,21 @@ class AbstractAction
      */
     protected $config;
     /**
-     * @var ResourceInterface
+     * @var \DateTime
      */
-    protected $filesystem;
+    protected $date;
 
     /**
      * @param UnitBagInterface $bag
      * @param ConfigInterface $config
-     * @param ResourceInterface $filesystem
      */
     public function __construct(
         UnitBagInterface $bag,
-        ConfigInterface $config,
-        ResourceInterface $filesystem
+        ConfigInterface $config
     ) {
         $this->bag = $bag;
         $this->config = $config;
-        $this->filesystem = $filesystem;
+        $this->date = new \DateTime();
     }
 
     /**
@@ -48,8 +45,24 @@ class AbstractAction
         sprintf(
             $this->config->get('tmp_file_mask'),
             $unit->getTable(),
-            date('Y-m-d_H:i:s')
+            $this->getDate()
         );
+    }
+
+    /**
+     * @return string
+     */
+    protected function getDate()
+    {
+        return $this->date->format('Y-m-d_H:i:s');
+    }
+
+    /**
+     * @return int
+     */
+    protected function getStamp()
+    {
+        return $this->date->getTimestamp();
     }
 
     /**
@@ -61,7 +74,7 @@ class AbstractAction
         return sprintf(
             $this->config->get('tmp_table_mask'),
             $unit->getTable(),
-            implode(explode(" ", microtime()))
+            $this->getStamp()
         );
     }
 }

@@ -4,7 +4,6 @@ namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Storage\Db\ResourceInterface;
-use Maketok\DataMigration\Storage\Filesystem\ResourceInterface as FsResourceInterface;
 use Maketok\DataMigration\Unit\AbstractUnit;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 
@@ -13,9 +12,8 @@ class LoadTest extends \PHPUnit_Framework_TestCase
     public function testGetCode()
     {
         $action = new Load(
-            $this->getUnitBag([$this->getUnit()]),
+            $this->getUnitBag(),
             $this->getConfig(),
-            $this->getFS(),
             $this->getResource()
         );
         $this->assertEquals('load', $action->getCode());
@@ -63,7 +61,7 @@ class LoadTest extends \PHPUnit_Framework_TestCase
      * @param array $units
      * @return UnitBagInterface
      */
-    protected function getUnitBag(array $units)
+    protected function getUnitBag(array $units = [])
     {
         $unitBag = $this->getMockBuilder('\Maketok\DataMigration\Unit\UnitBagInterface')->getMock();
         $unitBag->expects($this->any())->method('add')->willReturnSelf();
@@ -86,23 +84,12 @@ class LoadTest extends \PHPUnit_Framework_TestCase
         return $resource;
     }
 
-    /**
-     * @return FsResourceInterface
-     */
-    protected function getFS()
-    {
-        $filesystem = $this->getMockBuilder('\Maketok\DataMigration\Storage\Filesystem\ResourceInterface')
-            ->getMock();
-        return $filesystem;
-    }
-
     public function testProcess()
     {
         $unit = $this->getUnit();
         $action = new Load(
             $this->getUnitBag([$unit]),
             $this->getConfig(),
-            $this->getFS(),
             $this->getResource(true)
         );
         $action->process();
@@ -118,7 +105,6 @@ class LoadTest extends \PHPUnit_Framework_TestCase
         $action = new Load(
             $this->getUnitBag([$this->getWrongUnit()]),
             $this->getConfig(),
-            $this->getFS(),
             $this->getResource()
         );
         $action->process();

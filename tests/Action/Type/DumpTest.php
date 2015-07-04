@@ -13,9 +13,8 @@ class DumpTest extends \PHPUnit_Framework_TestCase
     public function testGetCode()
     {
         $action = new Dump(
-            $this->getUnitBag([$this->getUnit()]),
+            $this->getUnitBag(),
             $this->getConfig(),
-            $this->getFS(),
             $this->getResource()
         );
         $this->assertEquals('dump', $action->getCode());
@@ -54,7 +53,7 @@ class DumpTest extends \PHPUnit_Framework_TestCase
      * @param array $units
      * @return UnitBagInterface
      */
-    protected function getUnitBag(array $units)
+    protected function getUnitBag(array $units = [])
     {
         $unitBag = $this->getMockBuilder('\Maketok\DataMigration\Unit\UnitBagInterface')
             ->getMock();
@@ -66,36 +65,29 @@ class DumpTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @param bool $expects
+     * @param array $returns
      * @return ResourceInterface
      */
-    protected function getResource($expects = false)
+    protected function getResource($returns = [])
     {
         $resource = $this->getMockBuilder('\Maketok\DataMigration\Storage\Db\ResourceInterface')
             ->getMock();
-        if ($expects) {
-            $resource->expects($this->atLeastOnce())
-                ->method('dumpData')
-                ->willReturnOnConsecutiveCalls([
-                    [1, 'value1'],
-                    [2, 'value2'],
-                ], false);
-        }
+        $method = $resource->expects($this->atLeastOnce())
+            ->method('dumpData');
+        call_user_func_array([$method, 'willReturnOnConsecutiveCalls'], $returns);
         return $resource;
     }
 
     /**
-     * @param bool $expects
+     * @param int $expects
      * @return FsResourceInterface
      */
-    protected function getFS($expects = false)
+    protected function getFS($expects = 0)
     {
         $filesystem = $this->getMockBuilder('\Maketok\DataMigration\Storage\Filesystem\ResourceInterface')
             ->getMock();
-        if ($expects) {
-            $filesystem->expects($this->exactly(2))
-                ->method('writeRow');
-        }
+        $filesystem->expects($this->exactly($expects))
+            ->method('writeRow');
         return $filesystem;
     }
 
@@ -105,8 +97,7 @@ class DumpTest extends \PHPUnit_Framework_TestCase
         $action = new Dump(
             $this->getUnitBag([$unit]),
             $this->getConfig(),
-            $this->getFS(true),
-            $this->getResource(true)
+            $this->getResource([])
         );
         $action->process();
 

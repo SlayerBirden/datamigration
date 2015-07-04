@@ -27,4 +27,10 @@ interface ResourceInterface
      * @return array|bool (false)
      */
     public function readRow();
+
+    /**
+     * check if resource is opened
+     * @return bool
+     */
+    public function isActive();
 }

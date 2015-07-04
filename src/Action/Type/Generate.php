@@ -22,30 +22,104 @@ class Generate extends AbstractAction implements ActionInterface
      * @var Generator
      */
     private $generator;
+    /**
+     * @var ResourceInterface[]
+     */
+    private $handlers = [];
+    /**
+     * @var array
+     */
+    private $buffer = [];
 
     /**
      * @param UnitBagInterface $bag
      * @param ConfigInterface $config
-     * @param ResourceInterface $filesystem
      * @param Generator $generator
      * @param int $count
      */
     public function __construct(
         UnitBagInterface $bag,
         ConfigInterface $config,
-        ResourceInterface $filesystem,
         Generator $generator,
         $count
     ) {
-        parent::__construct($bag, $config, $filesystem);
+        parent::__construct($bag, $config);
         $this->count = $count;
         $this->generator = $generator;
     }
 
     /**
      * {@inheritdoc}
+     * @throws WrongContextException, \LogicException
      */
     public function process()
+    {
+        $this->start();
+        while ($this->count > 0) {
+            foreach ($this->bag as $unit) {
+                list($max, $center) = $unit->getGenerationSeed();
+                $rnd = $this->getRandom($max, $center);
+                while ($rnd > 0) {
+                    $row = array_map(function ($el) {
+                        if (is_callable($el)) {
+                            return call_user_func_array($el, [
+                                'generator' => $this->generator,
+                                'units' => $this->buffer,
+                            ]);
+                        } else {
+                            return $el;
+                        }
+                    }, $unit->getGeneratorMapping());
+                    $this->buffer[$unit->getTable()] = $row;
+                    $this->filesystem->writeRow($row);
+                    $rnd--;
+                }
+            }
+            $this->count--;
+        }
+        $this->close();
+    }
+
+    /**
+     * @param int $max
+     * @param int $center
+     * @param int $min
+     * @return int
+     * @throws \LogicException
+     */
+    public function getRandom($max, $center, $min = 1)
+    {
+        $min = (int) $min;
+        $max = (int) $max;
+        $center = (int) $center;
+        if ($min == $max) {
+            return $min;
+        }
+        if ($min > $max || $min > $center || $center > $max) {
+            throw new \LogicException("Wrong values given.");
+        }
+        // get 1/8
+        $period = (int) ceil($max/8);
+        $pMin = max($min, $center - $period);
+        $pMax = min($center+$period, $max);
+        $s1 = mt_rand(0,1);
+        if ($s1 == 0) {
+            return mt_rand($pMin, $pMax);
+        } else {
+            $s2 = mt_rand(0,1);
+            if (0 == $s2) {
+                return mt_rand($min, $pMin);
+            } else {
+                return mt_rand($pMax, $max);
+            }
+        }
+    }
+
+    /**
+     * open handlers
+     * @throws WrongContextException
+     */
+    private function start()
     {
         foreach ($this->bag as $unit) {
             if ($unit->getGeneratorMapping() === null) {
@@ -57,15 +131,20 @@ class Generate extends AbstractAction implements ActionInterface
                 );
             }
             $unit->setTmpFileName($this->getTmpFileName($unit));
-            $this->filesystem->open($unit->getTmpFileName(), 'w');
-            while ($this->count > 0) {
-                $row = array_map(function ($el) {
-                    return call_user_func($el, $this->generator);
-                }, $unit->getGeneratorMapping());
-                $this->filesystem->writeRow($row);
-                $this->count--;
-            }
-            $this->filesystem->close();
+            $handler = clone $this->filesystem;
+            $handler->open($unit->getTmpFileName(), 'w');
+            $this->handlers[$unit->getTable()] = $handler;
+        }
+    }
+
+    /**
+     * close all handlers
+     */
+    private function close()
+    {
+        foreach ($this->bag as $unit) {
+            $handler = $this->handlers[$unit->getTable()];
+            $handler->close();
         }
     }
 

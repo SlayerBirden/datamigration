@@ -4,7 +4,6 @@ namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Storage\Db\ResourceInterface;
-use Maketok\DataMigration\Storage\Filesystem\ResourceInterface as FsResourceInterface;
 use Maketok\DataMigration\Unit\AbstractUnit;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 
@@ -15,7 +14,6 @@ class MoveTest extends \PHPUnit_Framework_TestCase
         $action = new Move(
             $this->getUnitBag(),
             $this->getConfig(),
-            $this->getFS(),
             $this->getResource()
         );
         $this->assertEquals('move', $action->getCode());
@@ -74,22 +72,11 @@ class MoveTest extends \PHPUnit_Framework_TestCase
         return $resource;
     }
 
-    /**
-     * @return FsResourceInterface
-     */
-    protected function getFS()
-    {
-        $filesystem = $this->getMockBuilder('\Maketok\DataMigration\Storage\Filesystem\ResourceInterface')
-            ->getMock();
-        return $filesystem;
-    }
-
     public function testProcess()
     {
         $action = new Move(
             $this->getUnitBag(),
             $this->getConfig(),
-            $this->getFS(),
             $this->getResource(true)
         );
         $action->process();

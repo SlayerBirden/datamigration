@@ -48,9 +48,18 @@ interface ResourceInterface
      * @param string $toTable
      * @param array $columns
      * @param array $conditions
+     * @param array $orderBy
+     * @param array $dir
      * @return mixed
      */
-    public function move($fromTable, $toTable, array $columns = null, array $conditions = null);
+    public function move(
+        $fromTable,
+        $toTable,
+        array $columns = null,
+        array $conditions = null,
+        array $orderBy = null,
+        array $dir = null
+    );
 
     /**
      * Dump selected columns data to array

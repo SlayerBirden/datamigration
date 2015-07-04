@@ -40,15 +40,10 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
      * @var array
      */
     private $buffer = [];
-    /**
-     * @var bool
-     */
-    private $ignoreValidation = false;
 
     /**
      * @param UnitBagInterface $bag
      * @param ConfigInterface $config
-     * @param ResourceInterface $filesystem
      * @param InputResourceInterface $input
      * @param MapInterface $map
      * @param ResourceHelperInterface $helperResource
@@ -56,12 +51,11 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
     public function __construct(
         UnitBagInterface $bag,
         ConfigInterface $config,
-        ResourceInterface $filesystem,
         InputResourceInterface $input,
         MapInterface $map,
         ResourceHelperInterface $helperResource
     ) {
-        parent::__construct($bag, $config, $filesystem);
+        parent::__construct($bag, $config);
         $this->input = $input;
         $this->map = $map;
         $this->helperResource = $helperResource;
@@ -98,6 +92,7 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
         $this->dumpBuffer($valid);
         $this->close();
     }
+
     /**
      * open handlers
      */
@@ -190,7 +185,7 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
      */
     private function dumpBuffer($valid, AbstractUnit $unit = null)
     {
-        if ($valid || $this->ignoreValidation) {
+        if ($valid || $this->config->get('ignore_validation')) {
             foreach ($this->buffer as $key => $dataArray) {
                 if ($unit && $key != $unit->getTable()) {
                     continue;
@@ -211,23 +206,5 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
     public function getCode()
     {
         return 'create_tmp_files';
-    }
-
-    /**
-     * @return boolean
-     */
-    public function isIgnoreValidation()
-    {
-        return $this->ignoreValidation;
-    }
-
-    /**
-     * @param boolean $ignoreValidation
-     * @return $this
-     */
-    public function setIgnoreValidation($ignoreValidation)
-    {
-        $this->ignoreValidation = $ignoreValidation;
-        return $this;
     }
 }

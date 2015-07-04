@@ -16,7 +16,20 @@ class ReverseMove extends AbstractDbAction implements ActionInterface
     {
         foreach ($this->bag as $unit) {
             $unit->setTmpTable($this->getTmpTableName($unit));
-            $this->resource->move($unit->getTable(), $unit->getTmpTable());
+            $this->resource->createTmpTable(
+                $unit->getTmpTable(),
+                array_keys($unit->getMapping())
+            );
+            $this->resource->move(
+                $unit->getTable(),
+                $unit->getTmpTable(),
+                null,
+                // set export filters
+                $unit->getReverseMoveConditions(),
+                // need to be able to set order, as assemble depends on that
+                $unit->getReverseMoveOrder(),
+                $unit->getReverseMoveDirections()
+            );
         }
     }
 

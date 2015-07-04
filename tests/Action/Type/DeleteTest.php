@@ -4,7 +4,6 @@ namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Storage\Db\ResourceInterface;
-use Maketok\DataMigration\Storage\Filesystem\ResourceInterface as FsResourceInterface;
 use Maketok\DataMigration\Unit\AbstractUnit;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 
@@ -13,9 +12,8 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
     public function testGetCode()
     {
         $action = new Delete(
-            $this->getUnitBag([$this->getUnit()]),
+            $this->getUnitBag(),
             $this->getConfig(),
-            $this->getFS(),
             $this->getResource()
         );
         $this->assertEquals('delete', $action->getCode());
@@ -60,7 +58,7 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
      * @param array $units
      * @return UnitBagInterface
      */
-    protected function getUnitBag(array $units)
+    protected function getUnitBag(array $units = [])
     {
         $unitBag = $this->getMockBuilder('\Maketok\DataMigration\Unit\UnitBagInterface')
             ->getMock();
@@ -85,22 +83,11 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
         return $resource;
     }
 
-    /**
-     * @return FsResourceInterface
-     */
-    protected function getFS()
-    {
-        $filesystem = $this->getMockBuilder('\Maketok\DataMigration\Storage\Filesystem\ResourceInterface')
-            ->getMock();
-        return $filesystem;
-    }
-
     public function testProcess()
     {
         $action = new Delete(
             $this->getUnitBag([$this->getUnit()]),
             $this->getConfig(),
-            $this->getFS(),
             $this->getResource(true)
         );
         $action->process();
@@ -114,7 +101,6 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
         $action = new Delete(
             $this->getUnitBag([$this->getWrongUnit()]),
             $this->getConfig(),
-            $this->getFS(),
             $this->getResource()
         );
         $action->process();

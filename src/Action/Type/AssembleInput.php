@@ -45,7 +45,6 @@ class AssembleInput extends AbstractAction implements ActionInterface
     /**
      * @param UnitBagInterface $bag
      * @param ConfigInterface $config
-     * @param ResourceInterface $filesystem
      * @param InputResourceInterface $input
      * @param MapInterface $map
      * @param ResourceHelperInterface $resourceHelper
@@ -53,12 +52,11 @@ class AssembleInput extends AbstractAction implements ActionInterface
     public function __construct(
         UnitBagInterface $bag,
         ConfigInterface $config,
-        ResourceInterface $filesystem,
         InputResourceInterface $input,
         MapInterface $map,
         ResourceHelperInterface $resourceHelper
     ) {
-        parent::__construct($bag, $config, $filesystem);
+        parent::__construct($bag, $config);
         $this->input = $input;
         $this->map = $map;
         $this->resourceHelper = $resourceHelper;

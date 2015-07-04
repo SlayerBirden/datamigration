@@ -2,6 +2,8 @@
 
 namespace Maketok\DataMigration\Unit;
 
+use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
+
 abstract class AbstractUnit implements UnitInterface
 {
     /**
@@ -28,17 +30,14 @@ abstract class AbstractUnit implements UnitInterface
      * @var array
      */
     protected $mapping;
-
     /**
      * @var array
      */
     protected $generatorMapping;
-
     /**
      * @var array
      */
     protected $reversedMapping;
-
     /**
      * @var string
      */
@@ -51,6 +50,75 @@ abstract class AbstractUnit implements UnitInterface
      * @var string|string[]
      */
     protected $pk;
+    /**
+     * Order by columns for reverse move
+     * @var array
+     */
+    protected $reverseMoveOrder;
+    /**
+     * Directions for reverse move
+     * @var array
+     */
+    protected $reverseMoveDirections;
+    /**
+     * Conditions for reverse move
+     * @var array
+     */
+    protected $reverseMoveConditions;
+    /**
+     * Max number with and center of dispersion
+     * @var array|int[]
+     */
+    protected $generationSeed;
+    /**
+     * @var ResourceInterface
+     */
+    private $filesystem;
+
+    /**
+     * @param string $tableName
+     * @param ResourceInterface $filesystem
+     * @param array $mapping
+     * @param string $isEntityCondition
+     * @param array $validationRules
+     * @param array $writeConditions
+     * @param array $contributions
+     * @param array $reversedMapping
+     * @param array $reverseMoveOrder
+     * @param array $reverseMoveDirections
+     * @param array $reverseMoveConditions
+     * @param array $generatorMapping
+     * @param array $generationSeed
+     */
+    public function __construct(
+        $tableName = null,
+        ResourceInterface $filesystem = null,
+        array $mapping = [],
+        $isEntityCondition = "",
+        $validationRules = [],
+        $writeConditions = [],
+        $contributions = [],
+        array $reversedMapping = [],
+        array $reverseMoveOrder = [],
+        array $reverseMoveDirections = [],
+        array $reverseMoveConditions = [],
+        array $generatorMapping = [],
+        array $generationSeed = [1, 1]
+    ) {
+        $this->tableName = $tableName;
+        $this->mapping = $mapping;
+        $this->isEntityCondition = $isEntityCondition;
+        $this->validationRules = $validationRules;
+        $this->writeConditions = $writeConditions;
+        $this->contributions = $contributions;
+        $this->reversedMapping = $reversedMapping;
+        $this->reverseMoveOrder = $reverseMoveOrder;
+        $this->reverseMoveDirections = $reverseMoveDirections;
+        $this->reverseMoveConditions = $reverseMoveConditions;
+        $this->generatorMapping = $generatorMapping;
+        $this->generationSeed = $generationSeed;
+        $this->filesystem = $filesystem;
+    }
 
     /**
      * {@inheritdoc}
@@ -239,5 +307,103 @@ abstract class AbstractUnit implements UnitInterface
     public function getValidationRules()
     {
         return $this->validationRules;
+    }
+
+    /**
+     * @return array
+     */
+    public function getReverseMoveOrder()
+    {
+        return $this->reverseMoveOrder;
+    }
+
+    /**
+     * @param array $reverseMoveOrder
+     * @return $this
+     */
+    public function setReverseMoveOrder(array $reverseMoveOrder)
+    {
+        $this->reverseMoveOrder = $reverseMoveOrder;
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getReverseMoveDirections()
+    {
+        return $this->reverseMoveDirections;
+    }
+
+    /**
+     * @param array $reverseMoveDirections
+     * @return $this
+     */
+    public function setReverseMoveDirections(array $reverseMoveDirections)
+    {
+        $this->reverseMoveDirections = $reverseMoveDirections;
+        return $this;
+    }
+
+    /**
+     * @return array
+     */
+    public function getReverseMoveConditions()
+    {
+        return $this->reverseMoveConditions;
+    }
+
+    /**
+     * @param array $reverseMoveConditions
+     * @return $this
+     */
+    public function setReverseMoveConditions($reverseMoveConditions)
+    {
+        $this->reverseMoveConditions = $reverseMoveConditions;
+        return $this;
+    }
+
+    /**
+     * get Number of possible occurrences of the
+     * @return array
+     */
+    public function getGenerationSeed()
+    {
+        return $this->generationSeed;
+    }
+
+    /**
+     * @param array $generationSeed
+     * @return $this
+     */
+    public function setGenerationSeed(array $generationSeed)
+    {
+        $this->generationSeed = $generationSeed;
+        return $this;
+    }
+
+    /**
+     * @return ResourceInterface
+     */
+    public function getFilesystem()
+    {
+        return $this->filesystem;
+    }
+
+    /**
+     * @param ResourceInterface $filesystem
+     * @return $this
+     */
+    public function setFilesystem($filesystem)
+    {
+        $this->filesystem = $filesystem;
+        return $this;
+    }
+
+    public function __destruct()
+    {
+        if (isset($this->filesystem) && $this->filesystem->isActive()) {
+            @$this->filesystem->close();
+        }
     }
 }
