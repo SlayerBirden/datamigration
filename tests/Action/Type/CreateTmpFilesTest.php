@@ -89,7 +89,7 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
                 'email' => 'email',
                 'age' => 'age',
             ])
-            ->addContribution(function ($row, MapInterface $map) {
+            ->addContribution(function (MapInterface $map) {
                 $map->incr('id', 1);
             })
             ->setFilesystem($this->getFS(
@@ -104,7 +104,7 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
                 'city' => 'addr1_city',
                 'parent_id' => 'id',
             ])
-            ->addContribution(function ($row, MapInterface $map) {
+            ->addContribution(function (MapInterface $map) {
                 $map->incr('addr_id', 1);
             })
             ->setFilesystem($this->getFS(
@@ -119,7 +119,7 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
                 'city' => 'addr2_city',
                 'parent_id' => 'id',
             ])
-            ->addContribution(function ($row, MapInterface $map) {
+            ->addContribution(function (MapInterface $map) {
                 $map->incr('addr_id', 1);
             })
             ->setFilesystem($this->getFS(

@@ -132,8 +132,8 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
     {
         foreach ($unit->getContributions() as $contribution) {
             call_user_func_array($contribution, [
-                'row' => $row,
                 'map' => $this->map,
+                'row' => $row,
                 'resource' => $this->helperResource,
             ]);
         }
@@ -148,8 +148,8 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
         $shouldAdd = true;
         foreach ($unit->getWriteConditions() as $condition) {
             $shouldAdd = call_user_func_array($condition, [
-                'row' => $row,
                 'map' => $this->map,
+                'row' => $row,
                 'resource' => $this->helperResource,
             ]);
             if (!$shouldAdd) {
@@ -160,8 +160,8 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
             $this->buffer[$unit->getCode()] = array_map(function ($var) use ($row) {
                 if (is_callable($var)) {
                     return call_user_func_array($var, [
-                        'row' => $row,
                         'map' => $this->map,
+                        'row' => $row,
                         'resource' => $this->helperResource,
                     ]);
                 } else {
@@ -182,8 +182,8 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
         foreach ($unit->getValidationRules() as $validationRule) {
             if (is_callable($validationRule)) {
                 $valid = call_user_func_array($validationRule, [
-                    'row' => $row,
                     'map' => $this->map,
+                    'row' => $row,
                     'resource' => $this->helperResource,
                 ]);
             } else {
