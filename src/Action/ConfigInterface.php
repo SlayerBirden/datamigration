@@ -2,23 +2,8 @@
 
 namespace Maketok\DataMigration\Action;
 
-interface ConfigInterface
+interface ConfigInterface extends \ArrayAccess
 {
-    /**
-     * get config key
-     * @param string $key
-     * @return mixed
-     */
-    public function get($key);
-
-    /**
-     * set config key
-     * @param string $key
-     * @param mixed $value
-     * @return self
-     */
-    public function set($key, $value);
-
     /**
      * assign full config
      * @param array $config
@@ -27,8 +12,8 @@ interface ConfigInterface
     public function assign(array $config);
 
     /**
-     * pull current config
+     * dump current config
      * @return array
      */
-    public function pull();
+    public function dump();
 }

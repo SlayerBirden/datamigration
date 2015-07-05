@@ -74,11 +74,19 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
                 $this->map->feed($row);
             }
             foreach ($this->bag as $unit) {
-                if (call_user_func_array($unit->getIsEntityCondition(), [
-                    'map' => $this->map,
-                    'resource' => $this->helperResource,
-                    'oldmap' => $this->oldmap,
-                ])) {
+                $shouldDump = false;
+                if (is_callable($unit->getIsEntityCondition())) {
+                    $shouldDump = call_user_func_array($unit->getIsEntityCondition(), [
+                        'map' => $this->map,
+                        'resource' => $this->helperResource,
+                        'oldmap' => $this->oldmap,
+                    ]);
+                } elseif (empty($unit)) {
+                    $shouldDump = true;
+                } else {
+                    // todo expression
+                }
+                if ($shouldDump) {
                     $this->dumpBuffer($valid, $unit);
                 }
             }
@@ -100,9 +108,8 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
     {
         foreach ($this->bag as $unit) {
             $unit->setTmpFileName($this->getTmpFileName($unit));
-            $handler = clone $this->filesystem;
-            $handler->open($unit->getTmpFileName(), 'w');
-            $this->handlers[$unit->getTable()] = $handler;
+            $handler = $unit->getFilesystem();
+            $this->handlers[$unit->getCode()] = $handler;
         }
     }
 
@@ -112,7 +119,7 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
     private function close()
     {
         foreach ($this->bag as $unit) {
-            $handler = $this->handlers[$unit->getTable()];
+            $handler = $this->handlers[$unit->getCode()];
             $handler->close();
         }
     }
@@ -150,11 +157,17 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
             }
         }
         if ($shouldAdd) {
-            $this->buffer[$unit->getTable()] = $this->map->doMapping(
-                $row,
-                $unit->getMapping(),
-                $this->helperResource
-            );
+            $this->buffer[$unit->getCode()] = array_map(function ($var) use ($row) {
+                if (is_callable($var)) {
+                    return call_user_func_array($var, [
+                        'row' => $row,
+                        'map' => $this->map,
+                        'resource' => $this->helperResource,
+                    ]);
+                } else {
+                    return $this->map->offsetGet($var);
+                }
+            }, $unit->getMapping());
         }
     }
 
@@ -167,11 +180,15 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
     {
         $valid = true;
         foreach ($unit->getValidationRules() as $validationRule) {
-            $valid = call_user_func_array($validationRule, [
-                'row' => $row,
-                'map' => $this->map,
-                'resource' => $this->helperResource,
-            ]);
+            if (is_callable($validationRule)) {
+                $valid = call_user_func_array($validationRule, [
+                    'row' => $row,
+                    'map' => $this->map,
+                    'resource' => $this->helperResource,
+                ]);
+            } else {
+                // todo expression
+            }
             if (!$valid) {
                 break 1;
             }
@@ -185,16 +202,16 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
      */
     private function dumpBuffer($valid, AbstractUnit $unit = null)
     {
-        if ($valid || $this->config->get('ignore_validation')) {
+        if ($valid || $this->config->offsetGet('ignore_validation')) {
             foreach ($this->buffer as $key => $dataArray) {
-                if ($unit && $key != $unit->getTable()) {
+                if ($unit && $key != $unit->getCode()) {
                     continue;
                 }
                 if (!isset($this->handlers[$key])) {
                     throw new \LogicException(sprintf("No file handlers available for unit %s", $key));
                 }
                 $handler = $this->handlers[$key];
-                $handler->writeRow($dataArray);
+                $handler->writeRow(array_values($dataArray));
                 unset($this->buffer[$key]);
             }
         }

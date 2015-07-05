@@ -17,7 +17,7 @@ class Dump extends AbstractDbAction implements ActionInterface
     public function process()
     {
         $offset = 0;
-        $limit = $this->config->get('dump_limit');
+        $limit = $this->config->offsetGet('dump_limit');
         foreach ($this->bag as $unit) {
             if ($unit->getTmpTable() === null) {
                 throw new WrongContextException(sprintf(

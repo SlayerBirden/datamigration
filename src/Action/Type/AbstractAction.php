@@ -40,11 +40,11 @@ class AbstractAction
      */
     public function getTmpFileName(AbstractUnit $unit)
     {
-        return rtrim($this->config->get('tmp_folder'), '/') .
+        return rtrim($this->config->offsetGet('tmp_folder'), '/') .
         '/' .
         sprintf(
-            $this->config->get('tmp_file_mask'),
-            $unit->getTable(),
+            $this->config->offsetGet('tmp_file_mask'),
+            $unit->getCode(),
             $this->getDate()
         );
     }
@@ -72,8 +72,8 @@ class AbstractAction
     public function getTmpTableName(AbstractUnit $unit)
     {
         return sprintf(
-            $this->config->get('tmp_table_mask'),
-            $unit->getTable(),
+            $this->config->offsetGet('tmp_table_mask'),
+            $unit->getCode(),
             $this->getStamp()
         );
     }

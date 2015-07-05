@@ -2,17 +2,16 @@
 
 namespace Maketok\DataMigration\Action\Type;
 
-use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Action\Exception\ConflictException;
+use Maketok\DataMigration\ArrayMap;
 use Maketok\DataMigration\Input\InputResourceInterface;
-use Maketok\DataMigration\MapInterface;
 use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
-use Maketok\DataMigration\Unit\AbstractUnit;
-use Maketok\DataMigration\Unit\UnitBagInterface;
 
 class AssembleInputTest extends \PHPUnit_Framework_TestCase
 {
+    use ServiceGetterTrait;
+
     /**
      * @var AssembleInput
      */
@@ -24,7 +23,7 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
             $this->getUnitBag(),
             $this->getConfig(),
             $this->getInputResource(),
-            $this->getMap(),
+            new ArrayMap(),
             $this->getResourceHelper()
         );
     }
@@ -35,20 +34,6 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @param array $data
-     * @return MapInterface
-     */
-    protected function getMap($data = [])
-    {
-        $map = $this->getMockBuilder('\Maketok\DataMigration\MapInterface')
-            ->getMock();
-        if (count($data)) {
-            // todo
-        }
-        return $map;
-    }
-
-    /**
      * @return ResourceHelperInterface
      */
     protected function getResourceHelper()
@@ -56,33 +41,6 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         $rh = $this->getMockBuilder('\Maketok\DataMigration\Storage\Db\ResourceHelperInterface')
             ->getMock();
         return $rh;
-    }
-
-    /**
-     * @param $name
-     * @return AbstractUnit
-     */
-    protected function getUnit($name)
-    {
-        /** @var AbstractUnit $unit */
-        $unit = $this->getMockBuilder('\Maketok\DataMigration\Unit\AbstractUnit')
-            ->getMockForAbstractClass();
-        return $unit->setTable($name);
-    }
-
-    /**
-     * @param AbstractUnit[] $units
-     * @return UnitBagInterface
-     */
-    protected function getUnitBag($units = [])
-    {
-        $unitBag = $this->getMockBuilder('\Maketok\DataMigration\Unit\UnitBagInterface')
-            ->getMock();
-        $unitBag->expects($this->any())->method('add')->willReturnSelf();
-        $unitBag->expects($this->any())
-            ->method('getIterator')
-            ->willReturn(new \ArrayIterator($units));
-        return $unitBag;
     }
 
     /**
@@ -97,20 +55,6 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         $method = $input->expects($this->exactly($count))->method('add');
         call_user_func_array([$method, 'withConsecutive'], $data);
         return $input;
-    }
-
-    /**
-     * @return ConfigInterface
-     */
-    protected function getConfig()
-    {
-        $config = $this->getMockBuilder('\Maketok\DataMigration\Action\ConfigInterface')
-            ->getMock();
-        $config->expects($this->any())->method('get')->willReturnMap([
-            ['tmp_folder', '/tmp'],
-            ['tmp_file_mask', '%1$s.csv'], // fname, date
-        ]);
-        return $config;
     }
 
     /**

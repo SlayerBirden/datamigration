@@ -2,71 +2,26 @@
 
 namespace Maketok\DataMigration\Action\Type;
 
-use Maketok\DataMigration\Action\ConfigInterface;
+use Maketok\DataMigration\ArrayMap;
 use Maketok\DataMigration\Input\InputResourceInterface;
 use Maketok\DataMigration\MapInterface;
 use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
-use Maketok\DataMigration\Unit\AbstractUnit;
-use Maketok\DataMigration\Unit\UnitBagInterface;
 
 class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
 {
+    use ServiceGetterTrait;
+
     public function testGetCode()
     {
         $action = new CreateTmpFiles(
             $this->getUnitBag(),
             $this->getConfig(),
             $this->getInputResource(),
-            $this->getMap(),
+            new ArrayMap(),
             $this->getResourceHelper()
         );
         $this->assertEquals('create_tmp_files', $action->getCode());
-    }
-
-    /**
-     * @param $name
-     * @return AbstractUnit
-     */
-    protected function getUnit($name)
-    {
-        /** @var AbstractUnit $unit */
-        $unit = $this->getMockBuilder('\Maketok\DataMigration\Unit\AbstractUnit')
-            ->getMockForAbstractClass();
-        return $unit->setTable($name);
-    }
-
-    /**
-     * @param AbstractUnit[] $units
-     * @return UnitBagInterface
-     */
-    protected function getUnitBag($units = [])
-    {
-        $unitBag = $this->getMockBuilder('\Maketok\DataMigration\Unit\UnitBagInterface')
-            ->getMock();
-        $unitBag->expects($this->any())->method('add')->willReturnSelf();
-        $unitBag->expects($this->any())
-            ->method('getIterator')
-            ->willReturn(new \ArrayIterator($units));
-        return $unitBag;
-    }
-
-    /**
-     * @param array $doMappingReturn
-     * @param array $getMap
-     * @return MapInterface
-     */
-    protected function getMap($doMappingReturn = [], $getMap = [])
-    {
-        $map = $this->getMockBuilder('\Maketok\DataMigration\MapInterface')
-            ->getMock();
-        $method = $map->expects($this->any())
-            ->method('doMapping');
-        call_user_func_array([$method, 'willReturnOnConsecutiveCalls'], $doMappingReturn);
-        $map->expects($this->any())
-            ->method('get')
-            ->willReturnMap($getMap);
-        return $map;
     }
 
     /**
@@ -94,32 +49,15 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @param array $map
-     * @return ConfigInterface
-     */
-    protected function getConfig($map = [])
-    {
-        $config = $this->getMockBuilder('\Maketok\DataMigration\Action\ConfigInterface')
-            ->getMock();
-        $config->expects($this->any())
-            ->method('get')
-            ->willReturnMap($map);
-        return $config;
-    }
-
-    /**
-     * @param int $expect
-     * @param int $number
+     * @param array $with
      * @return ResourceInterface
      */
-    protected function getFS($expect = 0, $number = 0)
+    protected function getFS($with = [])
     {
         $filesystem = $this->getMockBuilder('\Maketok\DataMigration\Storage\Filesystem\ResourceInterface')
             ->getMock();
-        $filesystem->expects($this->exactly($expect))
-            ->method('open');
-        $filesystem->expects($this->exactly($number))->method('writeRow');
-        $filesystem->expects($this->exactly($expect))->method('close');
+        $method = $filesystem->expects($this->exactly(count($with)))->method('writeRow');
+        call_user_func_array([$method, 'withConsecutive'], $with);
         return $filesystem;
     }
 
@@ -132,52 +70,78 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
     public function testProcess()
     {
         $inputs = [
-            ['email' => 'tst1@example.com', 'name' => 'Olaf'],
+            ['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr1_city' => 'Chicago',
+            'addr1_street' => '4100 Marine dr. App. 54', 'addr2_city' => 'New York',
+            'addr2_street' => '3300 St. George, Suite 300'],
+            false
         ];
-        $dumpStates = [
-
-        ];
-        $unit1 = $this->getUnit('customer');
-        $unit1->setMapping([
-            'entity_id' => 'id',
-            'code' => 'code',
-            'const' => '1',
-        ])->setIsEntityCondition(function () {
-            return true;
-        });
-        $unit2 = $this->getUnit('address');
-        $counter = new \stdClass();
-        $counter->count = 2;
-        $unit2->setMapping([
-            'new_id' => function ($counter) {
-                return ++$counter->count;
-            },
-            'name' => 'name',
-            'parent_id' => 'id',
-        ])->setIsEntityCondition(function (MapInterface $map) {
-            return $map->get('id') == 2;
-        });
+        $unit1 = $this->getUnit('customer')
+            ->setMapping([
+                'id' => 'id',
+                'fname' => function ($row) {
+                    list($fname) = explode(" ", $row['name']);
+                    return $fname;
+                },
+                'lname' => function ($row) {
+                    list(, $lname) = explode(" ", $row['name']);
+                    return $lname;
+                },
+                'email' => 'email',
+                'age' => 'age',
+            ])
+            ->addContribution(function ($row, MapInterface $map) {
+                $map->incr('id', 1);
+            })
+            ->setFilesystem($this->getFS(
+                [[
+                    [1, 'Olaf', 'Stone', 'tst1@example.com', 30]
+                ]]
+            ));
+        $unit2 = $this->getUnit('address1')
+            ->setMapping([
+                'id' => 'addr_id',
+                'street' => 'addr1_street',
+                'city' => 'addr1_city',
+                'parent_id' => 'id',
+            ])
+            ->addContribution(function ($row, MapInterface $map) {
+                $map->incr('addr_id', 1);
+            })
+            ->setFilesystem($this->getFS(
+                [[
+                    [1, '4100 Marine dr. App. 54', 'Chicago', 1]
+                ]]
+            ));
+        $unit3 = $this->getUnit('address2')
+            ->setMapping([
+                'id' => 'addr_id',
+                'street' => 'addr2_street',
+                'city' => 'addr2_city',
+                'parent_id' => 'id',
+            ])
+            ->addContribution(function ($row, MapInterface $map) {
+                $map->incr('addr_id', 1);
+            })
+            ->setFilesystem($this->getFS(
+                [[
+                    [2, '3300 St. George, Suite 300', 'New York', 1]
+                ]]
+            ));
 
         $action = new CreateTmpFiles(
-            $this->getUnitBag([$unit1, $unit2]),
+            $this->getUnitBag([$unit1, $unit2, $unit3]),
             $this->getConfig(),
             $this->getInputResource($inputs),
-            $this->getMap($dumpStates),
+            new ArrayMap(),
             $this->getResourceHelper()
         );
         $action->process();
 
-        $this->assertEquals('/tmp/entity_table1.csv',
+        $this->assertEquals('/tmp/customer.csv',
             $unit1->getTmpFileName());
-        $this->assertEquals('/tmp/data_table1.csv',
+        $this->assertEquals('/tmp/address1.csv',
             $unit2->getTmpFileName());
-    }
-
-    public function testProcessWriteCond()
-    {
-    }
-
-    public function testProcessInvalid()
-    {
+        $this->assertEquals('/tmp/address2.csv',
+            $unit3->getTmpFileName());
     }
 }

@@ -31,7 +31,7 @@ class Load extends AbstractDbAction implements ActionInterface
             $this->resource->loadData(
                 $unit->getTmpTable(),
                 $unit->getTmpFileName(),
-                $this->config->get('local_infile')
+                $this->config->offsetGet('local_infile')
             );
         }
     }

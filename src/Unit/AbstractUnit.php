@@ -9,6 +9,10 @@ abstract class AbstractUnit implements UnitInterface
     /**
      * @var string
      */
+    protected $code;
+    /**
+     * @var string
+     */
     protected $tableName;
     /**
      * @var string|callable
@@ -76,7 +80,8 @@ abstract class AbstractUnit implements UnitInterface
     private $filesystem;
 
     /**
-     * @param string $tableName
+     * @param $code
+     * @param null $tableName
      * @param ResourceInterface $filesystem
      * @param array $mapping
      * @param string $isEntityCondition
@@ -91,6 +96,7 @@ abstract class AbstractUnit implements UnitInterface
      * @param array $generationSeed
      */
     public function __construct(
+        $code,
         $tableName = null,
         ResourceInterface $filesystem = null,
         array $mapping = [],
@@ -105,6 +111,7 @@ abstract class AbstractUnit implements UnitInterface
         array $generatorMapping = [],
         array $generationSeed = [1, 1]
     ) {
+        $this->code = $code;
         $this->tableName = $tableName;
         $this->mapping = $mapping;
         $this->isEntityCondition = $isEntityCondition;
@@ -398,6 +405,14 @@ abstract class AbstractUnit implements UnitInterface
     {
         $this->filesystem = $filesystem;
         return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getCode()
+    {
+        return $this->code;
     }
 
     public function __destruct()
