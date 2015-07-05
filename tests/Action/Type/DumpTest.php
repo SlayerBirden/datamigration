@@ -27,7 +27,7 @@ class DumpTest extends \PHPUnit_Framework_TestCase
     {
         $resource = $this->getMockBuilder('\Maketok\DataMigration\Storage\Db\ResourceInterface')
             ->getMock();
-        $method = $resource->expects($this->atLeastOnce())
+        $method = $resource->expects($this->exactly(count($returns)))
             ->method('dumpData');
         call_user_func_array([$method, 'willReturnOnConsecutiveCalls'], $returns);
         return $resource;
@@ -48,11 +48,17 @@ class DumpTest extends \PHPUnit_Framework_TestCase
 
     public function testProcess()
     {
-        $unit = $this->getUnit('test_table1')->setTmpTable('tmp_test_table1');
+        $unit = $this->getUnit('test_table1')
+            ->setTmpTable('tmp_test_table1')
+            ->setFilesystem($this->getFS(2));
         $action = new Dump(
             $this->getUnitBag([$unit]),
             $this->getConfig(),
-            $this->getResource()
+            $this->getResource([
+                [["1", "somedata"]],
+                [["2", "somedata2"]],
+                false
+            ])
         );
         $action->process();
 

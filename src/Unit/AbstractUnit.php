@@ -2,6 +2,7 @@
 
 namespace Maketok\DataMigration\Unit;
 
+use Maketok\DataMigration\Action\Exception\WrongContextException;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
 
 abstract class AbstractUnit implements UnitInterface
@@ -391,9 +392,13 @@ abstract class AbstractUnit implements UnitInterface
 
     /**
      * @return ResourceInterface
+     * @throws WrongContextException
      */
     public function getFilesystem()
     {
+        if (is_null($this->filesystem)) {
+            throw new WrongContextException("Unit does not have filesystem set");
+        }
         return $this->filesystem;
     }
 

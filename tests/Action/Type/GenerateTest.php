@@ -3,25 +3,49 @@
 namespace Maketok\DataMigration\Action\Type;
 
 use Faker\Generator;
+use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
 
 class GenerateTest extends \PHPUnit_Framework_TestCase
 {
     use ServiceGetterTrait;
 
-    public function testGetCode()
+    /**
+     * @var Generate
+     */
+    protected $action;
+
+    public function setUp()
     {
-        $action = new Generate(
+        $this->action = new Generate(
             $this->getUnitBag(),
             $this->getConfig(),
             new Generator(),
             2
         );
-        $this->assertEquals('generate', $action->getCode());
+    }
+
+    public function testGetCode()
+    {
+        $this->assertEquals('generate', $this->action->getCode());
+    }
+
+    /**
+     * @param int $expects
+     * @return ResourceInterface
+     */
+    protected function getFS($expects = 0)
+    {
+        $filesystem = $this->getMockBuilder('\Maketok\DataMigration\Storage\Filesystem\ResourceInterface')
+            ->getMock();
+        $filesystem->expects($this->exactly($expects))
+            ->method('writeRow');
+        return $filesystem;
     }
 
     public function testProcess()
     {
-        $unit = $this->getUnit('test_table1');
+        $unit = $this->getUnit('test_table1')
+            ->setFilesystem($this->getFS(2));
         $action = new Generate(
             $this->getUnitBag([$unit]),
             $this->getConfig(),
@@ -36,12 +60,6 @@ class GenerateTest extends \PHPUnit_Framework_TestCase
 
     public function testGetRandom()
     {
-        $action = new Generate(
-            $this->getUnitBag(),
-            $this->getConfig(),
-            new Generator(),
-            1
-        );
         // distribution 1...40 with peak at 10;
         //            o
         //         o      o
@@ -53,7 +71,7 @@ class GenerateTest extends \PHPUnit_Framework_TestCase
         $numbers = [];
         $count = 100000;
         for ($i = 0; $i < $count; $i++) {
-            $rnd = $action->getRandom(40, 10);
+            $rnd = $this->action->getRandom(40, 10);
             if (isset($numbers[$rnd])) {
                 $numbers[$rnd]++;
             } else {

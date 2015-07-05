@@ -26,17 +26,17 @@ class Dump extends AbstractDbAction implements ActionInterface
                 ));
             }
             $unit->setTmpFileName($this->getTmpFileName($unit));
-            $this->filesystem->open($unit->getTmpFileName(), 'w');
+            $unit->getFilesystem()->open($unit->getTmpFileName(), 'w');
             while (($data = $this->resource->dumpData($unit->getTmpTable(),
                     array_keys($unit->getMapping()),
                     $limit,
                     $offset)) !== false) {
                 $offset += $limit;
                 foreach ($data as $row) {
-                    $this->filesystem->writeRow($row);
+                    $unit->getFilesystem()->writeRow($row);
                 }
             }
-            $this->filesystem->close();
+            $unit->getFilesystem()->close();
         }
     }
 

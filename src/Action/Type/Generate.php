@@ -23,10 +23,6 @@ class Generate extends AbstractAction implements ActionInterface
      */
     private $generator;
     /**
-     * @var ResourceInterface[]
-     */
-    private $handlers = [];
-    /**
      * @var array
      */
     private $buffer = [];
@@ -71,7 +67,7 @@ class Generate extends AbstractAction implements ActionInterface
                         }
                     }, $unit->getGeneratorMapping());
                     $this->buffer[$unit->getTable()] = $row;
-                    $this->filesystem->writeRow($row);
+                    $unit->getFilesystem()->writeRow($row);
                     $rnd--;
                 }
             }
@@ -131,9 +127,7 @@ class Generate extends AbstractAction implements ActionInterface
                 );
             }
             $unit->setTmpFileName($this->getTmpFileName($unit));
-            $handler = clone $this->filesystem;
-            $handler->open($unit->getTmpFileName(), 'w');
-            $this->handlers[$unit->getTable()] = $handler;
+            $unit->getFilesystem()->open($unit->getTmpFileName(), 'w');
         }
     }
 
@@ -143,8 +137,7 @@ class Generate extends AbstractAction implements ActionInterface
     private function close()
     {
         foreach ($this->bag as $unit) {
-            $handler = $this->handlers[$unit->getTable()];
-            $handler->close();
+            $unit->getFilesystem()->close();
         }
     }
 
