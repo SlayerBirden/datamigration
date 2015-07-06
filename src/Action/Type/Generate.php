@@ -6,7 +6,7 @@ use Faker\Generator;
 use Maketok\DataMigration\Action\ActionInterface;
 use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Action\Exception\WrongContextException;
-use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
+use Maketok\DataMigration\Expression\LanguageInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 
 /**
@@ -30,16 +30,18 @@ class Generate extends AbstractAction implements ActionInterface
     /**
      * @param UnitBagInterface $bag
      * @param ConfigInterface $config
+     * @param LanguageInterface $language
      * @param Generator $generator
      * @param int $count
      */
     public function __construct(
         UnitBagInterface $bag,
         ConfigInterface $config,
+        LanguageInterface $language,
         Generator $generator,
         $count
     ) {
-        parent::__construct($bag, $config);
+        parent::__construct($bag, $config, $language);
         $this->count = $count;
         $this->generator = $generator;
     }

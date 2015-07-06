@@ -2,6 +2,7 @@
 
 namespace Maketok\DataMigration\Action\Type;
 
+use Maketok\DataMigration\Expression\LanguageAdapter;
 use Maketok\DataMigration\Storage\Db\ResourceInterface;
 
 class LoadTest extends \PHPUnit_Framework_TestCase
@@ -13,6 +14,7 @@ class LoadTest extends \PHPUnit_Framework_TestCase
         $action = new Load(
             $this->getUnitBag(),
             $this->getConfig(),
+            new LanguageAdapter(),
             $this->getResource()
         );
         $this->assertEquals('load', $action->getCode());
@@ -37,6 +39,7 @@ class LoadTest extends \PHPUnit_Framework_TestCase
         $action = new Load(
             $this->getUnitBag([$unit]),
             $this->getConfig(),
+            new LanguageAdapter(),
             $this->getResource(true)
         );
         $action->process();
@@ -52,6 +55,7 @@ class LoadTest extends \PHPUnit_Framework_TestCase
         $action = new Load(
             $this->getUnitBag([$this->getUnit('tmp_table1')]),
             $this->getConfig(),
+            new LanguageAdapter(),
             $this->getResource()
         );
         $action->process();

@@ -4,6 +4,7 @@ namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ActionInterface;
 use Maketok\DataMigration\Action\ConfigInterface;
+use Maketok\DataMigration\Expression\LanguageInterface;
 use Maketok\DataMigration\Input\InputResourceInterface;
 use Maketok\DataMigration\MapInterface;
 use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
@@ -39,6 +40,7 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
     /**
      * @param UnitBagInterface $bag
      * @param ConfigInterface $config
+     * @param LanguageInterface $language
      * @param InputResourceInterface $input
      * @param MapInterface $map
      * @param ResourceHelperInterface $helperResource
@@ -46,11 +48,12 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
     public function __construct(
         UnitBagInterface $bag,
         ConfigInterface $config,
+        LanguageInterface $language,
         InputResourceInterface $input,
         MapInterface $map,
         ResourceHelperInterface $helperResource
     ) {
-        parent::__construct($bag, $config);
+        parent::__construct($bag, $config, $language);
         $this->input = $input;
         $this->map = $map;
         $this->helperResource = $helperResource;
@@ -68,29 +71,49 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
             if ($this->map->isFresh($row)) {
                 $this->map->feed($row);
             }
+            $shouldUnfreeze = true;
             foreach ($this->bag as $unit) {
-                $shouldDump = false;
-                if (is_callable($unit->getIsEntityCondition())) {
+                $isEntity = $unit->getIsEntityCondition();
+                if (!isset($this->oldmap)) {
+                    $shouldDump = true;
+                } elseif (is_callable($isEntity)) {
                     $shouldDump = call_user_func_array($unit->getIsEntityCondition(), [
                         'map' => $this->map,
-                        'resource' => $this->helperResource,
                         'oldmap' => $this->oldmap,
+                        'resource' => $this->helperResource,
                     ]);
                 } elseif (empty($unit)) {
                     $shouldDump = true;
+                } elseif (empty($isEntity)) {
+                    $shouldDump = true;
+                } elseif (is_string($isEntity)) {
+                    $shouldDump = $this->language->evaluate($isEntity, [
+                        'map' => $this->map,
+                        'oldmap' => $this->oldmap,
+                        'resource' => $this->helperResource,
+                    ]);
                 } else {
-                    // todo expression
+                    throw new \LogicException(
+                        sprintf("Can not understand is Entity Condition for %s unit.", $unit->getCode())
+                    );
                 }
                 if ($shouldDump) {
                     $this->dumpBuffer($valid, $unit);
                 }
+                $shouldUnfreeze &= $shouldDump;
+            }
+            // if all Units were dumped this row
+            if ($shouldUnfreeze) {
+                $this->map->unFreeze();
             }
             $valid = true;
             foreach ($this->bag as $unit) {
                 $this->processAdditions($unit, $row);
                 $valid &= $this->validate($unit, $row);
                 $this->writeRowBuffered($unit, $row);
+                $this->oldmap = clone $this->map;
             }
+            $this->map->freeze();
         }
         $this->dumpBuffer($valid);
         $this->close();

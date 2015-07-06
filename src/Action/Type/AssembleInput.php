@@ -6,6 +6,7 @@ use Maketok\DataMigration\Action\ActionInterface;
 use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Action\Exception\ConflictException;
 use Maketok\DataMigration\Action\Exception\WrongContextException;
+use Maketok\DataMigration\Expression\LanguageInterface;
 use Maketok\DataMigration\Input\InputResourceInterface;
 use Maketok\DataMigration\MapInterface;
 use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
@@ -45,6 +46,7 @@ class AssembleInput extends AbstractAction implements ActionInterface
     /**
      * @param UnitBagInterface $bag
      * @param ConfigInterface $config
+     * @param LanguageInterface $language
      * @param InputResourceInterface $input
      * @param MapInterface $map
      * @param ResourceHelperInterface $resourceHelper
@@ -52,11 +54,12 @@ class AssembleInput extends AbstractAction implements ActionInterface
     public function __construct(
         UnitBagInterface $bag,
         ConfigInterface $config,
+        LanguageInterface $language,
         InputResourceInterface $input,
         MapInterface $map,
         ResourceHelperInterface $resourceHelper
     ) {
-        parent::__construct($bag, $config);
+        parent::__construct($bag, $config, $language);
         $this->input = $input;
         $this->map = $map;
         $this->resourceHelper = $resourceHelper;

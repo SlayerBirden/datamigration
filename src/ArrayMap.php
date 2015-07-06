@@ -12,6 +12,10 @@ class ArrayMap implements MapInterface
      * @var array
      */
     protected $lastFed;
+    /**
+     * @var bool
+     */
+    protected $frozen = false;
 
     /**
      * {@inheritdoc}
@@ -131,5 +135,38 @@ class ArrayMap implements MapInterface
     public function setState(array $state)
     {
         $this->state = $state;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function frozenIncr($key, $default, $step = 1)
+    {
+        if (!$this->offsetExists($key)) {
+            $current = (int) $default;
+        } else {
+            $current = $this->offsetGet($key);
+            if (!$this->frozen) {
+                $current += $step;
+            }
+        }
+        $this->offsetSet($key, $current);
+        return $current;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function unFreeze()
+    {
+        $this->frozen = false;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function freeze()
+    {
+        $this->frozen = true;
     }
 }

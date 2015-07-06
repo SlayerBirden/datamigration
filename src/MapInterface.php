@@ -27,11 +27,31 @@ interface MapInterface extends \ArrayAccess, \IteratorAggregate
     /**
      * attempt to increment and get result value
      * @param string $key
-     * @param mixed $default
+     * @param int $default
      * @param int $step
      * @return mixed
      */
     public function incr($key, $default, $step = 1);
+
+    /**
+     * Increment only once, and then it's frozen
+     * can be un-frozen by appropriate function
+     * @param string$key
+     * @param int $default
+     * @param int $step
+     * @return mixed
+     */
+    public function frozenIncr($key, $default, $step = 1);
+
+    /**
+     * release all frozen keys
+     */
+    public function unFreeze();
+
+    /**
+     * freeze all frozenIncr operations
+     */
+    public function freeze();
 
     /**
      * Dump current image of an internal data array
@@ -42,7 +62,6 @@ interface MapInterface extends \ArrayAccess, \IteratorAggregate
     /**
      * Set current state (without feed's work)
      * @param array $state
-     * @return mixed
      */
     public function setState(array $state);
 }

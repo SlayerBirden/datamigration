@@ -3,6 +3,7 @@
 namespace Maketok\DataMigration\Action\Type;
 
 use Faker\Generator;
+use Maketok\DataMigration\Expression\LanguageAdapter;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
 
 class GenerateTest extends \PHPUnit_Framework_TestCase
@@ -19,6 +20,7 @@ class GenerateTest extends \PHPUnit_Framework_TestCase
         $this->action = new Generate(
             $this->getUnitBag(),
             $this->getConfig(),
+            new LanguageAdapter(),
             new Generator(),
             2
         );
@@ -49,6 +51,7 @@ class GenerateTest extends \PHPUnit_Framework_TestCase
         $action = new Generate(
             $this->getUnitBag([$unit]),
             $this->getConfig(),
+            new LanguageAdapter(),
             new Generator(),
             2
         );

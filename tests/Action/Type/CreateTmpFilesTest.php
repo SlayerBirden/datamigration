@@ -3,6 +3,7 @@
 namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\ArrayMap;
+use Maketok\DataMigration\Expression\LanguageAdapter;
 use Maketok\DataMigration\Input\InputResourceInterface;
 use Maketok\DataMigration\MapInterface;
 use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
@@ -17,6 +18,7 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
         $action = new CreateTmpFiles(
             $this->getUnitBag(),
             $this->getConfig(),
+            new LanguageAdapter(),
             $this->getInputResource(),
             new ArrayMap(),
             $this->getResourceHelper()
@@ -131,6 +133,7 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
         $action = new CreateTmpFiles(
             $this->getUnitBag([$unit1, $unit2, $unit3]),
             $this->getConfig(),
+            new LanguageAdapter(),
             $this->getInputResource($inputs),
             new ArrayMap(),
             $this->getResourceHelper()
@@ -143,5 +146,81 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
             $unit2->getTmpFileName());
         $this->assertEquals('/tmp/address2.csv',
             $unit3->getTmpFileName());
+    }
+
+    /**
+     * input type
+     * - customer1,address1
+     * - customer1,address2
+     * - customer2,address1
+     * ...
+     */
+    public function testProcess2()
+    {
+        $inputs = [
+            ['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr_city' => 'Chicago',
+                'addr_street' => '4100 Marine dr. App. 54'],
+            ['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr_city' => 'New York',
+                'addr_street' => '3300 St. George, Suite 300'],
+            false
+        ];
+        $unit1 = $this->getUnit('customer')
+            ->setMapping([
+                'id' => 'id',
+                'fname' => function ($row) {
+                    list($fname) = explode(" ", $row['name']);
+                    return $fname;
+                },
+                'lname' => function ($row) {
+                    list(, $lname) = explode(" ", $row['name']);
+                    return $lname;
+                },
+                'email' => 'email',
+                'age' => 'age',
+            ])
+            ->addContribution(function (MapInterface $map) {
+                $map->frozenIncr('id', 1);
+            })
+            ->setFilesystem($this->getFS(
+                [[
+                    [1, 'Olaf', 'Stone', 'tst1@example.com', 30]
+                ]]
+            ))->setIsEntityCondition(function (
+                MapInterface $map,
+                MapInterface $oldmap
+            ) {
+                return $oldmap->offsetGet('email') != $map->offsetGet('email');
+            });
+        $unit2 = $this->getUnit('address')
+            ->setMapping([
+                'id' => 'addr_id',
+                'street' => 'addr_street',
+                'city' => 'addr_city',
+                'parent_id' => 'id',
+            ])
+            ->addContribution(function (MapInterface $map) {
+                $map->incr('addr_id', 1);
+            })
+            ->setFilesystem($this->getFS(
+                [
+                    [[1, '4100 Marine dr. App. 54', 'Chicago', 1]],
+                    [[2, '3300 St. George, Suite 300', 'New York', 1]],
+                ]
+            ));
+
+        $action = new CreateTmpFiles(
+            $this->getUnitBag([$unit1, $unit2]),
+            $this->getConfig(),
+            new LanguageAdapter(),
+            $this->getInputResource($inputs),
+            new ArrayMap(),
+            $this->getResourceHelper()
+        );
+        $action->process();
+
+        $this->assertEquals('/tmp/customer.csv',
+            $unit1->getTmpFileName());
+        $this->assertEquals('/tmp/address.csv',
+            $unit2->getTmpFileName());
     }
 }

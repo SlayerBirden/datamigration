@@ -3,6 +3,7 @@
 namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ConfigInterface;
+use Maketok\DataMigration\Expression\LanguageInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 use Maketok\DataMigration\Unit\AbstractUnit;
 
@@ -20,18 +21,25 @@ class AbstractAction
      * @var \DateTime
      */
     protected $date;
+    /**
+     * @var LanguageInterface
+     */
+    protected $language;
 
     /**
      * @param UnitBagInterface $bag
      * @param ConfigInterface $config
+     * @param LanguageInterface $language
      */
     public function __construct(
         UnitBagInterface $bag,
-        ConfigInterface $config
+        ConfigInterface $config,
+        LanguageInterface $language
     ) {
         $this->bag = $bag;
         $this->config = $config;
         $this->date = new \DateTime();
+        $this->language = $language;
     }
 
     /**

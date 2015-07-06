@@ -2,6 +2,7 @@
 
 namespace Maketok\DataMigration\Action\Type;
 
+use Maketok\DataMigration\Expression\LanguageAdapter;
 use Maketok\DataMigration\Storage\Db\ResourceInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface as FsResourceInterface;
 
@@ -14,6 +15,7 @@ class DumpTest extends \PHPUnit_Framework_TestCase
         $action = new Dump(
             $this->getUnitBag(),
             $this->getConfig(),
+            new LanguageAdapter(),
             $this->getResource()
         );
         $this->assertEquals('dump', $action->getCode());
@@ -54,6 +56,7 @@ class DumpTest extends \PHPUnit_Framework_TestCase
         $action = new Dump(
             $this->getUnitBag([$unit]),
             $this->getConfig(),
+            new LanguageAdapter(),
             $this->getResource([
                 [["1", "somedata"]],
                 [["2", "somedata2"]],

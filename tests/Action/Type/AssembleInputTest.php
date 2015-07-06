@@ -4,6 +4,7 @@ namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\Exception\ConflictException;
 use Maketok\DataMigration\ArrayMap;
+use Maketok\DataMigration\Expression\LanguageAdapter;
 use Maketok\DataMigration\Input\InputResourceInterface;
 use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
@@ -22,6 +23,7 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         $this->action = new AssembleInput(
             $this->getUnitBag(),
             $this->getConfig(),
+            new LanguageAdapter(),
             $this->getInputResource(),
             new ArrayMap(),
             $this->getResourceHelper()

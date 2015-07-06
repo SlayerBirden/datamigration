@@ -2,6 +2,7 @@
 
 namespace Maketok\DataMigration\Action\Type;
 
+use Maketok\DataMigration\Expression\LanguageAdapter;
 use Maketok\DataMigration\Storage\Db\ResourceInterface;
 
 class ReverseMoveTest extends \PHPUnit_Framework_TestCase
@@ -13,6 +14,7 @@ class ReverseMoveTest extends \PHPUnit_Framework_TestCase
         $action = new ReverseMove(
             $this->getUnitBag(),
             $this->getConfig(),
+            new LanguageAdapter(),
             $this->getResource()
         );
         $this->assertEquals('reverse_move', $action->getCode());
@@ -39,6 +41,7 @@ class ReverseMoveTest extends \PHPUnit_Framework_TestCase
         $action = new ReverseMove(
             $this->getUnitBag([$unit]),
             $this->getConfig(),
+            new LanguageAdapter(),
             $this->getResource(true)
         );
         $action->process();
