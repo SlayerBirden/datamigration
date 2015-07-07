@@ -76,17 +76,11 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
                 $isEntity = $unit->getIsEntityCondition();
                 if (!isset($this->oldmap)) {
                     $shouldDump = true;
-                } elseif (is_callable($isEntity)) {
-                    $shouldDump = call_user_func_array($unit->getIsEntityCondition(), [
-                        'map' => $this->map,
-                        'oldmap' => $this->oldmap,
-                        'resource' => $this->helperResource,
-                    ]);
                 } elseif (empty($unit)) {
                     $shouldDump = true;
                 } elseif (empty($isEntity)) {
                     $shouldDump = true;
-                } elseif (is_string($isEntity)) {
+                } elseif (is_callable($isEntity) || is_string($isEntity)) {
                     $shouldDump = $this->language->evaluate($isEntity, [
                         'map' => $this->map,
                         'oldmap' => $this->oldmap,
@@ -108,9 +102,9 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
             }
             $valid = true;
             foreach ($this->bag as $unit) {
-                $this->processAdditions($unit, $row);
-                $valid &= $this->validate($unit, $row);
-                $this->writeRowBuffered($unit, $row);
+                $this->processAdditions($unit);
+                $valid &= $this->validate($unit);
+                $this->writeRowBuffered($unit);
                 $this->oldmap = clone $this->map;
             }
             $this->map->freeze();
@@ -142,14 +136,12 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
 
     /**
      * @param AbstractUnit $unit
-     * @param $row
      */
-    private function processAdditions(AbstractUnit $unit, $row)
+    private function processAdditions(AbstractUnit $unit)
     {
         foreach ($unit->getContributions() as $contribution) {
-            call_user_func_array($contribution, [
+            $this->language->evaluate($contribution, [
                 'map' => $this->map,
-                'row' => $row,
                 'resource' => $this->helperResource,
             ]);
         }
@@ -157,15 +149,13 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
 
     /**
      * @param AbstractUnit $unit
-     * @param $row
      */
-    private function writeRowBuffered(AbstractUnit $unit, $row)
+    private function writeRowBuffered(AbstractUnit $unit)
     {
         $shouldAdd = true;
         foreach ($unit->getWriteConditions() as $condition) {
-            $shouldAdd = call_user_func_array($condition, [
+            $shouldAdd = $this->language->evaluate($condition, [
                 'map' => $this->map,
-                'row' => $row,
                 'resource' => $this->helperResource,
             ]);
             if (!$shouldAdd) {
@@ -173,38 +163,27 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
             }
         }
         if ($shouldAdd) {
-            $this->buffer[$unit->getCode()] = array_map(function ($var) use ($row) {
-                if (is_callable($var)) {
-                    return call_user_func_array($var, [
-                        'map' => $this->map,
-                        'row' => $row,
-                        'resource' => $this->helperResource,
-                    ]);
-                } else {
-                    return $this->map->offsetGet($var);
-                }
+            $this->buffer[$unit->getCode()] = array_map(function ($var) {
+                return $this->language->evaluate($var, [
+                    'map' => $this->map,
+                    'resource' => $this->helperResource,
+                ]);
             }, $unit->getMapping());
         }
     }
 
     /**
      * @param $unit
-     * @param $row
      * @return bool
      */
-    private function validate(AbstractUnit $unit, $row)
+    private function validate(AbstractUnit $unit)
     {
         $valid = true;
         foreach ($unit->getValidationRules() as $validationRule) {
-            if (is_callable($validationRule)) {
-                $valid = call_user_func_array($validationRule, [
-                    'map' => $this->map,
-                    'row' => $row,
-                    'resource' => $this->helperResource,
-                ]);
-            } else {
-                // todo expression
-            }
+            $valid = $this->language->evaluate($validationRule, [
+                'map' => $this->map,
+                'resource' => $this->helperResource,
+            ]);
             if (!$valid) {
                 break 1;
             }

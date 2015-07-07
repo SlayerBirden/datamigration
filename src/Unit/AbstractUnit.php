@@ -78,7 +78,11 @@ abstract class AbstractUnit implements UnitInterface
     /**
      * @var ResourceInterface
      */
-    private $filesystem;
+    protected $filesystem;
+    /**
+     * @var array
+     */
+    protected $reversedConnection;
 
     /**
      * @param $code
@@ -90,6 +94,7 @@ abstract class AbstractUnit implements UnitInterface
      * @param array $writeConditions
      * @param array $contributions
      * @param array $reversedMapping
+     * @param array $reversedConnection
      * @param array $reverseMoveOrder
      * @param array $reverseMoveDirections
      * @param array $reverseMoveConditions
@@ -106,6 +111,7 @@ abstract class AbstractUnit implements UnitInterface
         $writeConditions = [],
         $contributions = [],
         array $reversedMapping = [],
+        array $reversedConnection = [],
         array $reverseMoveOrder = [],
         array $reverseMoveDirections = [],
         array $reverseMoveConditions = [],
@@ -120,6 +126,7 @@ abstract class AbstractUnit implements UnitInterface
         $this->writeConditions = $writeConditions;
         $this->contributions = $contributions;
         $this->reversedMapping = $reversedMapping;
+        $this->reversedConnection = $reversedConnection;
         $this->reverseMoveOrder = $reverseMoveOrder;
         $this->reverseMoveDirections = $reverseMoveDirections;
         $this->reverseMoveConditions = $reverseMoveConditions;
@@ -425,5 +432,23 @@ abstract class AbstractUnit implements UnitInterface
         if (isset($this->filesystem) && $this->filesystem->isActive()) {
             @$this->filesystem->close();
         }
+    }
+
+    /**
+     * @return array
+     */
+    public function getReversedConnection()
+    {
+        return $this->reversedConnection;
+    }
+
+    /**
+     * @param array $reversedConnection
+     * @return $this
+     */
+    public function setReversedConnection($reversedConnection)
+    {
+        $this->reversedConnection = $reversedConnection;
+        return $this;
     }
 }

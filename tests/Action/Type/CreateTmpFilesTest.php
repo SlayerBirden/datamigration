@@ -75,6 +75,9 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
             ['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr1_city' => 'Chicago',
             'addr1_street' => '4100 Marine dr. App. 54', 'addr2_city' => 'New York',
             'addr2_street' => '3300 St. George, Suite 300'],
+            ['email' => 'pete111@eol.com', 'name' => 'Peter Ostridge', 'age' => 33, 'addr1_city' => 'Chicago',
+            'addr1_street' => '5011 Sunnyside ave', 'addr2_city' => 'Chicago',
+            'addr2_street' => '111 W Jackson'],
             false
         ];
         $unit1 = $this->getUnit('customer')
@@ -95,9 +98,10 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
                 $map->incr('id', 1);
             })
             ->setFilesystem($this->getFS(
-                [[
-                    [1, 'Olaf', 'Stone', 'tst1@example.com', 30]
-                ]]
+                [
+                    [[1, 'Olaf', 'Stone', 'tst1@example.com', 30]],
+                    [[2, 'Peter', 'Ostridge', 'pete111@eol.com', 33]],
+                ]
             ));
         $unit2 = $this->getUnit('address1')
             ->setMapping([
@@ -110,9 +114,10 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
                 $map->incr('addr_id', 1);
             })
             ->setFilesystem($this->getFS(
-                [[
-                    [1, '4100 Marine dr. App. 54', 'Chicago', 1]
-                ]]
+                [
+                    [[1, '4100 Marine dr. App. 54', 'Chicago', 1]],
+                    [[3, '5011 Sunnyside ave', 'Chicago', 2]],
+                ]
             ));
         $unit3 = $this->getUnit('address2')
             ->setMapping([
@@ -125,9 +130,10 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
                 $map->incr('addr_id', 1);
             })
             ->setFilesystem($this->getFS(
-                [[
-                    [2, '3300 St. George, Suite 300', 'New York', 1]
-                ]]
+                [
+                    [[2, '3300 St. George, Suite 300', 'New York', 1]],
+                    [[4, '111 W Jackson', 'Chicago', 2]],
+                ]
             ));
 
         $action = new CreateTmpFiles(
@@ -162,17 +168,19 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
                 'addr_street' => '4100 Marine dr. App. 54'],
             ['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr_city' => 'New York',
                 'addr_street' => '3300 St. George, Suite 300'],
+            ['email' => 'pete111@eol.com', 'name' => 'Peter Ostridge', 'age' => 33, 'addr_city' => 'Chicago',
+                'addr_street' => '111 W Jackson'],
             false
         ];
         $unit1 = $this->getUnit('customer')
             ->setMapping([
                 'id' => 'id',
-                'fname' => function ($row) {
-                    list($fname) = explode(" ", $row['name']);
+                'fname' => function ($map) {
+                    list($fname) = explode(" ", $map['name']);
                     return $fname;
                 },
-                'lname' => function ($row) {
-                    list(, $lname) = explode(" ", $row['name']);
+                'lname' => function ($map) {
+                    list(, $lname) = explode(" ", $map['name']);
                     return $lname;
                 },
                 'email' => 'email',
@@ -182,9 +190,10 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
                 $map->frozenIncr('id', 1);
             })
             ->setFilesystem($this->getFS(
-                [[
-                    [1, 'Olaf', 'Stone', 'tst1@example.com', 30]
-                ]]
+                [
+                    [[1, 'Olaf', 'Stone', 'tst1@example.com', 30]],
+                    [[2, 'Peter', 'Ostridge', 'pete111@eol.com', 33]],
+                ]
             ))->setIsEntityCondition(function (
                 MapInterface $map,
                 MapInterface $oldmap
@@ -205,6 +214,7 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
                 [
                     [[1, '4100 Marine dr. App. 54', 'Chicago', 1]],
                     [[2, '3300 St. George, Suite 300', 'New York', 1]],
+                    [[3, '111 W Jackson', 'Chicago', 2]],
                 ]
             ));
 

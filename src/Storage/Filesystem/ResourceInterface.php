@@ -29,6 +29,12 @@ interface ResourceInterface
     public function readRow();
 
     /**
+     * return pointer to start of the file
+     * @return mixed
+     */
+    public function rewind();
+
+    /**
      * check if resource is opened
      * @return bool
      */

@@ -91,6 +91,6 @@ class GenerateTest extends \PHPUnit_Framework_TestCase
             $centerZone += $percentage[$indx];
         }
 
-        $this->assertGreaterThan(45, $centerZone);
+        $this->assertGreaterThan(50, $centerZone); // actual value is around 56% (+1 range)
     }
 }

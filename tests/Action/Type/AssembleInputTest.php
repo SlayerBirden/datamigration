@@ -6,6 +6,7 @@ use Maketok\DataMigration\Action\Exception\ConflictException;
 use Maketok\DataMigration\ArrayMap;
 use Maketok\DataMigration\Expression\LanguageAdapter;
 use Maketok\DataMigration\Input\InputResourceInterface;
+use Maketok\DataMigration\MapInterface;
 use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
 
@@ -61,17 +62,12 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @param array $returns
-     * @param int $cntUnits
      * @return ResourceInterface
      */
-    protected function getFS($returns = [], $cntUnits = 0)
+    protected function getFS($returns = [])
     {
         $filesystem = $this->getMockBuilder('\Maketok\DataMigration\Storage\Filesystem\ResourceInterface')
             ->getMock();
-        $filesystem->expects($this->exactly($cntUnits))
-            ->method('open');
-        $filesystem->expects($this->exactly($cntUnits))
-            ->method('close');
         $cntReturns = count($returns);
         $method = $filesystem->expects($this->exactly($cntReturns))
             ->method('readRow');
@@ -81,8 +77,106 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
 
     public function testProcess()
     {
-        // orders and items
-
+        $unit1 = $this->getUnit('customer')
+            ->setMapping([
+                'id' => 'id',
+                'fname' => function ($map) {
+                    list($fname) = explode(" ", $map['name']);
+                    return $fname;
+                },
+                'lname' => function ($map) {
+                    list(, $lname) = explode(" ", $map['name']);
+                    return $lname;
+                },
+                'email' => 'email',
+                'age' => 'age',
+            ])
+            ->setReversedMapping([
+                'email' => 'email',
+                'name' => function ($map) {
+                    return $map['fname'] . ' ' . $map['lname'];
+                },
+                'age' => 'age',
+            ])
+            ->setFilesystem($this->getFS(
+                [
+                    [1, 'Olaf', 'Stone', 'tst1@example.com', 30],
+                    [2, 'Peter', 'Ostridge', 'pete111@eol.com', 33],
+                    [3, 'Bill', 'Murray', 'bm@gmail.com', 55],
+                    false,
+                ]
+            ))->setIsEntityCondition(function (
+                MapInterface $map,
+                MapInterface $oldmap
+            ) {
+                return $oldmap->offsetGet('email') != $map->offsetGet('email');
+            })
+            ->setTmpFileName('customer_tmp.csv')
+            ->setReversedConnection([
+                'customer_id' => 'id',
+            ])
+        ;
+        $unit2 = $this->getUnit('address')
+            ->setMapping([
+                'id' => 'addr_id',
+                'street' => 'addr_street',
+                'city' => 'addr_city',
+                'parent_id' => 'id',
+            ])
+            ->setReversedMapping([
+                'addr_city' => 'city',
+                'addr_street' => 'street',
+            ])
+            ->addContribution(function (MapInterface $map) {
+                $map->incr('addr_id', 1);
+            })
+            ->setFilesystem($this->getFS(
+                [
+                    [1, '4100 Marine dr. App. 54', 'Chicago', 1],
+                    [2, '3300 St. George, Suite 300', 'New York', 1],
+                    [3, '111 W Jackson', 'Chicago', 2],
+                    [4, '111 W Jackson-2', 'Chicago', 2],
+                    [5, 'Hollywood', 'LA', 3],
+                    false,
+                ]
+            ))
+            ->setTmpFileName('address_tmp.csv')
+            ->setReversedConnection([
+                'customer_id' => 'parent_id',
+            ])
+        ;
+        $expected = [
+            [['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr_city' => 'Chicago',
+                'addr_street' => '4100 Marine dr. App. 54']],
+            [['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr_city' => 'New York',
+                'addr_street' => '3300 St. George, Suite 300']],
+            [['email' => 'pete111@eol.com', 'name' => 'Peter Ostridge', 'age' => 33, 'addr_city' => 'Chicago',
+                'addr_street' => '111 W Jackson']],
+            [['email' => 'pete111@eol.com', 'name' => 'Peter Ostridge', 'age' => 33, 'addr_city' => 'Chicago',
+                'addr_street' => '111 W Jackson-2']],
+            [['email' => 'bm@gmail.com', 'name' => 'Bill Murray', 'age' => 55, 'addr_city' => 'LA',
+                'addr_street' => 'Hollywood']],
+        ];
+        // normal
+        $action = new AssembleInput(
+            $this->getUnitBag([$unit1, $unit2]),
+            $this->getConfig(),
+            new LanguageAdapter(),
+            $this->getInputResource($expected),
+            new ArrayMap(),
+            $this->getResourceHelper()
+        );
+        $action->process();
+        // reversed
+        $action = new AssembleInput(
+            $this->getUnitBag([$unit2, $unit1]),
+            $this->getConfig(),
+            new LanguageAdapter(),
+            $this->getInputResource($expected),
+            new ArrayMap(),
+            $this->getResourceHelper()
+        );
+        $action->process();
     }
 
     /**

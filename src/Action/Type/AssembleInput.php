@@ -10,7 +10,7 @@ use Maketok\DataMigration\Expression\LanguageInterface;
 use Maketok\DataMigration\Input\InputResourceInterface;
 use Maketok\DataMigration\MapInterface;
 use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
-use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
+use Maketok\DataMigration\Unit\AbstractUnit;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 
 /**
@@ -31,17 +31,21 @@ class AssembleInput extends AbstractAction implements ActionInterface
      */
     private $resourceHelper;
     /**
-     * @var ResourceInterface[]
-     */
-    private $handlers = [];
-    /**
      * @var array
      */
-    private $headers = [];
+    private $processed = [];
     /**
      * @var array
      */
     private $buffer = [];
+    /**
+     * @var array
+     */
+    private $connectBuffer = [];
+    /**
+     * @var array
+     */
+    private $lastAdded = [];
 
     /**
      * @param UnitBagInterface $bag
@@ -68,97 +72,96 @@ class AssembleInput extends AbstractAction implements ActionInterface
     /**
      * {@inheritdoc}
      * Reversed process to create input resource
-     * THE ORDER OF UNITS MATTERS!
      * @throws \LogicException, WrongContextException
      */
     public function process()
     {
         $this->start();
         while (true) {
-            $data = $this->getUnitRowData();
-            if ($this->isEmptyData($data)) {
+            $this->processUnitRowData();
+            if ($this->isEmptyData($this->processed)) {
                 break 1; // exit point
             }
-            $this->addData($data);
+            $this->addData();
         }
         $this->close();
     }
 
     /**
-     * procedure of adding data to input resource
-     * @param array $data
-     */
-    private function addData(array $data)
-    {
-        while (true) {
-            try {
-                $row = $this->assemble($data);
-                $this->input->add($row);
-                break 1;
-            } catch (ConflictException $e) {
-                $conflicted = $e->getUnitsInConflict();
-                $unitToBuffer = array_pop($conflicted);
-                if (isset($this->buffer[$unitToBuffer])) {
-                    throw new \LogicException("Unhandled logic issue", 0, $e);
-                }
-                $this->buffer[$unitToBuffer] = $data[$unitToBuffer];
-                foreach ($data[$unitToBuffer] as $k => $v) {
-                    if ($k != $e->getConflictedKey()) {
-                        $data[$unitToBuffer][$k] = null;
-                    } else {
-                        unset($data[$unitToBuffer][$k]);
-                    }
-                }
-            }
-        }
-    }
-
-    /**
      * @return array
      */
-    private function getUnitRowData()
+    private function processUnitRowData()
     {
-        $data = [];
         foreach ($this->bag as $unit) {
-            if (isset($this->buffer[$unit->getTable()])) {
-                $data[$unit->getTable()] = $this->buffer[$unit->getTable()];
-                unset($this->buffer[$unit->getTable()]);
+            $code = $unit->getCode();
+            if (isset($this->buffer[$code])) {
+                $this->processed[$code] = $tmpRow = $this->buffer[$code];
+            } elseif (($tmpRow = $this->readRow($unit)) !== false) {
+                $this->processed[$code] = $tmpRow;
             } else {
-                $handler = $this->handlers[$unit->getTable()];
-                $unitData = [];
-                if (($tmpReadRow = $handler->readRow()) !== false) {
-                    $tmpRow = array_combine(array_keys($unit->getMapping()), $tmpReadRow);
-                    foreach ($unit->getReversedMapping() as $k => $v) {
-                        if (isset($tmpRow[$v])) {
-                            if (is_callable($tmpRow[$v])) {
-                                // should return string
-                                $unitData[$k] = call_user_func($tmpRow[$v]);
-                            } else {
-                                $unitData[$k] = $tmpRow[$v];
-                            }
-                        }
-                    }
-                    if (false !== $unitData) {
-                        $data[$unit->getTable()] = $unitData;
-                        $this->headers[$unit->getTable()] = array_keys($unitData);
-                    }
-                } elseif (isset($this->headers[$unit->getTable()])) {
-                    $data[$unit->getTable()] = array_combine(
-                        $this->headers[$unit->getTable()],
-                        array_map(function () {
-                            return null;
-                        }, $this->headers[$unit->getTable()])
-                    );
-                } else {
-                    // this unit doesn't have any data?!?
-                    // in that case we don't have to use it
-                }
+                throw new \LogicException(
+                    sprintf("Do not know how to process the unit %s.", $unit->getCode())
+                );
             }
+            $this->connectBuffer[$code] = array_map(function ($var) use ($tmpRow) {
+                if (!isset($tmpRow[$var])) {
+                    throw new \LogicException("Wrong reversed connection key given.");
+                } else {
+                    return $tmpRow[$var];
+                }
+            }, $unit->getReversedConnection());
         }
-        return $data;
+        try {
+            $this->assemble($this->connectBuffer);
+        } catch (ConflictException $e) {
+            $conflicted = $e->getUnitsInConflict();
+            // assume 1st unit is major entity (which goes on multiple rows)
+            $code = array_shift($conflicted);
+            $this->buffer[$code] = $this->processed[$code];
+            $this->processed[$code] = $this->lastAdded[$code];
+        }
     }
 
     /**
+     * procedure of adding data to input resource
+     */
+    private function addData()
+    {
+        $toAdd = [];
+        $tmpRow = $this->assemble($this->processed, true);
+        $this->map->feed($tmpRow);
+        foreach ($this->bag as $unit) {
+            if (!isset($this->processed[$unit->getCode()])) {
+                continue;
+            }
+            $unitData = $this->processed[$unit->getCode()];
+            $toAdd[$unit->getCode()] = array_map(function ($var) use ($unitData) {
+                return $this->language->evaluate($var, [
+                    'map' => $this->map,
+                ]);
+            }, $unit->getReversedMapping());
+            $this->lastAdded[$unit->getCode()] = $this->processed[$unit->getCode()];
+        }
+        $row = $this->assemble($toAdd);
+        $this->input->add($row);
+    }
+
+    /**
+     * @param AbstractUnit $unit
+     * @return array|bool
+     * @throws WrongContextException
+     */
+    private function readRow(AbstractUnit $unit)
+    {
+        $row = $unit->getFilesystem()->readRow();
+        if (is_array($row)) {
+            return array_combine(array_keys($unit->getMapping()), $row);
+        }
+        return false;
+    }
+
+    /**
+     * recursive array_filter
      * @param array $data
      * @return bool
      */
@@ -166,7 +169,7 @@ class AssembleInput extends AbstractAction implements ActionInterface
     {
         $filteredData = array_filter($data, function ($var) {
             if (is_array($var)) {
-                $var = array_filter($var);
+                return !$this->isEmptyData($var);
             }
             return !empty($var);
         });
@@ -183,12 +186,10 @@ class AssembleInput extends AbstractAction implements ActionInterface
             if ($unit->getTmpFileName() === null) {
                 throw new WrongContextException(sprintf(
                     "Action can not be used for current unit %s. Tmp file is missing.",
-                    $unit->getTable()
+                    $unit->getCode()
                 ));
             }
-            $handler = clone $this->filesystem;
-            $handler->open($unit->getTmpFileName(), 'r');
-            $this->handlers[$unit->getTable()] = $handler;
+            $unit->getFilesystem()->open($unit->getTmpFileName(), 'r');
         }
     }
 
@@ -198,37 +199,37 @@ class AssembleInput extends AbstractAction implements ActionInterface
     private function close()
     {
         foreach ($this->bag as $unit) {
-            $handler = $this->handlers[$unit->getTable()];
-            $handler->close();
+            $unit->getFilesystem()->close();
         }
     }
 
     /**
      * @param array $data
+     * @param bool $force
      * @return array
      * @throws ConflictException
      */
-    public function assemble(array $data)
+    public function assemble(array $data, $force = false)
     {
         $row = [];
         $meta = [];
-        foreach ($data as $unit => $mapping) {
+        foreach ($data as $unitCode => $mapping) {
             foreach ($mapping as $k => $v) {
-                if (isset($row[$k]) && $row[$k] != $v) {
-                    $meta[$k][] = $unit;
+                if (isset($row[$k]) && $row[$k] != $v && !$force) {
+                    $meta[$k][] = $unitCode;
                     throw new ConflictException(
                         sprintf("Conflict with data %s, %s", json_encode($data), $v),
                         array_unique($meta[$k]),
                         $k
                     );
                 } elseif (isset($row[$k]) && $row[$k] == $v) {
-                    $meta[$k][] = $unit;
+                    $meta[$k][] = $unitCode;
                 } elseif (!isset($row[$k])) {
                     $row[$k] = $v;
                     if (!isset($meta[$k])) {
                         $meta[$k] = [];
                     }
-                    $meta[$k][] = $unit;
+                    $meta[$k][] = $unitCode;
                 }
             }
         }

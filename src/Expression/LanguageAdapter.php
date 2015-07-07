@@ -2,6 +2,7 @@
 
 namespace Maketok\DataMigration\Expression;
 
+use Maketok\DataMigration\MapInterface;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 class LanguageAdapter implements LanguageInterface
@@ -20,13 +21,28 @@ class LanguageAdapter implements LanguageInterface
     }
 
     /**
-     * @param string $expression
+     * @param mixed $expression
      * @param array $values
-     * @return mixed|string
+     * @return mixed
      */
     public function evaluate($expression, array $values = [])
     {
-        return $this->language->evaluate($expression, $values);
+        if (is_callable($expression)) {
+            return call_user_func_array($expression, $values);
+        } elseif (is_string($expression)) {
+            if (
+                strpos($expression, '.') === false &&
+                isset($values['map']) &&
+                $values['map'] instanceof MapInterface
+            ) {
+                return $values['map'][$expression];
+            } else {
+                return $this->language->evaluate($expression, $values);
+            }
+        }
+        throw new \InvalidArgumentException(
+            sprintf("Wrong type of expression given: %s", gettype($expression))
+        );
     }
 
     /**

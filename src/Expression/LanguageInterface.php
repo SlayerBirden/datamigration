@@ -5,7 +5,7 @@ namespace Maketok\DataMigration\Expression;
 interface LanguageInterface
 {
     /**
-     * @param string $expression
+     * @param mixed $expression
      * @return mixed
      */
     public function evaluate($expression);
