@@ -194,7 +194,8 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
                     [[1, 'Olaf', 'Stone', 'tst1@example.com', 30]],
                     [[2, 'Peter', 'Ostridge', 'pete111@eol.com', 33]],
                 ]
-            ))->setIsEntityCondition(function (
+            ))
+            ->setIsEntityCondition(function (
                 MapInterface $map,
                 MapInterface $oldmap
             ) {

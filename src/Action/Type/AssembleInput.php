@@ -5,6 +5,7 @@ namespace Maketok\DataMigration\Action\Type;
 use Maketok\DataMigration\Action\ActionInterface;
 use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Action\Exception\ConflictException;
+use Maketok\DataMigration\Action\Exception\FlowRegulationException;
 use Maketok\DataMigration\Action\Exception\WrongContextException;
 use Maketok\DataMigration\Expression\LanguageInterface;
 use Maketok\DataMigration\Input\InputResourceInterface;
@@ -18,6 +19,9 @@ use Maketok\DataMigration\Unit\UnitBagInterface;
  */
 class AssembleInput extends AbstractAction implements ActionInterface
 {
+    const FLOW_CONTINUE = 100;
+    const FLOW_ABORT = 200;
+
     /**
      * @var InputResourceInterface
      */
@@ -31,21 +35,30 @@ class AssembleInput extends AbstractAction implements ActionInterface
      */
     private $resourceHelper;
     /**
+     * Current row being processed
      * @var array
      */
     private $processed = [];
     /**
+     * Buffered row
      * @var array
      */
     private $buffer = [];
     /**
+     * Entries that specify connection between units
      * @var array
      */
     private $connectBuffer = [];
     /**
+     * Last added rows buffer
      * @var array
      */
     private $lastAdded = [];
+    /**
+     * Units that are empty
+     * @var string[]
+     */
+    private $finished = [];
 
     /**
      * @param UnitBagInterface $bag
@@ -72,19 +85,33 @@ class AssembleInput extends AbstractAction implements ActionInterface
     /**
      * {@inheritdoc}
      * Reversed process to create input resource
+     * Order of the units matters!
      * @throws \LogicException, WrongContextException
      */
     public function process()
     {
         $this->start();
         while (true) {
-            $this->processUnitRowData();
-            if ($this->isEmptyData($this->processed)) {
-                break 1; // exit point
+            try {
+                $this->processUnitRowData();
+                $this->addData();
+            } catch (FlowRegulationException $e) {
+                if ($e->getCode() === self::FLOW_ABORT) {
+                    break 1; // exit point
+                }
             }
-            $this->addData();
+            $this->clear();
         }
         $this->close();
+    }
+
+    /**
+     * clear variable context
+     */
+    private function clear()
+    {
+        $this->connectBuffer = [];
+        $this->processed = [];
     }
 
     /**
@@ -94,14 +121,14 @@ class AssembleInput extends AbstractAction implements ActionInterface
     {
         foreach ($this->bag as $unit) {
             $code = $unit->getCode();
-            if (isset($this->buffer[$code])) {
+            if (in_array($code, $this->finished)) {
+                continue;
+            } elseif (isset($this->buffer[$code])) {
                 $this->processed[$code] = $tmpRow = $this->buffer[$code];
             } elseif (($tmpRow = $this->readRow($unit)) !== false) {
                 $this->processed[$code] = $tmpRow;
             } else {
-                throw new \LogicException(
-                    sprintf("Do not know how to process the unit %s.", $unit->getCode())
-                );
+                continue;
             }
             $this->connectBuffer[$code] = array_map(function ($var) use ($tmpRow) {
                 if (!isset($tmpRow[$var])) {
@@ -111,14 +138,66 @@ class AssembleInput extends AbstractAction implements ActionInterface
                 }
             }, $unit->getReversedConnection());
         }
+        $this->analyzeRow();
         try {
             $this->assemble($this->connectBuffer);
         } catch (ConflictException $e) {
-            $conflicted = $e->getUnitsInConflict();
-            // assume 1st unit is major entity (which goes on multiple rows)
-            $code = array_shift($conflicted);
+            $this->handleConflict($e->getUnitsInConflict());
+        }
+    }
+
+    /**
+     * analyze tmp rows before trying to assemble
+     * @throws FlowRegulationException
+     */
+    private function analyzeRow()
+    {
+        // check if we have some missing units
+        if ($this->isEmptyData($this->processed)) {
+            throw new FlowRegulationException("", self::FLOW_ABORT);
+        }
+        if (count($this->connectBuffer) < $this->bag->count()) {
+            foreach ($this->bag as $unit) {
+                $code = $unit->getCode();
+                if (!array_key_exists($code, $this->connectBuffer)) {
+                    $this->finished[] = $code;
+                }
+            }
+            // we can just check if input is correct or not
+            $intersected = array_intersect_key($this->connectBuffer, $this->buffer);
+            foreach (array_keys($intersected) as $purgeKey) {
+                unset($this->buffer[$purgeKey]);
+                unset($this->connectBuffer[$purgeKey]);
+            }
+            if (!empty($this->connectBuffer)) {
+                // todo notify input is incorrect
+            }
+            throw new FlowRegulationException("", self::FLOW_CONTINUE);
+        }
+    }
+
+    /**
+     * @param string[] $codes
+     * @throws FlowRegulationException
+     */
+    private function handleConflict(array $codes)
+    {
+        if (empty($codes)) {
+            throw new \LogicException("Can not resolve conflicted state of units.");
+        }
+        // assume 1st unit is major entity (which goes on multiple rows)
+        $code = array_shift($codes);
+        if (isset($this->buffer[$code])) {
+            // time to purge buffer for conflicted code
+            $this->buffer[$code] = null;
+            $this->handleConflict($codes);
+            throw new FlowRegulationException("", self::FLOW_CONTINUE);
+        } elseif (isset($this->lastAdded[$code]) && isset($this->processed[$code])) {
             $this->buffer[$code] = $this->processed[$code];
             $this->processed[$code] = $this->lastAdded[$code];
+        } else {
+            // it seem we've got wrong connection from the start
+            throw new \LogicException("Conflict is in the first row of given units. Will not process further.");
         }
     }
 
@@ -142,8 +221,9 @@ class AssembleInput extends AbstractAction implements ActionInterface
             }, $unit->getReversedMapping());
             $this->lastAdded[$unit->getCode()] = $this->processed[$unit->getCode()];
         }
-        $row = $this->assemble($toAdd);
-        $this->input->add($row);
+        $this->input->add(
+            $this->assemble($toAdd)
+        );
     }
 
     /**
@@ -224,7 +304,7 @@ class AssembleInput extends AbstractAction implements ActionInterface
                     );
                 } elseif (isset($row[$k]) && $row[$k] == $v) {
                     $meta[$k][] = $unitCode;
-                } elseif (!isset($row[$k])) {
+                } elseif (!isset($row[$k]) && isset($v)) {
                     $row[$k] = $v;
                     if (!isset($meta[$k])) {
                         $meta[$k] = [];

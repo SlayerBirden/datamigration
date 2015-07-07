@@ -34,6 +34,9 @@ trait ServiceGetterTrait
         $unitBag->expects($this->any())
             ->method('getIterator')
             ->willReturn(new \ArrayIterator($units));
+        $unitBag->expects($this->any())
+            ->method('count')
+            ->willReturn(count($units));
         return $unitBag;
     }
 

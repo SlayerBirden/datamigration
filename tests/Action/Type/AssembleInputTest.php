@@ -75,6 +75,9 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         return $filesystem;
     }
 
+    /**
+     * standard process
+     */
     public function testProcess()
     {
         $unit1 = $this->getUnit('customer')
@@ -157,7 +160,7 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
             [['email' => 'bm@gmail.com', 'name' => 'Bill Murray', 'age' => 55, 'addr_city' => 'LA',
                 'addr_street' => 'Hollywood']],
         ];
-        // normal
+
         $action = new AssembleInput(
             $this->getUnitBag([$unit1, $unit2]),
             $this->getConfig(),
@@ -167,12 +170,240 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
             $this->getResourceHelper()
         );
         $action->process();
-        // reversed
+    }
+
+    /**
+     * test process with incorrect connection (addresses do not match customers)
+     */
+    public function testProcess2()
+    {
+        $unit1 = $this->getUnit('customer')
+            ->setMapping([
+                'id' => 'id',
+                'fname' => function ($map) {
+                    list($fname) = explode(" ", $map['name']);
+                    return $fname;
+                },
+                'lname' => function ($map) {
+                    list(, $lname) = explode(" ", $map['name']);
+                    return $lname;
+                },
+                'email' => 'email',
+                'age' => 'age',
+            ])
+            ->setReversedMapping([
+                'email' => 'email',
+                'name' => function ($map) {
+                    return $map['fname'] . ' ' . $map['lname'];
+                },
+                'age' => 'age',
+            ])
+            ->setFilesystem($this->getFS(
+                [
+                    [1, 'Olaf', 'Stone', 'tst1@example.com', 30],
+                    [2, 'Peter', 'Ostridge', 'pete111@eol.com', 33],
+                    false,
+                ]
+            ))
+            ->setTmpFileName('customer_tmp.csv')
+            ->setReversedConnection([
+                'customer_id' => 'id',
+            ])
+        ;
+        $unit2 = $this->getUnit('address')
+            ->setMapping([
+                'id' => 'addr_id',
+                'street' => 'addr_street',
+                'city' => 'addr_city',
+                'parent_id' => 'id',
+            ])
+            ->setReversedMapping([
+                'addr_city' => 'city',
+                'addr_street' => 'street',
+            ])
+            ->addContribution(function (MapInterface $map) {
+                $map->incr('addr_id', 1);
+            })
+            ->setFilesystem($this->getFS(
+                [
+                    [1, '4100 Marine dr. App. 54', 'Chicago', 1],
+                    [2, '3300 St. George, Suite 300', 'New York', 1],
+                    [3, '111 W Jackson', 'Chicago', 4],
+                    [4, '111 W Jackson-2', 'Chicago', 4],
+                    [5, 'Hollywood', 'LA', 4],
+                    false,
+                ]
+            ))
+            ->setTmpFileName('address_tmp.csv')
+            ->setReversedConnection([
+                'customer_id' => 'parent_id',
+            ])
+        ;
+        $expected = [
+            [['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr_city' => 'Chicago',
+                'addr_street' => '4100 Marine dr. App. 54']],
+            [['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr_city' => 'New York',
+                'addr_street' => '3300 St. George, Suite 300']],
+        ];
+
         $action = new AssembleInput(
-            $this->getUnitBag([$unit2, $unit1]),
+            $this->getUnitBag([$unit1, $unit2]),
             $this->getConfig(),
             new LanguageAdapter(),
             $this->getInputResource($expected),
+            new ArrayMap(),
+            $this->getResourceHelper()
+        );
+        $action->process();
+    }
+
+    /**
+     * process unit with incorrect map
+     * @expectedException \LogicException
+     * @expectedExceptionMessage Wrong reversed connection key given.
+     */
+    public function testProcessException1()
+    {
+        $unit1 = $this->getUnit('test')
+            ->setMapping([
+                'field1' => 'name',
+                'field2' => 'code',
+            ])
+            ->setReversedMapping([
+                'name' => 'field3',
+            ])
+            ->setFilesystem($this->getFS(
+                [
+                    ['Pete', 'tst1']
+                ]
+            ))
+            ->setTmpFileName('customer_tmp.csv')
+            ->setReversedConnection([
+                'id' => 'field4',
+            ])
+        ;
+
+        $action = new AssembleInput(
+            $this->getUnitBag([$unit1]),
+            $this->getConfig(),
+            new LanguageAdapter(),
+            $this->getInputResource(),
+            new ArrayMap(),
+            $this->getResourceHelper()
+        );
+        $action->process();
+    }
+
+    /**
+     * try to process units that do not match
+     * @expectedException \LogicException
+     * @expectedExceptionMessage Conflict is in the first row of given units. Will not process further.
+     */
+    public function testProcessWeirdCase1()
+    {
+        $unit1 = $this->getUnit('test')
+            ->setMapping([
+                'field1' => 'name',
+                'field2' => 'code',
+                'id' => 'id',
+            ])
+            ->setReversedMapping([
+                'name' => 'field1',
+            ])
+            ->setFilesystem($this->getFS(
+                [
+                    ['Pete', 'tst1', '1']
+                ]
+            ))
+            ->setTmpFileName('customer_tmp.csv')
+            ->setReversedConnection([
+                'tid' => 'id',
+            ])
+        ;
+
+        $unit2 = $this->getUnit('test2')
+            ->setMapping([
+                'field1' => 'name',
+                'field2' => 'code',
+                'parent_id' => 'id',
+            ])
+            ->setReversedMapping([
+                'name' => 'field1',
+            ])
+            ->setFilesystem($this->getFS(
+                [
+                    ['Pete', 'tst1', '2']
+                ]
+            ))
+            ->setTmpFileName('customer_tmp.csv')
+            ->setReversedConnection([
+                'tid' => 'parent_id',
+            ])
+        ;
+
+        $action = new AssembleInput(
+            $this->getUnitBag([$unit1, $unit2]),
+            $this->getConfig(),
+            new LanguageAdapter(),
+            $this->getInputResource(),
+            new ArrayMap(),
+            $this->getResourceHelper()
+        );
+        $action->process();
+    }
+
+    /**
+     * try to process 2 units one of which is empty
+     * nothing should happen here (not single addition nor exceptions)
+     */
+    public function testProcessWeirdCase2()
+    {
+        $unit1 = $this->getUnit('test')
+            ->setMapping([
+                'field1' => 'name',
+                'field2' => 'code',
+                'id' => 'id',
+            ])
+            ->setReversedMapping([
+                'name' => 'field1',
+            ])
+            ->setFilesystem($this->getFS(
+                [
+                    ['Pete', 'tst1', '1'],
+                    false
+                ]
+            ))
+            ->setTmpFileName('customer_tmp.csv')
+            ->setReversedConnection([
+                'tid' => 'id',
+            ])
+        ;
+
+        $unit2 = $this->getUnit('test2')
+            ->setMapping([
+                'field1' => 'name',
+                'field2' => 'code',
+                'parent_id' => 'id',
+            ])
+            ->setReversedMapping([
+                'name' => 'field1',
+            ])
+            ->setFilesystem($this->getFS(
+                [
+                    false
+                ]
+            ))
+            ->setTmpFileName('customer_tmp.csv')
+            ->setReversedConnection([
+                'tid' => 'parent_id',
+            ])
+        ;
+
+        $action = new AssembleInput(
+            $this->getUnitBag([$unit1, $unit2]),
+            $this->getConfig(),
+            new LanguageAdapter(),
+            $this->getInputResource(),
             new ArrayMap(),
             $this->getResourceHelper()
         );
