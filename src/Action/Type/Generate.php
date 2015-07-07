@@ -100,11 +100,11 @@ class Generate extends AbstractAction implements ActionInterface
         $period = (int) ceil($max/8);
         $pMin = max($min, $center - $period);
         $pMax = min($center+$period, $max);
-        $s1 = mt_rand(0,1);
+        $s1 = mt_rand(0, 1);
         if ($s1 == 0) {
             return mt_rand($pMin, $pMax);
         } else {
-            $s2 = mt_rand(0,1);
+            $s2 = mt_rand(0, 1);
             if (0 == $s2) {
                 return mt_rand($min, $pMin);
             } else {
