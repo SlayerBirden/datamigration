@@ -9,5 +9,5 @@ interface LanguageInterface
      * @param array $values
      * @return mixed
      */
-    public function evaluate($expression,  array $values = []);
+    public function evaluate($expression, array $values = []);
 }

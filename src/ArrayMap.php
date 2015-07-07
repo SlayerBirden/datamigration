@@ -11,7 +11,7 @@ class ArrayMap implements MapInterface
     /**
      * @var array
      */
-    protected $lastFed;
+    protected $lastFed = [];
     /**
      * @var bool
      */
@@ -84,7 +84,7 @@ class ArrayMap implements MapInterface
     public function clear()
     {
         $this->state = [];
-        $this->lastFed = null;
+        $this->lastFed = [];
     }
 
     /**

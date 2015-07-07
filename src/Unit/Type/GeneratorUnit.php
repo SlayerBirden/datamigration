@@ -7,7 +7,7 @@ use Maketok\DataMigration\Unit\GenerateUnitInterface;
 class GeneratorUnit extends ImportFileUnit implements GenerateUnitInterface
 {
     /**
-     * @var \SplFixedArray
+     * @var array
      */
     protected $generatorMapping = [];
     /**

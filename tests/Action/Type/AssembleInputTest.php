@@ -7,7 +7,6 @@ use Maketok\DataMigration\ArrayMap;
 use Maketok\DataMigration\Expression\LanguageAdapter;
 use Maketok\DataMigration\Input\InputResourceInterface;
 use Maketok\DataMigration\MapInterface;
-use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
 use Maketok\DataMigration\Unit\Type\ExportFileUnit;
 
@@ -22,29 +21,28 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        $this->action = new AssembleInput(
-            $this->getUnitBag(),
+        $this->action = $this->getAction();
+    }
+
+    /**
+     * @param array $units
+     * @param array $inputExpectations
+     * @return AssembleInput
+     */
+    public function getAction($units = [], $inputExpectations = [])
+    {
+        return new AssembleInput(
+            $this->getUnitBag($units),
             $this->getConfig(),
             new LanguageAdapter(),
-            $this->getInputResource(),
-            new ArrayMap(),
-            $this->getResourceHelper()
+            $this->getInputResource($inputExpectations),
+            new ArrayMap()
         );
     }
 
     public function testGetCode()
     {
         $this->assertEquals('assemble_input', $this->action->getCode());
-    }
-
-    /**
-     * @return ResourceHelperInterface
-     */
-    protected function getResourceHelper()
-    {
-        $rh = $this->getMockBuilder('\Maketok\DataMigration\Storage\Db\ResourceHelperInterface')
-            ->getMock();
-        return $rh;
     }
 
     /**
@@ -91,6 +89,16 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
     public function testProcess()
     {
         $unit1 = $this->getUnit('customer')
+            ->setReversedMapping([
+                'email' => 'email',
+                'name' => function ($map) {
+                    return $map['fname'] . ' ' . $map['lname'];
+                },
+                'age' => 'age',
+            ])
+            ->setReversedConnection([
+                'customer_id' => 'id',
+            ])
             ->setMapping([
                 'id' => 'id',
                 'fname' => function ($map) {
@@ -102,13 +110,6 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
                     return $lname;
                 },
                 'email' => 'email',
-                'age' => 'age',
-            ])
-            ->setReversedMapping([
-                'email' => 'email',
-                'name' => function ($map) {
-                    return $map['fname'] . ' ' . $map['lname'];
-                },
                 'age' => 'age',
             ])
             ->setFilesystem($this->getFS(
@@ -125,20 +126,20 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
                 return $oldmap->offsetGet('email') != $map->offsetGet('email');
             })
             ->setTmpFileName('customer_tmp.csv')
-            ->setReversedConnection([
-                'customer_id' => 'id',
-            ])
         ;
         $unit2 = $this->getUnit('address')
+            ->setReversedMapping([
+                'addr_city' => 'city',
+                'addr_street' => 'street',
+            ])
+            ->setReversedConnection([
+                'customer_id' => 'parent_id',
+            ])
             ->setMapping([
                 'id' => 'addr_id',
                 'street' => 'addr_street',
                 'city' => 'addr_city',
                 'parent_id' => 'id',
-            ])
-            ->setReversedMapping([
-                'addr_city' => 'city',
-                'addr_street' => 'street',
             ])
             ->addContribution(function (MapInterface $map) {
                 $map->incr('addr_id', 1);
@@ -154,9 +155,6 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
                 ]
             ))
             ->setTmpFileName('address_tmp.csv')
-            ->setReversedConnection([
-                'customer_id' => 'parent_id',
-            ])
         ;
         $expected = [
             [['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr_city' => 'Chicago',
@@ -171,14 +169,7 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
                 'addr_street' => 'Hollywood']],
         ];
 
-        $action = new AssembleInput(
-            $this->getUnitBag([$unit1, $unit2]),
-            $this->getConfig(),
-            new LanguageAdapter(),
-            $this->getInputResource($expected),
-            new ArrayMap(),
-            $this->getResourceHelper()
-        );
+        $action = $this->getAction([$unit1, $unit2], $expected);
         $action->process();
     }
 
@@ -188,6 +179,16 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
     public function testProcess2()
     {
         $unit1 = $this->getUnit('customer')
+            ->setReversedMapping([
+                'email' => 'email',
+                'name' => function ($map) {
+                    return $map['fname'] . ' ' . $map['lname'];
+                },
+                'age' => 'age',
+            ])
+            ->setReversedConnection([
+                'customer_id' => 'id',
+            ])
             ->setMapping([
                 'id' => 'id',
                 'fname' => function ($map) {
@@ -201,13 +202,6 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
                 'email' => 'email',
                 'age' => 'age',
             ])
-            ->setReversedMapping([
-                'email' => 'email',
-                'name' => function ($map) {
-                    return $map['fname'] . ' ' . $map['lname'];
-                },
-                'age' => 'age',
-            ])
             ->setFilesystem($this->getFS(
                 [
                     [1, 'Olaf', 'Stone', 'tst1@example.com', 30],
@@ -216,20 +210,20 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
                 ]
             ))
             ->setTmpFileName('customer_tmp.csv')
-            ->setReversedConnection([
-                'customer_id' => 'id',
-            ])
         ;
         $unit2 = $this->getUnit('address')
+            ->setReversedMapping([
+                'addr_city' => 'city',
+                'addr_street' => 'street',
+            ])
+            ->setReversedConnection([
+                'customer_id' => 'parent_id',
+            ])
             ->setMapping([
                 'id' => 'addr_id',
                 'street' => 'addr_street',
                 'city' => 'addr_city',
                 'parent_id' => 'id',
-            ])
-            ->setReversedMapping([
-                'addr_city' => 'city',
-                'addr_street' => 'street',
             ])
             ->addContribution(function (MapInterface $map) {
                 $map->incr('addr_id', 1);
@@ -245,9 +239,6 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
                 ]
             ))
             ->setTmpFileName('address_tmp.csv')
-            ->setReversedConnection([
-                'customer_id' => 'parent_id',
-            ])
         ;
         $expected = [
             [['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr_city' => 'Chicago',
@@ -256,14 +247,7 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
                 'addr_street' => '3300 St. George, Suite 300']],
         ];
 
-        $action = new AssembleInput(
-            $this->getUnitBag([$unit1, $unit2]),
-            $this->getConfig(),
-            new LanguageAdapter(),
-            $this->getInputResource($expected),
-            new ArrayMap(),
-            $this->getResourceHelper()
-        );
+        $action = $this->getAction([$unit1, $unit2], $expected);
         $action->process();
     }
 
@@ -275,12 +259,15 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
     public function testProcessException1()
     {
         $unit1 = $this->getUnit('test')
+            ->setReversedMapping([
+                'name' => 'field3',
+            ])
+            ->setReversedConnection([
+                'id' => 'field4',
+            ])
             ->setMapping([
                 'field1' => 'name',
                 'field2' => 'code',
-            ])
-            ->setReversedMapping([
-                'name' => 'field3',
             ])
             ->setFilesystem($this->getFS(
                 [
@@ -288,19 +275,9 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
                 ]
             ))
             ->setTmpFileName('customer_tmp.csv')
-            ->setReversedConnection([
-                'id' => 'field4',
-            ])
         ;
 
-        $action = new AssembleInput(
-            $this->getUnitBag([$unit1]),
-            $this->getConfig(),
-            new LanguageAdapter(),
-            $this->getInputResource(),
-            new ArrayMap(),
-            $this->getResourceHelper()
-        );
+        $action = $this->getAction([$unit1]);
         $action->process();
     }
 
@@ -312,13 +289,16 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
     public function testProcessWeirdCase1()
     {
         $unit1 = $this->getUnit('test')
+            ->setReversedMapping([
+                'name' => 'field1',
+            ])
+            ->setReversedConnection([
+                'tid' => 'id',
+            ])
             ->setMapping([
                 'field1' => 'name',
                 'field2' => 'code',
                 'id' => 'id',
-            ])
-            ->setReversedMapping([
-                'name' => 'field1',
             ])
             ->setFilesystem($this->getFS(
                 [
@@ -326,19 +306,19 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
                 ]
             ))
             ->setTmpFileName('customer_tmp.csv')
-            ->setReversedConnection([
-                'tid' => 'id',
-            ])
         ;
 
         $unit2 = $this->getUnit('test2')
+            ->setReversedMapping([
+                'name' => 'field1',
+            ])
+            ->setReversedConnection([
+                'tid' => 'parent_id',
+            ])
             ->setMapping([
                 'field1' => 'name',
                 'field2' => 'code',
                 'parent_id' => 'id',
-            ])
-            ->setReversedMapping([
-                'name' => 'field1',
             ])
             ->setFilesystem($this->getFS(
                 [
@@ -346,19 +326,9 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
                 ]
             ))
             ->setTmpFileName('customer_tmp.csv')
-            ->setReversedConnection([
-                'tid' => 'parent_id',
-            ])
         ;
 
-        $action = new AssembleInput(
-            $this->getUnitBag([$unit1, $unit2]),
-            $this->getConfig(),
-            new LanguageAdapter(),
-            $this->getInputResource(),
-            new ArrayMap(),
-            $this->getResourceHelper()
-        );
+        $action = $this->getAction([$unit1, $unit2]);
         $action->process();
     }
 
@@ -369,13 +339,16 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
     public function testProcessWeirdCase2()
     {
         $unit1 = $this->getUnit('test')
+            ->setReversedMapping([
+                'name' => 'field1',
+            ])
+            ->setReversedConnection([
+                'tid' => 'id',
+            ])
             ->setMapping([
                 'field1' => 'name',
                 'field2' => 'code',
                 'id' => 'id',
-            ])
-            ->setReversedMapping([
-                'name' => 'field1',
             ])
             ->setFilesystem($this->getFS(
                 [
@@ -384,19 +357,19 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
                 ]
             ))
             ->setTmpFileName('customer_tmp.csv')
-            ->setReversedConnection([
-                'tid' => 'id',
-            ])
         ;
 
         $unit2 = $this->getUnit('test2')
+            ->setReversedMapping([
+                'name' => 'field1',
+            ])
+            ->setReversedConnection([
+                'tid' => 'parent_id',
+            ])
             ->setMapping([
                 'field1' => 'name',
                 'field2' => 'code',
                 'parent_id' => 'id',
-            ])
-            ->setReversedMapping([
-                'name' => 'field1',
             ])
             ->setFilesystem($this->getFS(
                 [
@@ -404,19 +377,9 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
                 ]
             ))
             ->setTmpFileName('customer_tmp.csv')
-            ->setReversedConnection([
-                'tid' => 'parent_id',
-            ])
         ;
 
-        $action = new AssembleInput(
-            $this->getUnitBag([$unit1, $unit2]),
-            $this->getConfig(),
-            new LanguageAdapter(),
-            $this->getInputResource(),
-            new ArrayMap(),
-            $this->getResourceHelper()
-        );
+        $action = $this->getAction([$unit1, $unit2]);
         $action->process();
     }
 

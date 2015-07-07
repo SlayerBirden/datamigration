@@ -32,9 +32,9 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
      */
     protected function getResourceHelper()
     {
-        $rh = $this->getMockBuilder('\Maketok\DataMigration\Storage\Db\ResourceHelperInterface')
+        $helper = $this->getMockBuilder('\Maketok\DataMigration\Storage\Db\ResourceHelperInterface')
             ->getMock();
-        return $rh;
+        return $helper;
     }
 
     /**

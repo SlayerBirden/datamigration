@@ -77,7 +77,7 @@ class AssembleInput extends AbstractAction implements ActionInterface
         InputResourceInterface $input,
         MapInterface $map
     ) {
-        parent::__construct($bag, $config, $language);
+        parent::__construct($bag, $config);
         $this->input = $input;
         $this->map = $map;
         $this->language = $language;

@@ -20,10 +20,10 @@ interface ResourceInterface
      * Delete rows in table using PK from temp table
      * @param string $deleteTable
      * @param string $tmpTable
-     * @param string|string[] $pk
+     * @param string|string[] $primaryKey
      * @return bool
      */
-    public function deleteUsingTempPK($deleteTable, $tmpTable, $pk = 'id');
+    public function deleteUsingTempPK($deleteTable, $tmpTable, $primaryKey = 'id');
 
     /**
      * Load data from file to table

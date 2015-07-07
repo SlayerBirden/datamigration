@@ -64,9 +64,9 @@ class ImportDbUnit extends ImportFileUnit implements ImportDbUnitInterface
     /**
      * {@inheritdoc}
      */
-    public function setPk($pk)
+    public function setPk($definition)
     {
-        $this->primaryKey = $pk;
+        $this->primaryKey = $definition;
         return $this;
     }
 }

@@ -21,10 +21,10 @@ interface ExportDbUnitInterface extends ImportDbUnitInterface
     public function getReverseMoveDirections();
 
     /**
-     * @param array $reverseMoveDirections
+     * @param array $directions
      * @return $this
      */
-    public function setReverseMoveDirections(array $reverseMoveDirections);
+    public function setReverseMoveDirections(array $directions);
 
     /**
      * @return array
@@ -32,8 +32,8 @@ interface ExportDbUnitInterface extends ImportDbUnitInterface
     public function getReverseMoveConditions();
 
     /**
-     * @param array $reverseMoveConditions
+     * @param array $conditions
      * @return $this
      */
-    public function setReverseMoveConditions($reverseMoveConditions);
+    public function setReverseMoveConditions($conditions);
 }
