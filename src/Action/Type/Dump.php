@@ -4,12 +4,19 @@ namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ActionInterface;
 use Maketok\DataMigration\Action\Exception\WrongContextException;
+use Maketok\DataMigration\Unit\ExportFileUnitInterface;
+use Maketok\DataMigration\Unit\UnitBagInterface;
 
 /**
  * Dump data from tmp table to tmp file
  */
 class Dump extends AbstractDbAction implements ActionInterface
 {
+    /**
+     * @var UnitBagInterface|ExportFileUnitInterface[]
+     */
+    protected $bag;
+
     /**
      * {@inheritdoc}
      * @throws WrongContextException

@@ -4,12 +4,19 @@ namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ActionInterface;
 use Maketok\DataMigration\Action\Exception\WrongContextException;
+use Maketok\DataMigration\Unit\ImportDbUnitInterface;
+use Maketok\DataMigration\Unit\UnitBagInterface;
 
 /**
  * Move data data from tmp table to main table
  */
 class Move extends AbstractDbAction implements ActionInterface
 {
+    /**
+     * @var UnitBagInterface|ImportDbUnitInterface[]
+     */
+    protected $bag;
+
     /**
      * {@inheritdoc}
      * @throws WrongContextException

@@ -9,19 +9,6 @@ use Maketok\DataMigration\Unit\UnitBagInterface;
 trait ServiceGetterTrait
 {
     /**
-     * @param string $code
-     * @return AbstractUnit
-     */
-    protected function getUnit($code)
-    {
-        /** @var \PHPUnit_Framework_TestCase $this */
-        $unit = $this->getMockBuilder('\Maketok\DataMigration\Unit\AbstractUnit')
-            ->setConstructorArgs([$code])
-            ->getMockForAbstractClass();
-        return $unit;
-    }
-
-    /**
      * @param AbstractUnit[] $units
      * @return UnitBagInterface
      */
@@ -34,6 +21,16 @@ trait ServiceGetterTrait
         $unitBag->expects($this->any())
             ->method('getIterator')
             ->willReturn(new \ArrayIterator($units));
+        $unitBag->expects($this->any())
+            ->method('count')
+            ->willReturn(count($units));
+        $map = [];
+        foreach ($units as $unit) {
+            $map[] = [$unit->getCode(), $unit];
+        }
+        $unitBag->expects($this->any())
+            ->method('getUnitByCode')
+            ->willReturnMap($map);
         $unitBag->expects($this->any())
             ->method('count')
             ->willReturn(count($units));

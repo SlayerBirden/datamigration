@@ -8,6 +8,7 @@ use Maketok\DataMigration\Input\InputResourceInterface;
 use Maketok\DataMigration\MapInterface;
 use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
+use Maketok\DataMigration\Unit\Type\ImportFileUnit;
 
 class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
 {
@@ -34,6 +35,15 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
         $rh = $this->getMockBuilder('\Maketok\DataMigration\Storage\Db\ResourceHelperInterface')
             ->getMock();
         return $rh;
+    }
+
+    /**
+     * @param string $code
+     * @return ImportFileUnit
+     */
+    public function getUnit($code)
+    {
+        return new ImportFileUnit($code);
     }
 
     /**

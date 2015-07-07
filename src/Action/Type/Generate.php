@@ -7,6 +7,7 @@ use Maketok\DataMigration\Action\ActionInterface;
 use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Action\Exception\WrongContextException;
 use Maketok\DataMigration\Expression\LanguageInterface;
+use Maketok\DataMigration\Unit\GenerateUnitInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 
 /**
@@ -14,6 +15,10 @@ use Maketok\DataMigration\Unit\UnitBagInterface;
  */
 class Generate extends AbstractAction implements ActionInterface
 {
+    /**
+     * @var UnitBagInterface|GenerateUnitInterface[]
+     */
+    protected $bag;
     /**
      * @var int
      */
@@ -26,6 +31,10 @@ class Generate extends AbstractAction implements ActionInterface
      * @var array
      */
     private $buffer = [];
+    /**
+     * @var LanguageInterface
+     */
+    private $language;
 
     /**
      * @param UnitBagInterface $bag
@@ -41,9 +50,10 @@ class Generate extends AbstractAction implements ActionInterface
         Generator $generator,
         $count
     ) {
-        parent::__construct($bag, $config, $language);
+        parent::__construct($bag, $config);
         $this->count = $count;
         $this->generator = $generator;
+        $this->language = $language;
     }
 
     /**
@@ -68,7 +78,7 @@ class Generate extends AbstractAction implements ActionInterface
                             return $el;
                         }
                     }, $unit->getGeneratorMapping());
-                    $this->buffer[$unit->getTable()] = $row;
+                    $this->buffer[$unit->getCode()] = $row;
                     $unit->getFilesystem()->writeRow($row);
                     $rnd--;
                 }
@@ -124,7 +134,7 @@ class Generate extends AbstractAction implements ActionInterface
                 throw new WrongContextException(
                     sprintf(
                         "Can not use generation with unit %s. No generation mapping found.",
-                        $unit->getTable()
+                        $unit->getCode()
                     )
                 );
             }

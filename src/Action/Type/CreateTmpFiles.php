@@ -8,7 +8,7 @@ use Maketok\DataMigration\Expression\LanguageInterface;
 use Maketok\DataMigration\Input\InputResourceInterface;
 use Maketok\DataMigration\MapInterface;
 use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
-use Maketok\DataMigration\Unit\AbstractUnit;
+use Maketok\DataMigration\Unit\ImportFileUnitInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 
 /**
@@ -16,6 +16,10 @@ use Maketok\DataMigration\Unit\UnitBagInterface;
  */
 class CreateTmpFiles extends AbstractAction implements ActionInterface
 {
+    /**
+     * @var UnitBagInterface|ImportFileUnitInterface[]
+     */
+    protected $bag;
     /**
      * @var InputResourceInterface
      */
@@ -36,6 +40,15 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
      * @var array
      */
     private $buffer = [];
+    /**
+     * is last processed entity valid
+     * @var bool
+     */
+    private $isValid = true;
+    /**
+     * @var LanguageInterface
+     */
+    protected $language;
 
     /**
      * @param UnitBagInterface $bag
@@ -57,6 +70,7 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
         $this->input = $input;
         $this->map = $map;
         $this->helperResource = $helperResource;
+        $this->language = $language;
     }
 
     /**
@@ -66,51 +80,62 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
     {
         // TODO add hashtables
         $this->start();
-        $valid = true;
         while (($row = $this->input->get()) !== false) {
             if ($this->map->isFresh($row)) {
                 $this->map->feed($row);
             }
-            $shouldUnfreeze = true;
-            foreach ($this->bag as $unit) {
-                $isEntity = $unit->getIsEntityCondition();
-                if (!isset($this->oldmap)) {
-                    $shouldDump = true;
-                } elseif (empty($unit)) {
-                    $shouldDump = true;
-                } elseif (empty($isEntity)) {
-                    $shouldDump = true;
-                } elseif (is_callable($isEntity) || is_string($isEntity)) {
-                    $shouldDump = $this->language->evaluate($isEntity, [
-                        'map' => $this->map,
-                        'oldmap' => $this->oldmap,
-                        'resource' => $this->helperResource,
-                    ]);
-                } else {
-                    throw new \LogicException(
-                        sprintf("Can not understand is Entity Condition for %s unit.", $unit->getCode())
-                    );
-                }
-                if ($shouldDump) {
-                    $this->dumpBuffer($valid, $unit);
-                }
-                $shouldUnfreeze &= $shouldDump;
-            }
-            // if all Units were dumped this row
-            if ($shouldUnfreeze) {
-                $this->map->unFreeze();
-            }
-            $valid = true;
-            foreach ($this->bag as $unit) {
-                $this->processAdditions($unit);
-                $valid &= $this->validate($unit);
-                $this->writeRowBuffered($unit);
-                $this->oldmap = clone $this->map;
-            }
-            $this->map->freeze();
+            $this->processDump();
+            $this->processWrite();
         }
-        $this->dumpBuffer($valid);
+        $this->dumpBuffer();
         $this->close();
+    }
+
+    /**
+     * dump buffered row (if needed)
+     */
+    private function processDump()
+    {
+        $shouldUnfreeze = true;
+        foreach ($this->bag as $unit) {
+            $isEntity = $unit->getIsEntityCondition();
+            if (!isset($this->oldmap) || empty($unit) || empty($isEntity)) {
+                $shouldDump = true;
+            } elseif (is_callable($isEntity) || is_string($isEntity)) {
+                $shouldDump = $this->language->evaluate($isEntity, [
+                    'map' => $this->map,
+                    'oldmap' => $this->oldmap,
+                    'resource' => $this->helperResource,
+                ]);
+            } else {
+                throw new \LogicException(
+                    sprintf("Can not understand is Entity Condition for %s unit.", $unit->getCode())
+                );
+            }
+            if ($shouldDump) {
+                $this->dumpBuffer($unit);
+            }
+            $shouldUnfreeze &= $shouldDump;
+        }
+        // if all Units were dumped this row
+        if ($shouldUnfreeze) {
+            $this->map->unFreeze();
+        }
+    }
+
+    /**
+     * write row to buffer
+     */
+    private function processWrite()
+    {
+        $this->isValid = true;
+        foreach ($this->bag as $unit) {
+            $this->processAdditions($unit);
+            $this->isValid &= $this->validate($unit);
+            $this->writeRowBuffered($unit);
+            $this->oldmap = clone $this->map;
+        }
+        $this->map->freeze();
     }
 
     /**
@@ -135,9 +160,9 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
     }
 
     /**
-     * @param AbstractUnit $unit
+     * @param ImportFileUnitInterface $unit
      */
-    private function processAdditions(AbstractUnit $unit)
+    private function processAdditions(ImportFileUnitInterface $unit)
     {
         foreach ($unit->getContributions() as $contribution) {
             $this->language->evaluate($contribution, [
@@ -148,9 +173,9 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
     }
 
     /**
-     * @param AbstractUnit $unit
+     * @param ImportFileUnitInterface $unit
      */
-    private function writeRowBuffered(AbstractUnit $unit)
+    private function writeRowBuffered(ImportFileUnitInterface $unit)
     {
         $shouldAdd = true;
         foreach ($unit->getWriteConditions() as $condition) {
@@ -173,10 +198,10 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
     }
 
     /**
-     * @param $unit
+     * @param ImportFileUnitInterface $unit
      * @return bool
      */
-    private function validate(AbstractUnit $unit)
+    private function validate(ImportFileUnitInterface $unit)
     {
         $valid = true;
         foreach ($unit->getValidationRules() as $validationRule) {
@@ -192,32 +217,28 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
     }
 
     /**
-     * @param AbstractUnit $unit
-     * @param bool $valid
+     * @param ImportFileUnitInterface $unit
      */
-    private function dumpBuffer($valid, AbstractUnit $unit = null)
+    private function dumpBuffer(ImportFileUnitInterface $unit = null)
     {
-        if ($valid || $this->config->offsetGet('ignore_validation')) {
-            foreach ($this->buffer as $key => $dataArray) {
-                if ($unit && $key != $unit->getCode()) {
-                    continue;
-                }
-                $handler = false;
-                if ($unit) {
-                    $handler = $unit->getFilesystem();
-                } else {
-                    foreach ($this->bag as $u) {
-                        if ($key == $u->getCode()) {
-                            $handler = $u->getFilesystem();
-                            break 1;
-                        }
-                    }
-                }
-                if ($handler) {
-                    $handler->writeRow(array_values($dataArray));
-                }
-                unset($this->buffer[$key]);
+        if (!$this->isValid && !$this->config->offsetGet('ignore_validation')) {
+            return;
+        }
+        foreach ($this->buffer as $key => $dataArray) {
+            if ($unit && $key != $unit->getCode()) {
+                continue;
             }
+            $handler = false;
+            if ($unit) {
+                $handler = $unit->getFilesystem();
+            } elseif (($tmpUnit = $this->bag->getUnitByCode($key)) !== false) {
+                /** @var ImportFileUnitInterface $tmpUnit */
+                $handler = $tmpUnit->getFilesystem();
+            }
+            if (is_object($handler)) {
+                $handler->writeRow(array_values($dataArray));
+            }
+            unset($this->buffer[$key]);
         }
     }
 

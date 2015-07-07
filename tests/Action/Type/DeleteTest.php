@@ -4,6 +4,7 @@ namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Expression\LanguageAdapter;
 use Maketok\DataMigration\Storage\Db\ResourceInterface;
+use Maketok\DataMigration\Unit\Type\ImportDbUnit;
 
 class DeleteTest extends \PHPUnit_Framework_TestCase
 {
@@ -14,7 +15,6 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
         $action = new Delete(
             $this->getUnitBag(),
             $this->getConfig(),
-            new LanguageAdapter(),
             $this->getResource()
         );
         $this->assertEquals('delete', $action->getCode());
@@ -34,12 +34,20 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
         return $resource;
     }
 
+    /**
+     * @param string $code
+     * @return ImportDbUnit
+     */
+    public function getUnit($code)
+    {
+        return new ImportDbUnit($code);
+    }
+
     public function testProcess()
     {
         $action = new Delete(
             $this->getUnitBag([$this->getUnit('tmp')->setTmpTable('tmp1')]),
             $this->getConfig(),
-            new LanguageAdapter(),
             $this->getResource(true)
         );
         $action->process();
@@ -53,7 +61,6 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
         $action = new Delete(
             $this->getUnitBag([$this->getUnit('tmp')]),
             $this->getConfig(),
-            new LanguageAdapter(),
             $this->getResource()
         );
         $action->process();

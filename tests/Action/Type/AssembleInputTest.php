@@ -9,6 +9,7 @@ use Maketok\DataMigration\Input\InputResourceInterface;
 use Maketok\DataMigration\MapInterface;
 use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
+use Maketok\DataMigration\Unit\Type\ExportFileUnit;
 
 class AssembleInputTest extends \PHPUnit_Framework_TestCase
 {
@@ -73,6 +74,15 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
             ->method('readRow');
         call_user_func_array([$method, 'willReturnOnConsecutiveCalls'], $returns);
         return $filesystem;
+    }
+
+    /**
+     * @param string $code
+     * @return ExportFileUnit
+     */
+    public function getUnit($code)
+    {
+        return new ExportFileUnit($code);
     }
 
     /**

@@ -3,14 +3,13 @@
 namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ConfigInterface;
-use Maketok\DataMigration\Expression\LanguageInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
-use Maketok\DataMigration\Unit\AbstractUnit;
+use Maketok\DataMigration\Unit\UnitInterface;
 
 class AbstractAction
 {
     /**
-     * @var UnitBagInterface|AbstractUnit[]
+     * @var UnitBagInterface|UnitInterface[]
      */
     protected $bag;
     /**
@@ -21,32 +20,26 @@ class AbstractAction
      * @var \DateTime
      */
     protected $date;
-    /**
-     * @var LanguageInterface
-     */
-    protected $language;
+
 
     /**
      * @param UnitBagInterface $bag
      * @param ConfigInterface $config
-     * @param LanguageInterface $language
      */
     public function __construct(
         UnitBagInterface $bag,
-        ConfigInterface $config,
-        LanguageInterface $language
+        ConfigInterface $config
     ) {
         $this->bag = $bag;
         $this->config = $config;
         $this->date = new \DateTime();
-        $this->language = $language;
     }
 
     /**
-     * @param AbstractUnit $unit
+     * @param UnitInterface $unit
      * @return string
      */
-    public function getTmpFileName(AbstractUnit $unit)
+    public function getTmpFileName(UnitInterface $unit)
     {
         return rtrim($this->config->offsetGet('tmp_folder'), '/') .
         '/' .
@@ -74,10 +67,10 @@ class AbstractAction
     }
 
     /**
-     * @param AbstractUnit $unit
+     * @param UnitInterface $unit
      * @return string
      */
-    public function getTmpTableName(AbstractUnit $unit)
+    public function getTmpTableName(UnitInterface $unit)
     {
         return sprintf(
             $this->config->offsetGet('tmp_table_mask'),

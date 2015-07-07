@@ -10,8 +10,7 @@ use Maketok\DataMigration\Action\Exception\WrongContextException;
 use Maketok\DataMigration\Expression\LanguageInterface;
 use Maketok\DataMigration\Input\InputResourceInterface;
 use Maketok\DataMigration\MapInterface;
-use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
-use Maketok\DataMigration\Unit\AbstractUnit;
+use Maketok\DataMigration\Unit\ExportFileUnitInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 
 /**
@@ -23,6 +22,10 @@ class AssembleInput extends AbstractAction implements ActionInterface
     const FLOW_ABORT = 200;
 
     /**
+     * @var UnitBagInterface|ExportFileUnitInterface[]
+     */
+    protected $bag;
+    /**
      * @var InputResourceInterface
      */
     private $input;
@@ -30,10 +33,6 @@ class AssembleInput extends AbstractAction implements ActionInterface
      * @var MapInterface
      */
     private $map;
-    /**
-     * @var ResourceHelperInterface
-     */
-    private $resourceHelper;
     /**
      * Current row being processed
      * @var array
@@ -59,6 +58,10 @@ class AssembleInput extends AbstractAction implements ActionInterface
      * @var string[]
      */
     private $finished = [];
+    /**
+     * @var LanguageInterface
+     */
+    protected $language;
 
     /**
      * @param UnitBagInterface $bag
@@ -66,20 +69,18 @@ class AssembleInput extends AbstractAction implements ActionInterface
      * @param LanguageInterface $language
      * @param InputResourceInterface $input
      * @param MapInterface $map
-     * @param ResourceHelperInterface $resourceHelper
      */
     public function __construct(
         UnitBagInterface $bag,
         ConfigInterface $config,
         LanguageInterface $language,
         InputResourceInterface $input,
-        MapInterface $map,
-        ResourceHelperInterface $resourceHelper
+        MapInterface $map
     ) {
         parent::__construct($bag, $config, $language);
         $this->input = $input;
         $this->map = $map;
-        $this->resourceHelper = $resourceHelper;
+        $this->language = $language;
     }
 
     /**
@@ -227,11 +228,11 @@ class AssembleInput extends AbstractAction implements ActionInterface
     }
 
     /**
-     * @param AbstractUnit $unit
+     * @param ExportFileUnitInterface $unit
      * @return array|bool
      * @throws WrongContextException
      */
-    private function readRow(AbstractUnit $unit)
+    private function readRow(ExportFileUnitInterface $unit)
     {
         $row = $unit->getFilesystem()->readRow();
         if (is_array($row)) {

@@ -4,6 +4,7 @@ namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Expression\LanguageAdapter;
 use Maketok\DataMigration\Storage\Db\ResourceInterface;
+use Maketok\DataMigration\Unit\Type\ExportDbUnit;
 
 class ReverseMoveTest extends \PHPUnit_Framework_TestCase
 {
@@ -14,10 +15,18 @@ class ReverseMoveTest extends \PHPUnit_Framework_TestCase
         $action = new ReverseMove(
             $this->getUnitBag(),
             $this->getConfig(),
-            new LanguageAdapter(),
             $this->getResource()
         );
         $this->assertEquals('reverse_move', $action->getCode());
+    }
+
+    /**
+     * @param string $code
+     * @return ExportDbUnit
+     */
+    public function getUnit($code)
+    {
+        return new ExportDbUnit($code);
     }
 
     /**
@@ -41,7 +50,6 @@ class ReverseMoveTest extends \PHPUnit_Framework_TestCase
         $action = new ReverseMove(
             $this->getUnitBag([$unit]),
             $this->getConfig(),
-            new LanguageAdapter(),
             $this->getResource(true)
         );
         $action->process();

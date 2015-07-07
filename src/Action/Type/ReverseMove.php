@@ -3,12 +3,19 @@
 namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ActionInterface;
+use Maketok\DataMigration\Unit\ExportDbUnitInterface;
+use Maketok\DataMigration\Unit\UnitBagInterface;
 
 /**
  * Move data from main table to tmp one
  */
 class ReverseMove extends AbstractDbAction implements ActionInterface
 {
+    /**
+     * @var UnitBagInterface|ExportDbUnitInterface[]
+     */
+    protected $bag;
+
     /**
      * {@inheritdoc}
      */

@@ -5,6 +5,7 @@ namespace Maketok\DataMigration\Action\Type;
 use Faker\Generator;
 use Maketok\DataMigration\Expression\LanguageAdapter;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
+use Maketok\DataMigration\Unit\Type\GeneratorUnit;
 
 class GenerateTest extends \PHPUnit_Framework_TestCase
 {
@@ -24,6 +25,15 @@ class GenerateTest extends \PHPUnit_Framework_TestCase
             new Generator(),
             2
         );
+    }
+
+    /**
+     * @param string $code
+     * @return GeneratorUnit
+     */
+    public function getUnit($code)
+    {
+        return new GeneratorUnit($code);
     }
 
     public function testGetCode()
