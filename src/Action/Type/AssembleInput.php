@@ -171,7 +171,12 @@ class AssembleInput extends AbstractAction implements ActionInterface
                 unset($this->connectBuffer[$purgeKey]);
             }
             if (!empty($this->connectBuffer)) {
-                // todo notify input is incorrect
+                throw new \LogicException(
+                    sprintf(
+                        "Orphaned rows in some of the units %s",
+                        json_encode(array_keys($this->connectBuffer))
+                    )
+                );
             }
             throw new FlowRegulationException("", self::FLOW_CONTINUE);
         }
@@ -215,9 +220,10 @@ class AssembleInput extends AbstractAction implements ActionInterface
                 continue;
             }
             $unitData = $this->processed[$unit->getCode()];
-            $toAdd[$unit->getCode()] = array_map(function ($var) use ($unitData) {
+            $toAdd[$unit->getCode()] = array_map(function ($var) use ($unitData, $unit) {
                 return $this->language->evaluate($var, [
                     'map' => $this->map,
+                    'hashmaps' => $unit->getHashmaps(),
                 ]);
             }, $unit->getReversedMapping());
             $this->lastAdded[$unit->getCode()] = $this->processed[$unit->getCode()];

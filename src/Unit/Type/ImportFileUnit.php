@@ -3,6 +3,7 @@
 namespace Maketok\DataMigration\Unit\Type;
 
 use Maketok\DataMigration\Action\Exception\WrongContextException;
+use Maketok\DataMigration\HashmapInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
 use Maketok\DataMigration\Unit\AbstractUnit;
 use Maketok\DataMigration\Unit\ImportFileUnitInterface;
@@ -37,6 +38,10 @@ class ImportFileUnit extends AbstractUnit implements ImportFileUnitInterface
      * @var ResourceInterface
      */
     protected $filesystem;
+    /**
+     * @var HashmapInterface[]
+     */
+    protected $hashmaps;
 
     /**
      * {@inheritdoc}
@@ -167,11 +172,24 @@ class ImportFileUnit extends AbstractUnit implements ImportFileUnitInterface
     public function __destruct()
     {
         if (isset($this->filesystem) && $this->filesystem->isActive()) {
-            try {
-                $this->filesystem->close();
-            } catch (\Exception $e) {
-                // todo log exception
-            }
+            $this->filesystem->close();
         }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function addHashmap(HashmapInterface $hashmap)
+    {
+        $this->hashmaps[$hashmap->getCode()] = $hashmap;
+        return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getHashmaps()
+    {
+        return $this->hashmaps;
     }
 }

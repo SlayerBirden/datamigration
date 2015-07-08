@@ -2,6 +2,7 @@
 
 namespace Maketok\DataMigration\Unit;
 
+use Maketok\DataMigration\HashmapInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
 
 interface ImportFileUnitInterface extends UnitInterface
@@ -95,4 +96,15 @@ interface ImportFileUnitInterface extends UnitInterface
      * @return self
      */
     public function setFilesystem(ResourceInterface $filesystem);
+
+    /**
+     * @param HashmapInterface $hashmap
+     * @return self
+     */
+    public function addHashmap(HashmapInterface $hashmap);
+
+    /**
+     * @return array|HashmapInterface[]
+     */
+    public function getHashmaps();
 }

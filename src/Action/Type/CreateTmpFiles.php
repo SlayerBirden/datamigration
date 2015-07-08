@@ -78,7 +78,6 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
      */
     public function process()
     {
-        // TODO add hashtables
         $this->start();
         while (($row = $this->input->get()) !== false) {
             if ($this->map->isFresh($row)) {
@@ -168,6 +167,7 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
             $this->language->evaluate($contribution, [
                 'map' => $this->map,
                 'resource' => $this->helperResource,
+                'hashmaps' => $unit->getHashmaps(),
             ]);
         }
     }
@@ -182,16 +182,18 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
             $shouldAdd = $this->language->evaluate($condition, [
                 'map' => $this->map,
                 'resource' => $this->helperResource,
+                'hashmaps' => $unit->getHashmaps(),
             ]);
             if (!$shouldAdd) {
                 break 1;
             }
         }
         if ($shouldAdd) {
-            $this->buffer[$unit->getCode()] = array_map(function ($var) {
+            $this->buffer[$unit->getCode()] = array_map(function ($var) use ($unit) {
                 return $this->language->evaluate($var, [
                     'map' => $this->map,
                     'resource' => $this->helperResource,
+                    'hashmaps' => $unit->getHashmaps(),
                 ]);
             }, $unit->getMapping());
         }
@@ -208,6 +210,7 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
             $valid = $this->language->evaluate($validationRule, [
                 'map' => $this->map,
                 'resource' => $this->helperResource,
+                'hashmaps' => $unit->getHashmaps(),
             ]);
             if (!$valid) {
                 break 1;

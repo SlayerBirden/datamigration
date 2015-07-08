@@ -175,6 +175,8 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
 
     /**
      * test process with incorrect connection (addresses do not match customers)
+     * @expectedException \LogicException
+     * @expectedExceptionMessage Orphaned rows in some of the units
      */
     public function testProcess2()
     {
@@ -234,8 +236,9 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
                     [2, '3300 St. George, Suite 300', 'New York', 1],
                     [3, '111 W Jackson', 'Chicago', 4],
                     [4, '111 W Jackson-2', 'Chicago', 4],
-                    [5, 'Hollywood', 'LA', 4],
-                    false,
+                    // next rows will not be read due to LogicException
+                    // [5, 'Hollywood', 'LA', 4],
+                    // false,
                 ]
             ))
             ->setTmpFileName('address_tmp.csv')
@@ -335,6 +338,8 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
     /**
      * try to process 2 units one of which is empty
      * nothing should happen here (not single addition nor exceptions)
+     * @expectedException \LogicException
+     * @expectedExceptionMessage Orphaned rows in some of the units
      */
     public function testProcessWeirdCase2()
     {
@@ -353,7 +358,8 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
             ->setFilesystem($this->getFS(
                 [
                     ['Pete', 'tst1', '1'],
-                    false
+                    // next rows will not be read due to LogicException
+                    // false,
                 ]
             ))
             ->setTmpFileName('customer_tmp.csv')
