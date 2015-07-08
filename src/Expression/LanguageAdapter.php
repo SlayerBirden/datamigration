@@ -55,11 +55,9 @@ class LanguageAdapter implements LanguageInterface
 
     /**
      * @param ExpressionLanguage $language
-     * @return $this
      */
     public function setLanguage($language)
     {
         $this->language = $language;
-        return $this;
     }
 }

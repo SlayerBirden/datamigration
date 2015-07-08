@@ -56,8 +56,8 @@ class GenerateTest extends \PHPUnit_Framework_TestCase
 
     public function testProcess()
     {
-        $unit = $this->getUnit('test_table1')
-            ->setFilesystem($this->getFS(2));
+        $unit = $this->getUnit('test_table1');
+        $unit->setFilesystem($this->getFS(2));
         $action = new Generate(
             $this->getUnitBag([$unit]),
             $this->getConfig(),
@@ -67,8 +67,10 @@ class GenerateTest extends \PHPUnit_Framework_TestCase
         );
         $action->process();
 
-        $this->assertEquals('/tmp/test_table1.csv',
-            $unit->getTmpFileName());
+        $this->assertEquals(
+            '/tmp/test_table1.csv',
+            $unit->getTmpFileName()
+        );
     }
 
     public function testGetRandom()

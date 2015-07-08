@@ -42,12 +42,10 @@ class ConflictException extends \Exception
 
     /**
      * @param array $unitsInConflict
-     * @return $this
      */
     public function setUnitsInConflict($unitsInConflict)
     {
         $this->unitsInConflict = $unitsInConflict;
-        return $this;
     }
 
     /**
@@ -60,11 +58,9 @@ class ConflictException extends \Exception
 
     /**
      * @param string $conflictedKey
-     * @return $this
      */
     public function setConflictedKey($conflictedKey)
     {
         $this->conflictedKey = $conflictedKey;
-        return $this;
     }
 }

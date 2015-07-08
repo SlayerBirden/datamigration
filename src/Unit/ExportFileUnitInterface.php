@@ -12,7 +12,6 @@ interface ExportFileUnitInterface extends ExportDbUnitInterface
 
     /**
      * @param array $reversedConnection
-     * @return $this
      */
     public function setReversedConnection($reversedConnection);
 
@@ -23,7 +22,6 @@ interface ExportFileUnitInterface extends ExportDbUnitInterface
 
     /**
      * @param array $reversedMapping
-     * @return $this
      */
     public function setReversedMapping($reversedMapping);
 }

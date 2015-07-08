@@ -7,7 +7,7 @@ interface MapInterface extends \ArrayAccess, \IteratorAggregate
     /**
      * Feed new row to map
      * @param array $row
-     * @return self
+     * @return void
      */
     public function feed(array $row);
 

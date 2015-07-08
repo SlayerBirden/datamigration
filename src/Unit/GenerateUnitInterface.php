@@ -11,7 +11,6 @@ interface GenerateUnitInterface extends ImportFileUnitInterface
 
     /**
      * @param array $generatorMapping
-     * @return $this
      */
     public function setGeneratorMapping(array $generatorMapping);
 
@@ -24,7 +23,6 @@ interface GenerateUnitInterface extends ImportFileUnitInterface
 
     /**
      * @param \SplFixedArray $generationSeed
-     * @return $this
      */
     public function setGenerationSeed(\SplFixedArray $generationSeed);
 }

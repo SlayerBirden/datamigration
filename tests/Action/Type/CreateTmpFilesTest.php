@@ -83,68 +83,68 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
     {
         $inputs = [
             ['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr1_city' => 'Chicago',
-            'addr1_street' => '4100 Marine dr. App. 54', 'addr2_city' => 'New York',
-            'addr2_street' => '3300 St. George, Suite 300'],
+                'addr1_street' => '4100 Marine dr. App. 54', 'addr2_city' => 'New York',
+                'addr2_street' => '3300 St. George, Suite 300'],
             ['email' => 'pete111@eol.com', 'name' => 'Peter Ostridge', 'age' => 33, 'addr1_city' => 'Chicago',
-            'addr1_street' => '5011 Sunnyside ave', 'addr2_city' => 'Chicago',
-            'addr2_street' => '111 W Jackson'],
+                'addr1_street' => '5011 Sunnyside ave', 'addr2_city' => 'Chicago',
+                'addr2_street' => '111 W Jackson'],
             false
         ];
-        $unit1 = $this->getUnit('customer')
-            ->setMapping([
-                'id' => 'id',
-                'fname' => function ($row) {
-                    list($fname) = explode(" ", $row['name']);
-                    return $fname;
-                },
-                'lname' => function ($row) {
-                    list(, $lname) = explode(" ", $row['name']);
-                    return $lname;
-                },
-                'email' => 'email',
-                'age' => 'age',
-            ])
-            ->addContribution(function (MapInterface $map) {
-                $map->incr('id', 1);
-            })
-            ->setFilesystem($this->getFS(
-                [
-                    [[1, 'Olaf', 'Stone', 'tst1@example.com', 30]],
-                    [[2, 'Peter', 'Ostridge', 'pete111@eol.com', 33]],
-                ]
-            ));
-        $unit2 = $this->getUnit('address1')
-            ->setMapping([
-                'id' => 'addr_id',
-                'street' => 'addr1_street',
-                'city' => 'addr1_city',
-                'parent_id' => 'id',
-            ])
-            ->addContribution(function (MapInterface $map) {
-                $map->incr('addr_id', 1);
-            })
-            ->setFilesystem($this->getFS(
-                [
-                    [[1, '4100 Marine dr. App. 54', 'Chicago', 1]],
-                    [[3, '5011 Sunnyside ave', 'Chicago', 2]],
-                ]
-            ));
-        $unit3 = $this->getUnit('address2')
-            ->setMapping([
-                'id' => 'addr_id',
-                'street' => 'addr2_street',
-                'city' => 'addr2_city',
-                'parent_id' => 'id',
-            ])
-            ->addContribution(function (MapInterface $map) {
-                $map->incr('addr_id', 1);
-            })
-            ->setFilesystem($this->getFS(
-                [
-                    [[2, '3300 St. George, Suite 300', 'New York', 1]],
-                    [[4, '111 W Jackson', 'Chicago', 2]],
-                ]
-            ));
+        $unit1 = $this->getUnit('customer');
+        $unit1->setMapping([
+            'id' => 'id',
+            'fname' => function ($row) {
+                list($fname) = explode(" ", $row['name']);
+                return $fname;
+            },
+            'lname' => function ($row) {
+                list(, $lname) = explode(" ", $row['name']);
+                return $lname;
+            },
+            'email' => 'email',
+            'age' => 'age',
+        ]);
+        $unit1->addContribution(function (MapInterface $map) {
+            $map->incr('id', 1);
+        });
+        $unit1->setFilesystem($this->getFS(
+            [
+                [[1, 'Olaf', 'Stone', 'tst1@example.com', 30]],
+                [[2, 'Peter', 'Ostridge', 'pete111@eol.com', 33]],
+            ]
+        ));
+        $unit2 = $this->getUnit('address1');
+        $unit2->setMapping([
+            'id' => 'addr_id',
+            'street' => 'addr1_street',
+            'city' => 'addr1_city',
+            'parent_id' => 'id',
+        ]);
+        $unit2->addContribution(function (MapInterface $map) {
+            $map->incr('addr_id', 1);
+        });
+        $unit2->setFilesystem($this->getFS(
+            [
+                [[1, '4100 Marine dr. App. 54', 'Chicago', 1]],
+                [[3, '5011 Sunnyside ave', 'Chicago', 2]],
+            ]
+        ));
+        $unit3 = $this->getUnit('address2');
+        $unit3->setMapping([
+            'id' => 'addr_id',
+            'street' => 'addr2_street',
+            'city' => 'addr2_city',
+            'parent_id' => 'id',
+        ]);
+        $unit3->addContribution(function (MapInterface $map) {
+            $map->incr('addr_id', 1);
+        });
+        $unit3->setFilesystem($this->getFS(
+            [
+                [[2, '3300 St. George, Suite 300', 'New York', 1]],
+                [[4, '111 W Jackson', 'Chicago', 2]],
+            ]
+        ));
 
         $action = new CreateTmpFiles(
             $this->getUnitBag([$unit1, $unit2, $unit3]),
@@ -182,52 +182,52 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
                 'addr_street' => '111 W Jackson'],
             false
         ];
-        $unit1 = $this->getUnit('customer')
-            ->setMapping([
-                'id' => 'id',
-                'fname' => function ($map) {
-                    list($fname) = explode(" ", $map['name']);
-                    return $fname;
-                },
-                'lname' => function ($map) {
-                    list(, $lname) = explode(" ", $map['name']);
-                    return $lname;
-                },
-                'email' => 'email',
-                'age' => 'age',
-            ])
-            ->addContribution(function (MapInterface $map) {
-                $map->frozenIncr('id', 1);
-            })
-            ->setFilesystem($this->getFS(
-                [
-                    [[1, 'Olaf', 'Stone', 'tst1@example.com', 30]],
-                    [[2, 'Peter', 'Ostridge', 'pete111@eol.com', 33]],
-                ]
-            ))
-            ->setIsEntityCondition(function (
-                MapInterface $map,
-                MapInterface $oldmap
-            ) {
-                return $oldmap->offsetGet('email') != $map->offsetGet('email');
-            });
-        $unit2 = $this->getUnit('address')
-            ->setMapping([
-                'id' => 'addr_id',
-                'street' => 'addr_street',
-                'city' => 'addr_city',
-                'parent_id' => 'id',
-            ])
-            ->addContribution(function (MapInterface $map) {
-                $map->incr('addr_id', 1);
-            })
-            ->setFilesystem($this->getFS(
-                [
-                    [[1, '4100 Marine dr. App. 54', 'Chicago', 1]],
-                    [[2, '3300 St. George, Suite 300', 'New York', 1]],
-                    [[3, '111 W Jackson', 'Chicago', 2]],
-                ]
-            ));
+        $unit1 = $this->getUnit('customer');
+        $unit1->setMapping([
+            'id' => 'id',
+            'fname' => function ($map) {
+                list($fname) = explode(" ", $map['name']);
+                return $fname;
+            },
+            'lname' => function ($map) {
+                list(, $lname) = explode(" ", $map['name']);
+                return $lname;
+            },
+            'email' => 'email',
+            'age' => 'age',
+        ]);
+        $unit1->addContribution(function (MapInterface $map) {
+            $map->frozenIncr('id', 1);
+        });
+        $unit1->setFilesystem($this->getFS(
+            [
+                [[1, 'Olaf', 'Stone', 'tst1@example.com', 30]],
+                [[2, 'Peter', 'Ostridge', 'pete111@eol.com', 33]],
+            ]
+        ));
+        $unit1->setIsEntityCondition(function (
+            MapInterface $map,
+            MapInterface $oldmap
+        ) {
+            return $oldmap->offsetGet('email') != $map->offsetGet('email');
+        });
+        $unit2 = $this->getUnit('address');
+        $unit2->setMapping([
+            'id' => 'addr_id',
+            'street' => 'addr_street',
+            'city' => 'addr_city',
+            'parent_id' => 'id',
+        ]);
+        $unit2->addContribution(function (MapInterface $map) {
+            $map->incr('addr_id', 1);
+        });
+        $unit2->setFilesystem($this->getFS(
+            [
+                [[1, '4100 Marine dr. App. 54', 'Chicago', 1]],
+                [[2, '3300 St. George, Suite 300', 'New York', 1]],
+                [[3, '111 W Jackson', 'Chicago', 2]],
+            ]
+        ));
 
         $action = new CreateTmpFiles(
             $this->getUnitBag([$unit1, $unit2]),

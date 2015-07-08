@@ -8,7 +8,7 @@ interface WorkflowInterface
 {
     /**
      * @param ActionInterface $action
-     * @return self
+     * @return void
      */
     public function add(ActionInterface $action);
 

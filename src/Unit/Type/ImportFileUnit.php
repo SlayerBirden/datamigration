@@ -57,7 +57,6 @@ class ImportFileUnit extends AbstractUnit implements ImportFileUnitInterface
     public function setMapping(array $mapping)
     {
         $this->mapping = $mapping;
-        return $this;
     }
 
     /**
@@ -74,7 +73,6 @@ class ImportFileUnit extends AbstractUnit implements ImportFileUnitInterface
     public function setIsEntityCondition($condition)
     {
         $this->isEntityCondition = $condition;
-        return $this;
     }
 
     /**
@@ -91,7 +89,6 @@ class ImportFileUnit extends AbstractUnit implements ImportFileUnitInterface
     public function addContribution($contribution)
     {
         $this->contributions[] = $contribution;
-        return $this;
     }
 
     /**
@@ -108,7 +105,6 @@ class ImportFileUnit extends AbstractUnit implements ImportFileUnitInterface
     public function addWriteCondition($condition)
     {
         $this->writeConditions[] = $condition;
-        return $this;
     }
 
     /**
@@ -129,7 +125,6 @@ class ImportFileUnit extends AbstractUnit implements ImportFileUnitInterface
     public function setFilesystem(ResourceInterface $filesystem)
     {
         $this->filesystem = $filesystem;
-        return $this;
     }
 
     /**
@@ -146,7 +141,6 @@ class ImportFileUnit extends AbstractUnit implements ImportFileUnitInterface
     public function setTmpFileName($tmpFileName)
     {
         $this->tmpFileName = $tmpFileName;
-        return $this;
     }
 
     /**
@@ -163,7 +157,6 @@ class ImportFileUnit extends AbstractUnit implements ImportFileUnitInterface
     public function addValidationRule($condition)
     {
         $this->validationRules[] = $condition;
-        return $this;
     }
 
     /**
@@ -182,7 +175,6 @@ class ImportFileUnit extends AbstractUnit implements ImportFileUnitInterface
     public function addHashmap(HashmapInterface $hashmap)
     {
         $this->hashmaps[$hashmap->getCode()] = $hashmap;
-        return $this;
     }
 
     /**

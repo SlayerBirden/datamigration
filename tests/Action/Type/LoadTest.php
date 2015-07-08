@@ -2,7 +2,6 @@
 
 namespace Maketok\DataMigration\Action\Type;
 
-use Maketok\DataMigration\Expression\LanguageAdapter;
 use Maketok\DataMigration\Storage\Db\ResourceInterface;
 use Maketok\DataMigration\Unit\Type\ImportDbUnit;
 
@@ -44,7 +43,8 @@ class LoadTest extends \PHPUnit_Framework_TestCase
 
     public function testProcess()
     {
-        $unit = $this->getUnit('tmp_table1')->setTmpFileName('tmp_file.csv');
+        $unit = $this->getUnit('tmp_table1');
+        $unit->setTmpFileName('tmp_file.csv');
         $action = new Load(
             $this->getUnitBag([$unit]),
             $this->getConfig(),

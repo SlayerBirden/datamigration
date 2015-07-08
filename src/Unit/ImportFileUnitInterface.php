@@ -10,7 +10,7 @@ interface ImportFileUnitInterface extends UnitInterface
     /**
      * set condition that would determine if current row is Entity for current unit
      * @param string|callable $condition
-     * @return self
+     * @return void
      */
     public function setIsEntityCondition($condition);
 
@@ -23,7 +23,7 @@ interface ImportFileUnitInterface extends UnitInterface
     /**
      * add directive that should be executed for each row
      * @param string|callable $contribution
-     * @return self
+     * @return void
      */
     public function addContribution($contribution);
 
@@ -36,7 +36,7 @@ interface ImportFileUnitInterface extends UnitInterface
     /**
      * add condition based on which it would be clear if we should add current entity
      * @param string|callable $condition
-     * @return self
+     * @return void
      */
     public function addWriteCondition($condition);
 
@@ -49,7 +49,7 @@ interface ImportFileUnitInterface extends UnitInterface
     /**
      * set current mapping
      * @param array|string[] $mapping hashmap
-     * @return self
+     * @return void
      */
     public function setMapping(array $mapping);
 
@@ -75,7 +75,7 @@ interface ImportFileUnitInterface extends UnitInterface
     /**
      * add condition based on which it would be clear if we should add current entity
      * @param string|callable $condition
-     * @return self
+     * @return void
      */
     public function addValidationRule($condition);
 
@@ -93,13 +93,13 @@ interface ImportFileUnitInterface extends UnitInterface
     /**
      * set IO handler
      * @param ResourceInterface $filesystem
-     * @return self
+     * @return void
      */
     public function setFilesystem(ResourceInterface $filesystem);
 
     /**
      * @param HashmapInterface $hashmap
-     * @return self
+     * @return void
      */
     public function addHashmap(HashmapInterface $hashmap);
 

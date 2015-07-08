@@ -2,7 +2,6 @@
 
 namespace Maketok\DataMigration\Action\Type;
 
-use Maketok\DataMigration\Expression\LanguageAdapter;
 use Maketok\DataMigration\Storage\Db\ResourceInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface as FsResourceInterface;
 use Maketok\DataMigration\Unit\Type\ExportFileUnit;
@@ -59,9 +58,9 @@ class DumpTest extends \PHPUnit_Framework_TestCase
 
     public function testProcess()
     {
-        $unit = $this->getUnit('test_table1')
-            ->setTmpTable('tmp_test_table1')
-            ->setFilesystem($this->getFS(2));
+        $unit = $this->getUnit('test_table1');
+        $unit->setTmpTable('tmp_test_table1');
+        $unit->setFilesystem($this->getFS(2));
         $action = new Dump(
             $this->getUnitBag([$unit]),
             $this->getConfig(),

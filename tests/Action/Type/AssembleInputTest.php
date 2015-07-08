@@ -88,74 +88,75 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
      */
     public function testProcess()
     {
-        $unit1 = $this->getUnit('customer')
-            ->setReversedMapping([
-                'email' => 'email',
-                'name' => function ($map) {
-                    return $map['fname'] . ' ' . $map['lname'];
-                },
-                'age' => 'age',
-            ])
-            ->setReversedConnection([
-                'customer_id' => 'id',
-            ])
-            ->setMapping([
-                'id' => 'id',
-                'fname' => function ($map) {
-                    list($fname) = explode(" ", $map['name']);
-                    return $fname;
-                },
-                'lname' => function ($map) {
-                    list(, $lname) = explode(" ", $map['name']);
-                    return $lname;
-                },
-                'email' => 'email',
-                'age' => 'age',
-            ])
-            ->setFilesystem($this->getFS(
-                [
-                    [1, 'Olaf', 'Stone', 'tst1@example.com', 30],
-                    [2, 'Peter', 'Ostridge', 'pete111@eol.com', 33],
-                    [3, 'Bill', 'Murray', 'bm@gmail.com', 55],
-                    false,
-                ]
-            ))->setIsEntityCondition(function (
-                MapInterface $map,
-                MapInterface $oldmap
-            ) {
-                return $oldmap->offsetGet('email') != $map->offsetGet('email');
-            })
-            ->setTmpFileName('customer_tmp.csv')
-        ;
-        $unit2 = $this->getUnit('address')
-            ->setReversedMapping([
-                'addr_city' => 'city',
-                'addr_street' => 'street',
-            ])
-            ->setReversedConnection([
-                'customer_id' => 'parent_id',
-            ])
-            ->setMapping([
-                'id' => 'addr_id',
-                'street' => 'addr_street',
-                'city' => 'addr_city',
-                'parent_id' => 'id',
-            ])
-            ->addContribution(function (MapInterface $map) {
-                $map->incr('addr_id', 1);
-            })
-            ->setFilesystem($this->getFS(
-                [
-                    [1, '4100 Marine dr. App. 54', 'Chicago', 1],
-                    [2, '3300 St. George, Suite 300', 'New York', 1],
-                    [3, '111 W Jackson', 'Chicago', 2],
-                    [4, '111 W Jackson-2', 'Chicago', 2],
-                    [5, 'Hollywood', 'LA', 3],
-                    false,
-                ]
-            ))
-            ->setTmpFileName('address_tmp.csv')
-        ;
+        $unit1 = $this->getUnit('customer');
+        $unit1->setReversedMapping([
+            'email' => 'email',
+            'name' => function ($map) {
+                return $map['fname'] . ' ' . $map['lname'];
+            },
+            'age' => 'age',
+        ]);
+        $unit1->setReversedConnection([
+            'customer_id' => 'id',
+        ]);
+        $unit1->setMapping([
+            'id' => 'id',
+            'fname' => function ($map) {
+                list($fname) = explode(" ", $map['name']);
+                return $fname;
+            },
+            'lname' => function ($map) {
+                list(, $lname) = explode(" ", $map['name']);
+                return $lname;
+            },
+            'email' => 'email',
+            'age' => 'age',
+        ]);
+        $unit1->setFilesystem($this->getFS(
+            [
+                [1, 'Olaf', 'Stone', 'tst1@example.com', 30],
+                [2, 'Peter', 'Ostridge', 'pete111@eol.com', 33],
+                [3, 'Bill', 'Murray', 'bm@gmail.com', 55],
+                false,
+            ]
+        ));
+        $unit1->setIsEntityCondition(function (
+            MapInterface $map,
+            MapInterface $oldmap
+        ) {
+            return $oldmap->offsetGet('email') != $map->offsetGet('email');
+        });
+        $unit1->setTmpFileName('customer_tmp.csv');
+
+        $unit2 = $this->getUnit('address');
+        $unit2->setReversedMapping([
+            'addr_city' => 'city',
+            'addr_street' => 'street',
+        ]);
+        $unit2->setReversedConnection([
+            'customer_id' => 'parent_id',
+        ]);
+        $unit2->setMapping([
+            'id' => 'addr_id',
+            'street' => 'addr_street',
+            'city' => 'addr_city',
+            'parent_id' => 'id',
+        ]);
+        $unit2->addContribution(function (MapInterface $map) {
+            $map->incr('addr_id', 1);
+        });
+        $unit2->setFilesystem($this->getFS(
+            [
+                [1, '4100 Marine dr. App. 54', 'Chicago', 1],
+                [2, '3300 St. George, Suite 300', 'New York', 1],
+                [3, '111 W Jackson', 'Chicago', 2],
+                [4, '111 W Jackson-2', 'Chicago', 2],
+                [5, 'Hollywood', 'LA', 3],
+                false,
+            ]
+        ));
+        $unit2->setTmpFileName('address_tmp.csv');
+
         $expected = [
             [['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr_city' => 'Chicago',
                 'addr_street' => '4100 Marine dr. App. 54']],
@@ -180,69 +181,69 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
      */
     public function testProcess2()
     {
-        $unit1 = $this->getUnit('customer')
-            ->setReversedMapping([
-                'email' => 'email',
-                'name' => function ($map) {
-                    return $map['fname'] . ' ' . $map['lname'];
-                },
-                'age' => 'age',
-            ])
-            ->setReversedConnection([
-                'customer_id' => 'id',
-            ])
-            ->setMapping([
-                'id' => 'id',
-                'fname' => function ($map) {
-                    list($fname) = explode(" ", $map['name']);
-                    return $fname;
-                },
-                'lname' => function ($map) {
-                    list(, $lname) = explode(" ", $map['name']);
-                    return $lname;
-                },
-                'email' => 'email',
-                'age' => 'age',
-            ])
-            ->setFilesystem($this->getFS(
-                [
-                    [1, 'Olaf', 'Stone', 'tst1@example.com', 30],
-                    [2, 'Peter', 'Ostridge', 'pete111@eol.com', 33],
-                    false,
-                ]
-            ))
-            ->setTmpFileName('customer_tmp.csv')
-        ;
-        $unit2 = $this->getUnit('address')
-            ->setReversedMapping([
-                'addr_city' => 'city',
-                'addr_street' => 'street',
-            ])
-            ->setReversedConnection([
-                'customer_id' => 'parent_id',
-            ])
-            ->setMapping([
-                'id' => 'addr_id',
-                'street' => 'addr_street',
-                'city' => 'addr_city',
-                'parent_id' => 'id',
-            ])
-            ->addContribution(function (MapInterface $map) {
-                $map->incr('addr_id', 1);
-            })
-            ->setFilesystem($this->getFS(
-                [
-                    [1, '4100 Marine dr. App. 54', 'Chicago', 1],
-                    [2, '3300 St. George, Suite 300', 'New York', 1],
-                    [3, '111 W Jackson', 'Chicago', 4],
-                    [4, '111 W Jackson-2', 'Chicago', 4],
-                    // next rows will not be read due to LogicException
-                    // [5, 'Hollywood', 'LA', 4],
-                    // false,
-                ]
-            ))
-            ->setTmpFileName('address_tmp.csv')
-        ;
+        $unit1 = $this->getUnit('customer');
+        $unit1->setReversedMapping([
+            'email' => 'email',
+            'name' => function ($map) {
+                return $map['fname'] . ' ' . $map['lname'];
+            },
+            'age' => 'age',
+        ]);
+        $unit1->setReversedConnection([
+            'customer_id' => 'id',
+        ]);
+        $unit1->setMapping([
+            'id' => 'id',
+            'fname' => function ($map) {
+                list($fname) = explode(" ", $map['name']);
+                return $fname;
+            },
+            'lname' => function ($map) {
+                list(, $lname) = explode(" ", $map['name']);
+                return $lname;
+            },
+            'email' => 'email',
+            'age' => 'age',
+        ]);
+        $unit1->setFilesystem($this->getFS(
+            [
+                [1, 'Olaf', 'Stone', 'tst1@example.com', 30],
+                [2, 'Peter', 'Ostridge', 'pete111@eol.com', 33],
+                false,
+            ]
+        ));
+        $unit1->setTmpFileName('customer_tmp.csv');
+
+        $unit2 = $this->getUnit('address');
+        $unit2->setReversedMapping([
+            'addr_city' => 'city',
+            'addr_street' => 'street',
+        ]);
+        $unit2->setReversedConnection([
+            'customer_id' => 'parent_id',
+        ]);
+        $unit2->setMapping([
+            'id' => 'addr_id',
+            'street' => 'addr_street',
+            'city' => 'addr_city',
+            'parent_id' => 'id',
+        ]);
+        $unit2->addContribution(function (MapInterface $map) {
+            $map->incr('addr_id', 1);
+        });
+        $unit2->setFilesystem($this->getFS(
+            [
+                [1, '4100 Marine dr. App. 54', 'Chicago', 1],
+                [2, '3300 St. George, Suite 300', 'New York', 1],
+                [3, '111 W Jackson', 'Chicago', 4],
+                [4, '111 W Jackson-2', 'Chicago', 4],
+                // next rows will not be read due to LogicException
+                // [5, 'Hollywood', 'LA', 4],
+                // false,
+            ]
+        ));
+        $unit2->setTmpFileName('address_tmp.csv');
+
         $expected = [
             [['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr_city' => 'Chicago',
                 'addr_street' => '4100 Marine dr. App. 54']],
@@ -261,24 +262,23 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
      */
     public function testProcessException1()
     {
-        $unit1 = $this->getUnit('test')
-            ->setReversedMapping([
-                'name' => 'field3',
-            ])
-            ->setReversedConnection([
-                'id' => 'field4',
-            ])
-            ->setMapping([
-                'field1' => 'name',
-                'field2' => 'code',
-            ])
-            ->setFilesystem($this->getFS(
-                [
-                    ['Pete', 'tst1']
-                ]
-            ))
-            ->setTmpFileName('customer_tmp.csv')
-        ;
+        $unit1 = $this->getUnit('test');
+        $unit1->setReversedMapping([
+            'name' => 'field3',
+        ]);
+        $unit1->setReversedConnection([
+            'id' => 'field4',
+        ]);
+        $unit1->setMapping([
+            'field1' => 'name',
+            'field2' => 'code',
+        ]);
+        $unit1->setFilesystem($this->getFS(
+            [
+                ['Pete', 'tst1']
+            ]
+        ));
+        $unit1->setTmpFileName('customer_tmp.csv');
 
         $action = $this->getAction([$unit1]);
         $action->process();
@@ -291,45 +291,43 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
      */
     public function testProcessWeirdCase1()
     {
-        $unit1 = $this->getUnit('test')
-            ->setReversedMapping([
-                'name' => 'field1',
-            ])
-            ->setReversedConnection([
-                'tid' => 'id',
-            ])
-            ->setMapping([
-                'field1' => 'name',
-                'field2' => 'code',
-                'id' => 'id',
-            ])
-            ->setFilesystem($this->getFS(
-                [
-                    ['Pete', 'tst1', '1']
-                ]
-            ))
-            ->setTmpFileName('customer_tmp.csv')
-        ;
+        $unit1 = $this->getUnit('test');
+        $unit1->setReversedMapping([
+            'name' => 'field1',
+        ]);
+        $unit1->setReversedConnection([
+            'tid' => 'id',
+        ]);
+        $unit1->setMapping([
+            'field1' => 'name',
+            'field2' => 'code',
+            'id' => 'id',
+        ]);
+        $unit1->setFilesystem($this->getFS(
+            [
+                ['Pete', 'tst1', '1']
+            ]
+        ));
+        $unit1->setTmpFileName('customer_tmp.csv');
 
-        $unit2 = $this->getUnit('test2')
-            ->setReversedMapping([
-                'name' => 'field1',
-            ])
-            ->setReversedConnection([
-                'tid' => 'parent_id',
-            ])
-            ->setMapping([
-                'field1' => 'name',
-                'field2' => 'code',
-                'parent_id' => 'id',
-            ])
-            ->setFilesystem($this->getFS(
-                [
-                    ['Pete', 'tst1', '2']
-                ]
-            ))
-            ->setTmpFileName('customer_tmp.csv')
-        ;
+        $unit2 = $this->getUnit('test2');
+        $unit2->setReversedMapping([
+            'name' => 'field1',
+        ]);
+        $unit2->setReversedConnection([
+            'tid' => 'parent_id',
+        ]);
+        $unit2->setMapping([
+            'field1' => 'name',
+            'field2' => 'code',
+            'parent_id' => 'id',
+        ]);
+        $unit2->setFilesystem($this->getFS(
+            [
+                ['Pete', 'tst1', '2']
+            ]
+        ));
+        $unit2->setTmpFileName('customer_tmp.csv');
 
         $action = $this->getAction([$unit1, $unit2]);
         $action->process();
@@ -343,47 +341,45 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
      */
     public function testProcessWeirdCase2()
     {
-        $unit1 = $this->getUnit('test')
-            ->setReversedMapping([
-                'name' => 'field1',
-            ])
-            ->setReversedConnection([
-                'tid' => 'id',
-            ])
-            ->setMapping([
-                'field1' => 'name',
-                'field2' => 'code',
-                'id' => 'id',
-            ])
-            ->setFilesystem($this->getFS(
-                [
-                    ['Pete', 'tst1', '1'],
-                    // next rows will not be read due to LogicException
-                    // false,
-                ]
-            ))
-            ->setTmpFileName('customer_tmp.csv')
-        ;
+        $unit1 = $this->getUnit('test');
+        $unit1->setReversedMapping([
+            'name' => 'field1',
+        ]);
+        $unit1->setReversedConnection([
+            'tid' => 'id',
+        ]);
+        $unit1->setMapping([
+            'field1' => 'name',
+            'field2' => 'code',
+            'id' => 'id',
+        ]);
+        $unit1->setFilesystem($this->getFS(
+            [
+                ['Pete', 'tst1', '1'],
+                // next rows will not be read due to LogicException
+                // false,
+            ]
+        ));
+        $unit1->setTmpFileName('customer_tmp.csv');
 
-        $unit2 = $this->getUnit('test2')
-            ->setReversedMapping([
-                'name' => 'field1',
-            ])
-            ->setReversedConnection([
-                'tid' => 'parent_id',
-            ])
-            ->setMapping([
-                'field1' => 'name',
-                'field2' => 'code',
-                'parent_id' => 'id',
-            ])
-            ->setFilesystem($this->getFS(
-                [
-                    false
-                ]
-            ))
-            ->setTmpFileName('customer_tmp.csv')
-        ;
+        $unit2 = $this->getUnit('test2');
+        $unit2->setReversedMapping([
+            'name' => 'field1',
+        ]);
+        $unit2->setReversedConnection([
+            'tid' => 'parent_id',
+        ]);
+        $unit2->setMapping([
+            'field1' => 'name',
+            'field2' => 'code',
+            'parent_id' => 'id',
+        ]);
+        $unit2->setFilesystem($this->getFS(
+            [
+                false
+            ]
+        ));
+        $unit2->setTmpFileName('customer_tmp.csv');
 
         $action = $this->getAction([$unit1, $unit2]);
         $action->process();
@@ -407,11 +403,11 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         $data = [
             'unit1' => [
                 'id' => 1,
-                'name'=> 'u1'
+                'name' => 'u1',
             ],
             'unit2' => [
                 'id' => 1,
-                'name' => 'u2'
+                'name' => 'u2',
             ],
         ];
         try {
@@ -444,7 +440,7 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
                 [
                     'id' => 1,
                     'name' => 'tmp1',
-                    'code' => 't1'
+                    'code' => 't1',
                 ],
             ],
             // merge with equal keys
@@ -462,7 +458,7 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
                 [
                     'id' => 1,
                     'name' => 'tmp1',
-                    'code' => 't1'
+                    'code' => 't1',
                 ],
             ],
         ];

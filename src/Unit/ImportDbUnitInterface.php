@@ -7,7 +7,7 @@ interface ImportDbUnitInterface extends ImportFileUnitInterface
     /**
      * set main table unit is working with
      * @param string $tableName
-     * @return self
+     * @return void
      */
     public function setTable($tableName);
 
@@ -20,7 +20,7 @@ interface ImportDbUnitInterface extends ImportFileUnitInterface
     /**
      * set Temporary table name generated for this unit
      * @param string $name
-     * @return mixed
+     * @return void
      */
     public function setTmpTable($name);
 
@@ -33,7 +33,7 @@ interface ImportDbUnitInterface extends ImportFileUnitInterface
     /**
      * Definition of PK for current unit/table: can be sting or array
      * @param mixed $definition
-     * @return self
+     * @return void
      */
     public function setPk($definition);
 

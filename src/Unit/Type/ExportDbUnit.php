@@ -36,7 +36,6 @@ class ExportDbUnit extends ImportDbUnit implements ExportDbUnitInterface
     public function setReverseMoveOrder(array $reverseMoveOrder)
     {
         $this->reverseMoveOrder = $reverseMoveOrder;
-        return $this;
     }
 
     /**
@@ -53,7 +52,6 @@ class ExportDbUnit extends ImportDbUnit implements ExportDbUnitInterface
     public function setReverseMoveDirections(array $directions)
     {
         $this->reverseDirections = $directions;
-        return $this;
     }
 
     /**
@@ -70,6 +68,5 @@ class ExportDbUnit extends ImportDbUnit implements ExportDbUnitInterface
     public function setReverseMoveConditions($conditions)
     {
         $this->reverseConditions = $conditions;
-        return $this;
     }
 }

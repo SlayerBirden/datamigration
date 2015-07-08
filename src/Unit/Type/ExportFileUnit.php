@@ -29,7 +29,6 @@ class ExportFileUnit extends ExportDbUnit implements ExportFileUnitInterface
     public function setReversedMapping($reversedMapping)
     {
         $this->reversedMapping = $reversedMapping;
-        return $this;
     }
 
     /**
@@ -46,6 +45,5 @@ class ExportFileUnit extends ExportDbUnit implements ExportFileUnitInterface
     public function setReversedConnection($reversedConnection)
     {
         $this->reversedConnection = $reversedConnection;
-        return $this;
     }
 }

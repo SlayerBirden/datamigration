@@ -7,7 +7,7 @@ interface ConfigInterface extends \ArrayAccess
     /**
      * assign full config
      * @param array $config
-     * @return self
+     * @return void
      */
     public function assign(array $config);
 

@@ -33,7 +33,6 @@ class ImportDbUnit extends ImportFileUnit implements ImportDbUnitInterface
     public function setTmpTable($tmpTable)
     {
         $this->tmpTable = $tmpTable;
-        return $this;
     }
 
     /**
@@ -42,7 +41,6 @@ class ImportDbUnit extends ImportFileUnit implements ImportDbUnitInterface
     public function setTable($tableName)
     {
         $this->tableName = $tableName;
-        return $this;
     }
 
     /**
@@ -67,6 +65,5 @@ class ImportDbUnit extends ImportFileUnit implements ImportDbUnitInterface
     public function setPk($definition)
     {
         $this->primaryKey = $definition;
-        return $this;
     }
 }

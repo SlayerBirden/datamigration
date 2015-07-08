@@ -2,7 +2,6 @@
 
 namespace Maketok\DataMigration\Action\Type;
 
-use Maketok\DataMigration\Expression\LanguageAdapter;
 use Maketok\DataMigration\Storage\Db\ResourceInterface;
 use Maketok\DataMigration\Unit\Type\ExportDbUnit;
 

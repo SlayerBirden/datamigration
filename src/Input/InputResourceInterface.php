@@ -12,7 +12,7 @@ interface InputResourceInterface
     /**
      * add row to input resource
      * @param array $entity
-     * @return self
+     * @return void
      */
     public function add(array $entity);
 

@@ -44,7 +44,6 @@ class GeneratorUnit extends ImportFileUnit implements GenerateUnitInterface
     public function setGeneratorMapping(array $generatorMapping)
     {
         $this->generatorMapping = $generatorMapping;
-        return $this;
     }
 
     /**
@@ -61,6 +60,5 @@ class GeneratorUnit extends ImportFileUnit implements GenerateUnitInterface
     public function setGenerationSeed(\SplFixedArray $generationSeed)
     {
         $this->generationSeed = $generationSeed;
-        return $this;
     }
 }
