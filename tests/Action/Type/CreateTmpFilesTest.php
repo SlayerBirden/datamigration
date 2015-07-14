@@ -154,7 +154,7 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
             new ArrayMap(),
             $this->getResourceHelper()
         );
-        $action->process();
+        $action->process($this->getResultMock());
 
         $this->assertEquals('/tmp/customer.csv',
             $unit1->getTmpFileName());
@@ -237,7 +237,7 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
             new ArrayMap(),
             $this->getResourceHelper()
         );
-        $action->process();
+        $action->process($this->getResultMock());
 
         $this->assertEquals('/tmp/customer.csv',
             $unit1->getTmpFileName());

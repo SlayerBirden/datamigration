@@ -70,7 +70,7 @@ class DumpTest extends \PHPUnit_Framework_TestCase
                 false
             ])
         );
-        $action->process();
+        $action->process($this->getResultMock());
 
         $this->assertEquals('/tmp/test_table1.csv',
             $unit->getTmpFileName());

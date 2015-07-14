@@ -171,7 +171,7 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         ];
 
         $action = $this->getAction([$unit1, $unit2], $expected);
-        $action->process();
+        $action->process($this->getResultMock());
     }
 
     /**
@@ -252,7 +252,7 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         ];
 
         $action = $this->getAction([$unit1, $unit2], $expected);
-        $action->process();
+        $action->process($this->getResultMock());
     }
 
     /**
@@ -281,7 +281,7 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         $unit1->setTmpFileName('customer_tmp.csv');
 
         $action = $this->getAction([$unit1]);
-        $action->process();
+        $action->process($this->getResultMock());
     }
 
     /**
@@ -330,7 +330,7 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         $unit2->setTmpFileName('customer_tmp.csv');
 
         $action = $this->getAction([$unit1, $unit2]);
-        $action->process();
+        $action->process($this->getResultMock());
     }
 
     /**
@@ -382,7 +382,7 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         $unit2->setTmpFileName('customer_tmp.csv');
 
         $action = $this->getAction([$unit1, $unit2]);
-        $action->process();
+        $action->process($this->getResultMock());
     }
 
     /**

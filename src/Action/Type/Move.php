@@ -6,6 +6,7 @@ use Maketok\DataMigration\Action\ActionInterface;
 use Maketok\DataMigration\Action\Exception\WrongContextException;
 use Maketok\DataMigration\Unit\ImportDbUnitInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
+use Maketok\DataMigration\Workflow\ResultInterface;
 
 /**
  * Move data data from tmp table to main table
@@ -21,7 +22,7 @@ class Move extends AbstractDbAction implements ActionInterface
      * {@inheritdoc}
      * @throws WrongContextException
      */
-    public function process()
+    public function process(ResultInterface $result)
     {
         foreach ($this->bag as $unit) {
             if ($unit->getTmpTable() === null) {

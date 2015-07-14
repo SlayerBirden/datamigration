@@ -50,7 +50,7 @@ class LoadTest extends \PHPUnit_Framework_TestCase
             $this->getConfig(),
             $this->getResource(true)
         );
-        $action->process();
+        $action->process($this->getResultMock());
 
         $this->assertNotEmpty($unit->getTmpTable());
     }
@@ -65,6 +65,6 @@ class LoadTest extends \PHPUnit_Framework_TestCase
             $this->getConfig(),
             $this->getResource()
         );
-        $action->process();
+        $action->process($this->getResultMock());
     }
 }

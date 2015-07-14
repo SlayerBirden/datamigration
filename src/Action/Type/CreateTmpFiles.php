@@ -10,6 +10,7 @@ use Maketok\DataMigration\MapInterface;
 use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
 use Maketok\DataMigration\Unit\ImportFileUnitInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
+use Maketok\DataMigration\Workflow\ResultInterface;
 
 /**
  * Disperse base input stream into separate units (tmp csv files) for further processing
@@ -75,30 +76,37 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
 
     /**
      * {@inheritdoc}
+     * @throws \LogicException
      */
-    public function process()
+    public function process(ResultInterface $result)
     {
-        $this->start();
-        while (($row = $this->input->get()) !== false) {
-            if ($this->map->isFresh($row)) {
-                $this->map->feed($row);
+        try {
+            $this->start();
+            while (($row = $this->input->get()) !== false) {
+                if ($this->map->isFresh($row)) {
+                    $this->map->feed($row);
+                }
+                $this->processDump();
+                $this->processWrite();
             }
-            $this->processDump();
-            $this->processWrite();
+            $this->dumpBuffer();
+        } catch (\Exception $e) {
+            $this->close();
+            throw $e;
         }
-        $this->dumpBuffer();
         $this->close();
     }
 
     /**
      * dump buffered row (if needed)
+     * @throws \LogicException
      */
     private function processDump()
     {
         $shouldUnfreeze = true;
         foreach ($this->bag as $unit) {
             $isEntity = $unit->getIsEntityCondition();
-            if (!isset($this->oldmap) || empty($unit) || empty($isEntity)) {
+            if (!isset($this->oldmap) || empty($isEntity)) {
                 $shouldDump = true;
             } elseif (is_callable($isEntity) || is_string($isEntity)) {
                 $shouldDump = $this->language->evaluate($isEntity, [
@@ -130,10 +138,12 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
         $this->isValid = true;
         foreach ($this->bag as $unit) {
             $this->processAdditions($unit);
-            $this->isValid &= $this->validate($unit);
+            if (!$this->validate($unit)) {
+                $this->isValid = false;
+            }
             $this->writeRowBuffered($unit);
-            $this->oldmap = clone $this->map;
         }
+        $this->oldmap = clone $this->map;
         $this->map->freeze();
     }
 

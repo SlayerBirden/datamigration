@@ -12,6 +12,7 @@ use Maketok\DataMigration\Input\InputResourceInterface;
 use Maketok\DataMigration\MapInterface;
 use Maketok\DataMigration\Unit\ExportFileUnitInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
+use Maketok\DataMigration\Workflow\ResultInterface;
 
 /**
  * Create Base Input stream from separate units
@@ -87,21 +88,27 @@ class AssembleInput extends AbstractAction implements ActionInterface
      * {@inheritdoc}
      * Reversed process to create input resource
      * Order of the units matters!
-     * @throws \LogicException, WrongContextException
+     * @throws \LogicException
+     * @throws WrongContextException
      */
-    public function process()
+    public function process(ResultInterface $result)
     {
-        $this->start();
-        while (true) {
-            try {
-                $this->processUnitRowData();
-                $this->addData();
-            } catch (FlowRegulationException $e) {
-                if ($e->getCode() === self::FLOW_ABORT) {
-                    break 1; // exit point
+        try {
+            $this->start();
+            while (true) {
+                try {
+                    $this->processUnitRowData();
+                    $this->addData();
+                } catch (FlowRegulationException $e) {
+                    if ($e->getCode() === self::FLOW_ABORT) {
+                        break 1; // exit point
+                    }
                 }
+                $this->clear();
             }
-            $this->clear();
+        } catch (\Exception $e) {
+            $this->close();
+            throw $e;
         }
         $this->close();
     }
@@ -150,21 +157,21 @@ class AssembleInput extends AbstractAction implements ActionInterface
     /**
      * analyze tmp rows before trying to assemble
      * @throws FlowRegulationException
+     * @throws \LogicException
      */
     private function analyzeRow()
     {
-        // check if we have some missing units
         if ($this->isEmptyData($this->processed)) {
             throw new FlowRegulationException("", self::FLOW_ABORT);
         }
+        // check if we have some missing units
         if (count($this->connectBuffer) < $this->bag->count()) {
             foreach ($this->bag as $unit) {
-                $code = $unit->getCode();
-                if (!array_key_exists($code, $this->connectBuffer)) {
-                    $this->finished[] = $code;
+                if (!array_key_exists($unit->getCode(), $this->connectBuffer)) {
+                    $this->finished[] = $unit->getCode();
                 }
             }
-            // we can just check if input is correct or not
+            // checking if input has the correct # of mapped entries
             $intersected = array_intersect_key($this->connectBuffer, $this->buffer);
             foreach (array_keys($intersected) as $purgeKey) {
                 unset($this->buffer[$purgeKey]);
@@ -215,18 +222,16 @@ class AssembleInput extends AbstractAction implements ActionInterface
         $toAdd = [];
         $tmpRow = $this->assemble($this->processed, true);
         $this->map->feed($tmpRow);
-        foreach ($this->bag as $unit) {
-            if (!isset($this->processed[$unit->getCode()])) {
-                continue;
-            }
-            $unitData = $this->processed[$unit->getCode()];
-            $toAdd[$unit->getCode()] = array_map(function ($var) use ($unitData, $unit) {
+        foreach ($this->processed as $unitCode => $unitData) {
+            /** @var ExportFileUnitInterface $unit */
+            $unit = $this->bag->getUnitByCode($unitCode);
+            $toAdd[$unitCode] = array_map(function ($var) use ($unit) {
                 return $this->language->evaluate($var, [
                     'map' => $this->map,
                     'hashmaps' => $unit->getHashmaps(),
                 ]);
             }, $unit->getReversedMapping());
-            $this->lastAdded[$unit->getCode()] = $this->processed[$unit->getCode()];
+            $this->lastAdded[$unitCode] = $unitData;
         }
         $this->input->add(
             $this->assemble($toAdd)
@@ -298,29 +303,20 @@ class AssembleInput extends AbstractAction implements ActionInterface
      */
     public function assemble(array $data, $force = false)
     {
-        $row = [];
-        $meta = [];
-        foreach ($data as $unitCode => $mapping) {
-            foreach ($mapping as $k => $v) {
-                if (isset($row[$k]) && $row[$k] != $v && !$force) {
-                    $meta[$k][] = $unitCode;
-                    throw new ConflictException(
-                        sprintf("Conflict with data %s, %s", json_encode($data), $v),
-                        array_unique($meta[$k]),
-                        $k
-                    );
-                } elseif (isset($row[$k]) && $row[$k] == $v) {
-                    $meta[$k][] = $unitCode;
-                } elseif (!isset($row[$k]) && isset($v)) {
-                    $row[$k] = $v;
-                    if (!isset($meta[$k])) {
-                        $meta[$k] = [];
-                    }
-                    $meta[$k][] = $unitCode;
-                }
-            }
+        $byKeys = call_user_func_array('array_intersect_key', $data);
+        $byKeysAndValues = call_user_func_array('array_intersect_assoc', $data);
+        if ($byKeys != $byKeysAndValues && !$force) {
+            $key = array_shift(array_keys(array_diff_assoc($byKeys, $byKeysAndValues)));
+            $unitsInConflict = array_keys(array_filter($data, function ($var) use ($key) {
+                return array_key_exists($key, $var);
+            }));
+            throw new ConflictException(
+                sprintf("Conflict with data %s", json_encode($data)),
+                $unitsInConflict,
+                $key
+            );
         }
-        return $row;
+        return call_user_func_array('array_replace', $data);
     }
 
     /**

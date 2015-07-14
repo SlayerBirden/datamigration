@@ -5,6 +5,7 @@ namespace Maketok\DataMigration\Action\Type;
 use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Unit\AbstractUnit;
 use Maketok\DataMigration\Unit\UnitBagInterface;
+use Maketok\DataMigration\Workflow\ResultInterface;
 
 trait ServiceGetterTrait
 {
@@ -52,5 +53,14 @@ trait ServiceGetterTrait
             ['tmp_table_mask', 'tmp_%1$s%2$s'], // fname, stamp
         ]);
         return $config;
+    }
+
+    /**
+     * @return ResultInterface
+     */
+    protected function getResultMock()
+    {
+        /** @var \PHPUnit_Framework_TestCase $this */
+        return $this->getMockBuilder('\Maketok\DataMigration\Workflow\ResultInterface')->getMock();
     }
 }

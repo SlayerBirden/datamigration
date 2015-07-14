@@ -65,7 +65,7 @@ class GenerateTest extends \PHPUnit_Framework_TestCase
             new Generator(),
             2
         );
-        $action->process();
+        $action->process($this->getResultMock());
 
         $this->assertEquals(
             '/tmp/test_table1.csv',

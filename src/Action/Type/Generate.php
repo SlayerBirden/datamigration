@@ -9,6 +9,7 @@ use Maketok\DataMigration\Action\Exception\WrongContextException;
 use Maketok\DataMigration\Expression\LanguageInterface;
 use Maketok\DataMigration\Unit\GenerateUnitInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
+use Maketok\DataMigration\Workflow\ResultInterface;
 
 /**
  * Generate data and insert into tmp files
@@ -58,32 +59,38 @@ class Generate extends AbstractAction implements ActionInterface
 
     /**
      * {@inheritdoc}
-     * @throws WrongContextException, \LogicException
+     * @throws WrongContextException
+     * @throws \LogicException
      */
-    public function process()
+    public function process(ResultInterface $result)
     {
-        $this->start();
-        while ($this->count > 0) {
-            foreach ($this->bag as $unit) {
-                list($max, $center) = $unit->getGenerationSeed();
-                $rnd = $this->getRandom($max, $center);
-                while ($rnd > 0) {
-                    $row = array_map(function ($el) {
-                        if (is_callable($el)) {
-                            return call_user_func_array($el, [
-                                'generator' => $this->generator,
-                                'units' => $this->buffer,
-                            ]);
-                        } else {
-                            return $el;
-                        }
-                    }, $unit->getGeneratorMapping());
-                    $this->buffer[$unit->getCode()] = $row;
-                    $unit->getFilesystem()->writeRow($row);
-                    $rnd--;
+        try {
+            $this->start();
+            while ($this->count > 0) {
+                foreach ($this->bag as $unit) {
+                    list($max, $center) = $unit->getGenerationSeed();
+                    $rnd = $this->getRandom($max, $center);
+                    while ($rnd > 0) {
+                        $row = array_map(function ($el) {
+                            if (is_callable($el)) {
+                                return call_user_func_array($el, [
+                                    'generator' => $this->generator,
+                                    'units' => $this->buffer,
+                                ]);
+                            } else {
+                                return $el;
+                            }
+                        }, $unit->getGeneratorMapping());
+                        $this->buffer[$unit->getCode()] = $row;
+                        $unit->getFilesystem()->writeRow($row);
+                        $rnd--;
+                    }
                 }
+                $this->count--;
             }
-            $this->count--;
+        } catch (\Exception $e) {
+            $this->close();
+            throw $e;
         }
         $this->close();
     }

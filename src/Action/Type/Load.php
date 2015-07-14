@@ -6,6 +6,7 @@ use Maketok\DataMigration\Action\ActionInterface;
 use Maketok\DataMigration\Action\Exception\WrongContextException;
 use Maketok\DataMigration\Unit\ImportDbUnitInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
+use Maketok\DataMigration\Workflow\ResultInterface;
 
 /**
  * Load data from tmp files to tmp tables
@@ -21,7 +22,7 @@ class Load extends AbstractDbAction implements ActionInterface
      * {@inheritdoc}
      * @throws WrongContextException
      */
-    public function process()
+    public function process(ResultInterface $result)
     {
         foreach ($this->bag as $unit) {
             if ($unit->getTmpFileName() === null) {

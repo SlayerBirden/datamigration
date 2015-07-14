@@ -6,6 +6,7 @@ use Maketok\DataMigration\Action\ActionInterface;
 use Maketok\DataMigration\Action\Exception\WrongContextException;
 use Maketok\DataMigration\Unit\ImportDbUnitInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
+use Maketok\DataMigration\Workflow\ResultInterface;
 
 /**
  * Delete rows in table using tmp table as pk key mapper
@@ -21,7 +22,7 @@ class Delete extends AbstractDbAction implements ActionInterface
      * {@inheritdoc}
      * @throws WrongContextException
      */
-    public function process()
+    public function process(ResultInterface $result)
     {
         foreach ($this->bag as $unit) {
             if ($unit->getTmpTable() === null) {
