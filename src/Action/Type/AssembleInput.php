@@ -63,6 +63,10 @@ class AssembleInput extends AbstractAction implements ActionInterface
      * @var LanguageInterface
      */
     protected $language;
+    /**
+     * @var ResultInterface
+     */
+    protected $result;
 
     /**
      * @param UnitBagInterface $bag
@@ -93,22 +97,29 @@ class AssembleInput extends AbstractAction implements ActionInterface
      */
     public function process(ResultInterface $result)
     {
-        try {
-            $this->start();
-            while (true) {
-                try {
-                    $this->processUnitRowData();
-                    $this->addData();
-                } catch (FlowRegulationException $e) {
-                    if ($e->getCode() === self::FLOW_ABORT) {
-                        break 1; // exit point
-                    }
+        $this->result = $result;
+        $this->start();
+        while (true) {
+            try {
+                $this->processUnitRowData();
+                $this->addData();
+                $result->incrementActionProcessed($this->getCode());
+            } catch (FlowRegulationException $e) {
+                if ($e->getCode() === self::FLOW_ABORT) {
+                    break 1; // exit point
                 }
-                $this->clear();
+            } catch (\Exception $e) {
+                if (
+                    $e instanceof WrongContextException ||
+                    $e instanceof \LogicException &&
+                    $this->config['skip_on_failure']
+                ) {
+                    $result->addActionError($this->getCode(), $e->getMessage());
+                    $result->addActionException($this->getCode(), $e);
+                }
+                throw $e;
             }
-        } catch (\Exception $e) {
-            $this->close();
-            throw $e;
+            $this->clear();
         }
         $this->close();
     }
@@ -274,6 +285,7 @@ class AssembleInput extends AbstractAction implements ActionInterface
      */
     private function start()
     {
+        $this->result->setActionStartTime($this->getCode(), new \DateTime());
         foreach ($this->bag as $unit) {
             if ($unit->getTmpFileName() === null) {
                 throw new WrongContextException(sprintf(
@@ -293,6 +305,7 @@ class AssembleInput extends AbstractAction implements ActionInterface
         foreach ($this->bag as $unit) {
             $unit->getFilesystem()->close();
         }
+        $this->result->setActionEndTime($this->getCode(), new \DateTime());
     }
 
     /**
@@ -306,7 +319,8 @@ class AssembleInput extends AbstractAction implements ActionInterface
         $byKeys = call_user_func_array('array_intersect_key', $data);
         $byKeysAndValues = call_user_func_array('array_intersect_assoc', $data);
         if ($byKeys != $byKeysAndValues && !$force) {
-            $key = array_shift(array_keys(array_diff_assoc($byKeys, $byKeysAndValues)));
+            $keys = array_keys(array_diff_assoc($byKeys, $byKeysAndValues));
+            $key = array_shift($keys);
             $unitsInConflict = array_keys(array_filter($data, function ($var) use ($key) {
                 return array_key_exists($key, $var);
             }));

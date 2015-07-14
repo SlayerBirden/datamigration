@@ -5,9 +5,9 @@ namespace Maketok\DataMigration\Unit;
 interface UnitBagInterface extends \IteratorAggregate, \Countable
 {
     /**
-     * @param UnitInterface $worker
+     * @param UnitInterface $unit
      */
-    public function add(UnitInterface $worker);
+    public function add(UnitInterface $unit);
 
     /**
      * @param string $code

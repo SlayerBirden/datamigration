@@ -50,6 +50,10 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
      * @var LanguageInterface
      */
     protected $language;
+    /**
+     * @var ResultInterface
+     */
+    protected $result;
 
     /**
      * @param UnitBagInterface $bag
@@ -80,20 +84,27 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
      */
     public function process(ResultInterface $result)
     {
-        try {
-            $this->start();
-            while (($row = $this->input->get()) !== false) {
+        $this->result = $result;
+        $this->start();
+        while (($row = $this->input->get()) !== false) {
+            try {
                 if ($this->map->isFresh($row)) {
                     $this->map->feed($row);
                 }
                 $this->processDump();
                 $this->processWrite();
+            } catch (\Exception $e) {
+                if (
+                    $e instanceof \LogicException &&
+                    $this->config['skip_on_failure']
+                ) {
+                    $result->addActionError($this->getCode(), $e->getMessage());
+                    $result->addActionException($this->getCode(), $e);
+                }
+                throw $e;
             }
-            $this->dumpBuffer();
-        } catch (\Exception $e) {
-            $this->close();
-            throw $e;
         }
+        $this->dumpBuffer();
         $this->close();
     }
 
@@ -152,6 +163,7 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
      */
     private function start()
     {
+        $this->result->setActionStartTime($this->getCode(), new \DateTime());
         foreach ($this->bag as $unit) {
             $unit->setTmpFileName($this->getTmpFileName($unit));
             $unit->getFilesystem()->open($unit->getTmpFileName(), 'w');
@@ -166,6 +178,7 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
         foreach ($this->bag as $unit) {
             $unit->getFilesystem()->close();
         }
+        $this->result->setActionEndTime($this->getCode(), new \DateTime());
     }
 
     /**
@@ -223,6 +236,14 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
                 'hashmaps' => $unit->getHashmaps(),
             ]);
             if (!$valid) {
+                $this->result->addActionError(
+                    $this->getCode(),
+                    sprintf(
+                        "Invalid row %s for unit %s.",
+                        json_encode($this->map->dumpState()),
+                        $unit->getCode()
+                    )
+                );
                 break 1;
             }
         }
@@ -234,7 +255,7 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
      */
     private function dumpBuffer(ImportFileUnitInterface $unit = null)
     {
-        if (!$this->isValid && !$this->config->offsetGet('ignore_validation')) {
+        if (!$this->isValid && !$this->config['ignore_validation']) {
             return;
         }
         foreach ($this->buffer as $key => $dataArray) {
@@ -250,6 +271,7 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
             }
             if (is_object($handler)) {
                 $handler->writeRow(array_values($dataArray));
+                $this->result->incrementActionProcessed($this->getCode());
             }
             unset($this->buffer[$key]);
         }
