@@ -24,6 +24,7 @@ class Delete extends AbstractDbAction implements ActionInterface
      */
     public function process(ResultInterface $result)
     {
+        $result->setActionStartTime($this->getCode(), new \DateTime());
         foreach ($this->bag as $unit) {
             if ($unit->getTmpTable() === null) {
                 throw new WrongContextException(sprintf(
@@ -38,8 +39,10 @@ class Delete extends AbstractDbAction implements ActionInterface
             if ($unit->getPk() !== null) {
                 $args[] = $unit->getPk();
             }
-            call_user_func_array([$this->resource, 'deleteUsingTempPK'], $args);
+            $rowsDeleted = call_user_func_array([$this->resource, 'deleteUsingTempPK'], $args);
+            $result->incrementActionProcessed($this->getCode(), $rowsDeleted);
         }
+        $result->setActionEndTime($this->getCode(), new \DateTime());
     }
 
     /**

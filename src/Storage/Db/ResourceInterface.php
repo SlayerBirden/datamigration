@@ -21,7 +21,7 @@ interface ResourceInterface
      * @param string $deleteTable
      * @param string $tmpTable
      * @param string|string[] $primaryKey
-     * @return bool
+     * @return int number of rows deleted
      */
     public function deleteUsingTempPK($deleteTable, $tmpTable, $primaryKey = 'id');
 
@@ -32,7 +32,7 @@ interface ResourceInterface
      * @param bool $local
      * @param array $columns
      * @param array $set
-     * @return mixed
+     * @return int number of rows loaded
      */
     public function loadData(
         $table,
@@ -50,7 +50,7 @@ interface ResourceInterface
      * @param array $conditions
      * @param array $orderBy
      * @param array $dir
-     * @return mixed
+     * @return int number of rows moved
      */
     public function move(
         $fromTable,
