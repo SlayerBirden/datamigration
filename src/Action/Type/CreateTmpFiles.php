@@ -94,13 +94,7 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
                 $this->processDump();
                 $this->processWrite();
             } catch (\Exception $e) {
-                if (
-                    $e instanceof \LogicException &&
-                    $this->config['skip_on_failure']
-                ) {
-                    $result->addActionError($this->getCode(), $e->getMessage());
-                    $result->addActionException($this->getCode(), $e);
-                }
+                $this->close();
                 throw $e;
             }
         }

@@ -36,6 +36,10 @@ class Generate extends AbstractAction implements ActionInterface
      * @var LanguageInterface
      */
     private $language;
+    /**
+     * @var ResultInterface
+     */
+    protected $result;
 
     /**
      * @param UnitBagInterface $bag
@@ -64,10 +68,11 @@ class Generate extends AbstractAction implements ActionInterface
      */
     public function process(ResultInterface $result)
     {
-        try {
-            $this->start();
-            while ($this->count > 0) {
-                foreach ($this->bag as $unit) {
+        $this->result = $result;
+        $this->start();
+        while ($this->count > 0) {
+            foreach ($this->bag as $unit) {
+                try {
                     list($max, $center) = $unit->getGenerationSeed();
                     $rnd = $this->getRandom($max, $center);
                     while ($rnd > 0) {
@@ -83,14 +88,15 @@ class Generate extends AbstractAction implements ActionInterface
                         }, $unit->getGeneratorMapping());
                         $this->buffer[$unit->getCode()] = $row;
                         $unit->getFilesystem()->writeRow($row);
+                        $result->incrementActionProcessed($this->getCode());
                         $rnd--;
                     }
+                } catch (\Exception $e) {
+                    $this->close();
+                    throw $e;
                 }
-                $this->count--;
             }
-        } catch (\Exception $e) {
-            $this->close();
-            throw $e;
+            $this->count--;
         }
         $this->close();
     }
@@ -136,6 +142,7 @@ class Generate extends AbstractAction implements ActionInterface
      */
     private function start()
     {
+        $this->result->setActionStartTime($this->getCode(), new \DateTime());
         foreach ($this->bag as $unit) {
             if ($unit->getGeneratorMapping() === null) {
                 throw new WrongContextException(
@@ -158,6 +165,7 @@ class Generate extends AbstractAction implements ActionInterface
         foreach ($this->bag as $unit) {
             $unit->getFilesystem()->close();
         }
+        $this->result->setActionEndTime($this->getCode(), new \DateTime());
     }
 
     /**

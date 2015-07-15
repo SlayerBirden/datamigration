@@ -24,6 +24,7 @@ class Load extends AbstractDbAction implements ActionInterface
      */
     public function process(ResultInterface $result)
     {
+        $result->setActionStartTime($this->getCode(), new \DateTime());
         foreach ($this->bag as $unit) {
             if ($unit->getTmpFileName() === null) {
                 throw new WrongContextException(sprintf(
@@ -36,12 +37,14 @@ class Load extends AbstractDbAction implements ActionInterface
                 $unit->getTmpTable(),
                 array_keys($unit->getMapping())
             );
-            $this->resource->loadData(
+            $loaded = $this->resource->loadData(
                 $unit->getTmpTable(),
                 $unit->getTmpFileName(),
                 $this->config->offsetGet('local_infile')
             );
+            $result->incrementActionProcessed($this->getCode(), $loaded);
         }
+        $result->setActionEndTime($this->getCode(), new \DateTime());
     }
 
     /**

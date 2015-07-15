@@ -22,13 +22,14 @@ class ReverseMove extends AbstractDbAction implements ActionInterface
      */
     public function process(ResultInterface $result)
     {
+        $result->setActionStartTime($this->getCode(), new \DateTime());
         foreach ($this->bag as $unit) {
             $unit->setTmpTable($this->getTmpTableName($unit));
             $this->resource->createTmpTable(
                 $unit->getTmpTable(),
                 array_keys($unit->getMapping())
             );
-            $this->resource->move(
+            $moved = $this->resource->move(
                 $unit->getTable(),
                 $unit->getTmpTable(),
                 null,
@@ -38,7 +39,9 @@ class ReverseMove extends AbstractDbAction implements ActionInterface
                 $unit->getReverseMoveOrder(),
                 $unit->getReverseMoveDirections()
             );
+            $result->incrementActionProcessed($this->getCode(), $moved);
         }
+        $result->setActionEndTime($this->getCode(), new \DateTime());
     }
 
     /**

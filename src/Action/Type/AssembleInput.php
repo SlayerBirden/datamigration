@@ -109,14 +109,7 @@ class AssembleInput extends AbstractAction implements ActionInterface
                     break 1; // exit point
                 }
             } catch (\Exception $e) {
-                if (
-                    $e instanceof WrongContextException ||
-                    $e instanceof \LogicException &&
-                    $this->config['skip_on_failure']
-                ) {
-                    $result->addActionError($this->getCode(), $e->getMessage());
-                    $result->addActionException($this->getCode(), $e);
-                }
+                $this->close();
                 throw $e;
             }
             $this->clear();

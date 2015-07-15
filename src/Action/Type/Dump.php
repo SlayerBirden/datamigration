@@ -17,6 +17,11 @@ class Dump extends AbstractDbAction implements ActionInterface
      * @var UnitBagInterface|ExportFileUnitInterface[]
      */
     protected $bag;
+    /**
+     * @var ResultInterface
+     */
+    protected $result;
+
 
     /**
      * {@inheritdoc}
@@ -26,6 +31,7 @@ class Dump extends AbstractDbAction implements ActionInterface
     {
         $offset = 0;
         $limit = $this->config->offsetGet('dump_limit');
+        $this->result = $result;
         try {
             $this->start();
             foreach ($this->bag as $unit) {
@@ -36,6 +42,7 @@ class Dump extends AbstractDbAction implements ActionInterface
                     $offset += $limit;
                     foreach ($data as $row) {
                         $unit->getFilesystem()->writeRow($row);
+                        $result->incrementActionProcessed($this->getCode());
                     }
                 }
             }
@@ -52,6 +59,7 @@ class Dump extends AbstractDbAction implements ActionInterface
      */
     private function start()
     {
+        $this->result->setActionStartTime($this->getCode(), new \DateTime());
         foreach ($this->bag as $unit) {
             if ($unit->getTmpTable() === null) {
                 throw new WrongContextException(sprintf(
@@ -72,6 +80,7 @@ class Dump extends AbstractDbAction implements ActionInterface
         foreach ($this->bag as $unit) {
             $unit->getFilesystem()->close();
         }
+        $this->result->setActionEndTime($this->getCode(), new \DateTime());
     }
 
     /**

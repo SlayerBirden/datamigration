@@ -24,6 +24,7 @@ class Move extends AbstractDbAction implements ActionInterface
      */
     public function process(ResultInterface $result)
     {
+        $result->setActionStartTime($this->getCode(), new \DateTime());
         foreach ($this->bag as $unit) {
             if ($unit->getTmpTable() === null) {
                 throw new WrongContextException(sprintf(
@@ -31,8 +32,10 @@ class Move extends AbstractDbAction implements ActionInterface
                     $unit->getTable()
                 ));
             }
-            $this->resource->move($unit->getTmpTable(), $unit->getTable());
+            $moved = $this->resource->move($unit->getTmpTable(), $unit->getTable());
+            $result->incrementActionProcessed($this->getCode(), $moved);
         }
+        $result->setActionEndTime($this->getCode(), new \DateTime());
     }
 
     /**
