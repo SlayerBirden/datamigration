@@ -319,6 +319,8 @@ class AssembleInput extends AbstractAction implements ActionInterface
             }));
             throw new ConflictException(
                 sprintf("Conflict with data %s", json_encode($data)),
+                0,
+                null,
                 $unitsInConflict,
                 $key
             );

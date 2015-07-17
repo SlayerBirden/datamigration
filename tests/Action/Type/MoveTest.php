@@ -54,4 +54,18 @@ class MoveTest extends \PHPUnit_Framework_TestCase
         );
         $action->process($this->getResultMock());
     }
+
+    /**
+     * @expectedException \Maketok\DataMigration\Action\Exception\WrongContextException
+     * @expectedExceptionMessage Action can not be used for current unit test
+     */
+    public function testWrongProcess()
+    {
+        $action = new Move(
+            $this->getUnitBag([$this->getUnit('test')]),
+            $this->getConfig(),
+            $this->getResource()
+        );
+        $action->process($this->getResultMock());
+    }
 }

@@ -9,7 +9,7 @@ class GeneratorUnit extends ImportFileUnit implements GenerateUnitInterface
     /**
      * @var array
      */
-    protected $generatorMapping = [];
+    protected $generatorMapping;
     /**
      * Max number with and center of dispersion
      * @var \SplFixedArray
@@ -22,7 +22,7 @@ class GeneratorUnit extends ImportFileUnit implements GenerateUnitInterface
      */
     public function __construct($code, \SplFixedArray $generationSeed = null)
     {
-        $this->code = $code;
+        parent::__construct($code);
         if (is_null($generationSeed)) {
             $this->generationSeed = new \SplFixedArray(2);
             $this->generationSeed[0] = 1;

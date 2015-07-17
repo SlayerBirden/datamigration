@@ -29,7 +29,7 @@ class Load extends AbstractDbAction implements ActionInterface
             if ($unit->getTmpFileName() === null) {
                 throw new WrongContextException(sprintf(
                     "Action can not be used for current unit %s. Tmp file is missing.",
-                    $unit->getTable()
+                    $unit->getCode()
                 ));
             }
             $unit->setTmpTable($this->getTmpTableName($unit));

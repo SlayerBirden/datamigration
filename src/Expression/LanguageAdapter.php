@@ -29,16 +29,8 @@ class LanguageAdapter implements LanguageInterface
     {
         if (is_callable($expression)) {
             return call_user_func_array($expression, $values);
-        } elseif (is_string($expression)) {
-            if (
-                strpos($expression, '.') === false &&
-                isset($values['map']) &&
-                $values['map'] instanceof MapInterface
-            ) {
-                return $values['map'][$expression];
-            } else {
-                return $this->language->evaluate($expression, $values);
-            }
+        } elseif (is_string($expression) && $this->language) {
+            return $this->language->evaluate($expression, $values);
         }
         throw new \InvalidArgumentException(
             sprintf("Wrong type of expression given: %s", gettype($expression))

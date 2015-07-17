@@ -75,4 +75,20 @@ class DumpTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('/tmp/test_table1.csv',
             $unit->getTmpFileName());
     }
+
+    /**
+     * @expectedException \Maketok\DataMigration\Action\Exception\WrongContextException
+     * @expectedExceptionMessage Action can not be used for current unit test123
+     */
+    public function testWrongProcess()
+    {
+        $unit = $this->getUnit('test123');
+        $unit->setFilesystem($this->getFS());
+        $action = new Dump(
+            $this->getUnitBag([$unit]),
+            $this->getConfig(),
+            $this->getResource()
+        );
+        $action->process($this->getResultMock());
+    }
 }

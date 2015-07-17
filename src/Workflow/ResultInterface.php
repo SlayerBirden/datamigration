@@ -2,8 +2,6 @@
 
 namespace Maketok\DataMigration\Workflow;
 
-use Maketok\DataMigration\Unit\UnitBagInterface;
-
 interface ResultInterface
 {
     /**
@@ -32,7 +30,7 @@ interface ResultInterface
     public function getAllExceptions();
 
     /**
-     * @return UnitBagInterface
+     * @return array
      */
     public function getParticipants();
 

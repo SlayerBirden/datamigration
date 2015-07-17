@@ -4,11 +4,13 @@ namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\ArrayMap;
 use Maketok\DataMigration\Expression\LanguageAdapter;
+use Maketok\DataMigration\Hashmap\ArrayHashmap;
 use Maketok\DataMigration\Input\InputResourceInterface;
 use Maketok\DataMigration\MapInterface;
 use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
 use Maketok\DataMigration\Unit\Type\ImportFileUnit;
+use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
 {
@@ -43,7 +45,16 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
      */
     public function getUnit($code)
     {
-        return new ImportFileUnit($code);
+        $unit = new ImportFileUnit($code);
+        $dummy = function () {
+            return true;
+        };
+        // all add
+        $unit->addWriteCondition($dummy);
+        // all valid
+        $unit->addValidationRule($dummy);
+        $unit->addHashmap(new ArrayHashmap('test'));
+        return $unit;
     }
 
     /**
@@ -92,7 +103,7 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
         ];
         $unit1 = $this->getUnit('customer');
         $unit1->setMapping([
-            'id' => 'id',
+            'id' => 'map.id',
             'fname' => function ($row) {
                 list($fname) = explode(" ", $row['name']);
                 return $fname;
@@ -101,8 +112,8 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
                 list(, $lname) = explode(" ", $row['name']);
                 return $lname;
             },
-            'email' => 'email',
-            'age' => 'age',
+            'email' => 'map.email',
+            'age' => 'map.age',
         ]);
         $unit1->addContribution(function (MapInterface $map) {
             $map->incr('id', 1);
@@ -115,10 +126,10 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
         ));
         $unit2 = $this->getUnit('address1');
         $unit2->setMapping([
-            'id' => 'addr_id',
-            'street' => 'addr1_street',
-            'city' => 'addr1_city',
-            'parent_id' => 'id',
+            'id' => 'map.addr_id',
+            'street' => 'map.addr1_street',
+            'city' => 'map.addr1_city',
+            'parent_id' => 'map.id',
         ]);
         $unit2->addContribution(function (MapInterface $map) {
             $map->incr('addr_id', 1);
@@ -131,10 +142,10 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
         ));
         $unit3 = $this->getUnit('address2');
         $unit3->setMapping([
-            'id' => 'addr_id',
-            'street' => 'addr2_street',
-            'city' => 'addr2_city',
-            'parent_id' => 'id',
+            'id' => 'map.addr_id',
+            'street' => 'map.addr2_street',
+            'city' => 'map.addr2_city',
+            'parent_id' => 'map.id',
         ]);
         $unit3->addContribution(function (MapInterface $map) {
             $map->incr('addr_id', 1);
@@ -149,7 +160,7 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
         $action = new CreateTmpFiles(
             $this->getUnitBag([$unit1, $unit2, $unit3]),
             $this->getConfig(),
-            new LanguageAdapter(),
+            new LanguageAdapter(new ExpressionLanguage()),
             $this->getInputResource($inputs),
             new ArrayMap(),
             $this->getResourceHelper()
@@ -184,7 +195,7 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
         ];
         $unit1 = $this->getUnit('customer');
         $unit1->setMapping([
-            'id' => 'id',
+            'id' => 'map.id',
             'fname' => function ($map) {
                 list($fname) = explode(" ", $map['name']);
                 return $fname;
@@ -193,8 +204,8 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
                 list(, $lname) = explode(" ", $map['name']);
                 return $lname;
             },
-            'email' => 'email',
-            'age' => 'age',
+            'email' => 'map.email',
+            'age' => 'map.age',
         ]);
         $unit1->addContribution(function (MapInterface $map) {
             $map->frozenIncr('id', 1);
@@ -213,10 +224,10 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
         });
         $unit2 = $this->getUnit('address');
         $unit2->setMapping([
-            'id' => 'addr_id',
-            'street' => 'addr_street',
-            'city' => 'addr_city',
-            'parent_id' => 'id',
+            'id' => 'map.addr_id',
+            'street' => 'map.addr_street',
+            'city' => 'map.addr_city',
+            'parent_id' => 'map.id',
         ]);
         $unit2->addContribution(function (MapInterface $map) {
             $map->incr('addr_id', 1);
@@ -232,7 +243,7 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
         $action = new CreateTmpFiles(
             $this->getUnitBag([$unit1, $unit2]),
             $this->getConfig(),
-            new LanguageAdapter(),
+            new LanguageAdapter(new ExpressionLanguage()),
             $this->getInputResource($inputs),
             new ArrayMap(),
             $this->getResourceHelper()

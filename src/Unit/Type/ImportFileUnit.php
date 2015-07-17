@@ -2,8 +2,8 @@
 
 namespace Maketok\DataMigration\Unit\Type;
 
-use Maketok\DataMigration\Action\Exception\WrongContextException;
 use Maketok\DataMigration\HashmapInterface;
+use Maketok\DataMigration\Storage\Filesystem\Resource;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
 use Maketok\DataMigration\Unit\AbstractUnit;
 use Maketok\DataMigration\Unit\ImportFileUnitInterface;
@@ -42,6 +42,15 @@ class ImportFileUnit extends AbstractUnit implements ImportFileUnitInterface
      * @var HashmapInterface[]
      */
     protected $hashmaps;
+
+    public function __construct($code, ResourceInterface $fileSystem = null)
+    {
+        parent::__construct($code);
+        if (is_null($fileSystem)) {
+            $fileSystem = new Resource();
+        }
+        $this->filesystem = $fileSystem;
+    }
 
     /**
      * {@inheritdoc}
@@ -109,13 +118,9 @@ class ImportFileUnit extends AbstractUnit implements ImportFileUnitInterface
 
     /**
      * {@inheritdoc}
-     * @throws WrongContextException
      */
     public function getFilesystem()
     {
-        if (is_null($this->filesystem)) {
-            throw new WrongContextException("Unit does not have filesystem set");
-        }
         return $this->filesystem;
     }
 

@@ -25,7 +25,10 @@ class LoadTest extends \PHPUnit_Framework_TestCase
      */
     public function getUnit($code)
     {
-        return new ImportDbUnit($code);
+        $unit = new ImportDbUnit($code);
+        $unit->setTable('table');
+        $unit->setPk('id');
+        return $unit;
     }
 
     /**

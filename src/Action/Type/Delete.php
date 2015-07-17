@@ -29,7 +29,7 @@ class Delete extends AbstractDbAction implements ActionInterface
             if ($unit->getTmpTable() === null) {
                 throw new WrongContextException(sprintf(
                     "Action can not be used for current unit %s. Tmp table is missing.",
-                    $unit->getTable()
+                    $unit->getCode()
                 ));
             }
             $args = [

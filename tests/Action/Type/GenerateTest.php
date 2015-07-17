@@ -3,9 +3,12 @@
 namespace Maketok\DataMigration\Action\Type;
 
 use Faker\Generator;
+use Faker\Provider\Base;
+use Faker\Provider\Lorem;
 use Maketok\DataMigration\Expression\LanguageAdapter;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
 use Maketok\DataMigration\Unit\Type\GeneratorUnit;
+use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 class GenerateTest extends \PHPUnit_Framework_TestCase
 {
@@ -33,7 +36,10 @@ class GenerateTest extends \PHPUnit_Framework_TestCase
      */
     public function getUnit($code)
     {
-        return new GeneratorUnit($code);
+        $unit = new GeneratorUnit($code);
+        $arr = \SplFixedArray::fromArray([1,1]);
+        $unit->setGenerationSeed($arr);
+        return $unit;
     }
 
     public function testGetCode()
@@ -58,11 +64,20 @@ class GenerateTest extends \PHPUnit_Framework_TestCase
     {
         $unit = $this->getUnit('test_table1');
         $unit->setFilesystem($this->getFS(2));
+        $unit->setGeneratorMapping([
+            'id' => 'generator.randomDigit',
+            'code' => function (Generator $generator) {
+                return $generator->word;
+            }
+        ]);
+        $generator = new Generator();
+        $generator->addProvider(new Base($generator));
+        $generator->addProvider(new Lorem($generator));
         $action = new Generate(
             $this->getUnitBag([$unit]),
             $this->getConfig(),
-            new LanguageAdapter(),
-            new Generator(),
+            new LanguageAdapter(new ExpressionLanguage()),
+            $generator,
             2
         );
         $action->process($this->getResultMock());
@@ -71,6 +86,23 @@ class GenerateTest extends \PHPUnit_Framework_TestCase
             '/tmp/test_table1.csv',
             $unit->getTmpFileName()
         );
+    }
+
+    /**
+     * @expectedException \Maketok\DataMigration\Action\Exception\WrongContextException
+     * @expectedExceptionMessage Can not use generation with unit test_table1
+     */
+    public function testWrongProcess()
+    {
+        $unit = $this->getUnit('test_table1');
+        $action = new Generate(
+            $this->getUnitBag([$unit]),
+            $this->getConfig(),
+            new LanguageAdapter(),
+            new Generator(),
+            2
+        );
+        $action->process($this->getResultMock());
     }
 
     public function testGetRandom()

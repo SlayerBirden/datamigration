@@ -15,17 +15,17 @@ class ConflictException extends \Exception
 
     /**
      * @param string $message
-     * @param array $unitsInConflict
-     * @param string $conflictedKey
      * @param int $code
      * @param \Exception $previous
+     * @param array $unitsInConflict
+     * @param string $conflictedKey
      */
     public function __construct(
         $message,
-        array $unitsInConflict,
-        $conflictedKey,
         $code = 0,
-        \Exception $previous = null
+        \Exception $previous = null,
+        array $unitsInConflict = [],
+        $conflictedKey = ""
     ) {
         $this->unitsInConflict = $unitsInConflict;
         parent::__construct($message, $code, $previous);

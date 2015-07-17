@@ -22,10 +22,12 @@ class ResultTest extends \PHPUnit_Framework_TestCase
         $this->result->addActionError('test_action', 'Error message1');
         $this->result->addActionError('test_action2', 'Error message2');
         $this->result->addActionError('test_action3', 'Error message1');
+        $this->result->addActionError('test_action3', 'Error message2');
         $this->assertSame([
             'Error message1',
             'Error message2',
             'Error message1',
+            'Error message2',
         ], $this->result->getAllErrors());
     }
 
@@ -36,9 +38,11 @@ class ResultTest extends \PHPUnit_Framework_TestCase
     {
         $e1 = new \Exception('bar');
         $e2 = new \Exception('baz');
+        $e3 = new \Exception('zap');
         $this->result->addActionException('test_action', $e1);
         $this->result->addActionException('test_action2', $e2);
-        $this->assertSame([$e1, $e2], $this->result->getAllExceptions());
+        $this->result->addActionException('test_action2', $e3);
+        $this->assertEquals([$e1, $e2, $e3], $this->result->getAllExceptions());
     }
 
     /**
@@ -53,7 +57,9 @@ class ResultTest extends \PHPUnit_Framework_TestCase
         $this->result->setActionEndTime('test2', $end2);
         $this->result->addActionError('test3', 'error');
         $this->result->addActionException('test2', $e);
+        $this->result->addActionError('test2', 'err');
         $this->result->incrementActionProcessed('test4');
+        $this->result->incrementActionProcessed('test2');
 
         $this->assertEquals([
             'test1' => [
@@ -62,6 +68,8 @@ class ResultTest extends \PHPUnit_Framework_TestCase
             'test2' => [
                 'end_time' => $end2,
                 'exceptions' => [$e],
+                'errors' => ['err'],
+                'rows_processed' => 1,
             ],
             'test3' => [
                 'errors' => ['error'],
@@ -90,7 +98,37 @@ class ResultTest extends \PHPUnit_Framework_TestCase
     {
         $this->result->incrementActionProcessed('test4', 1);
         $this->result->incrementActionProcessed('test1', 100);
+        $this->result->incrementActionProcessed('test1', 1);
 
         $this->assertSame(1, $this->result->getTotalRowsThrough());
+    }
+
+    /**
+     * @test
+     */
+    public function testGetTimes()
+    {
+        $dt = new \DateTime();
+        $dt2 = new \DateTime('+1 minute');
+        $this->result->setStartTime($dt);
+        $this->result->setEndTime($dt2);
+        $this->result->setActionStartTime('test', $dt);
+        $this->result->setActionEndTime('test', $dt2);
+        $this->result->setActionStartTime('test', $dt2);
+        $this->result->setActionEndTime('test', $dt);
+
+        $this->assertSame($dt, $this->result->getStartTime());
+        $this->assertSame($dt2, $this->result->getEndTime());
+        $this->assertSame($dt2, $this->result->getActionStartTime('test'));
+        $this->assertSame($dt, $this->result->getActionEndTime('test'));
+    }
+
+    /**
+     * @test
+     */
+    public function testGetErrors()
+    {
+        $this->assertEquals([], $this->result->getActionErrors('test'));
+        $this->assertEquals([], $this->result->getActionExceptions('test'));
     }
 }

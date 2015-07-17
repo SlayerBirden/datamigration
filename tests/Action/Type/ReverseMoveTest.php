@@ -25,7 +25,17 @@ class ReverseMoveTest extends \PHPUnit_Framework_TestCase
      */
     public function getUnit($code)
     {
-        return new ExportDbUnit($code);
+        $unit = new ExportDbUnit($code);
+        $unit->setReverseMoveConditions([
+            "id != 5"
+        ]);
+        $unit->setReverseMoveOrder([
+            'id'
+        ]);
+        $unit->setReverseMoveDirections([
+            'desc'
+        ]);
+        return $unit;
     }
 
     /**

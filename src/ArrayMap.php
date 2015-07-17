@@ -22,7 +22,7 @@ class ArrayMap implements MapInterface
      */
     public function getIterator()
     {
-        return new \ArrayIterator([]);
+        return new \ArrayIterator($this->state);
     }
 
     /**

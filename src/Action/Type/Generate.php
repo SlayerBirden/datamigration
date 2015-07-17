@@ -69,34 +69,30 @@ class Generate extends AbstractAction implements ActionInterface
     public function process(ResultInterface $result)
     {
         $this->result = $result;
-        $this->start();
-        while ($this->count > 0) {
-            foreach ($this->bag as $unit) {
-                try {
+        try {
+            $this->start();
+            while ($this->count > 0) {
+                foreach ($this->bag as $unit) {
                     list($max, $center) = $unit->getGenerationSeed();
                     $rnd = $this->getRandom($max, $center);
                     while ($rnd > 0) {
                         $row = array_map(function ($el) {
-                            if (is_callable($el)) {
-                                return call_user_func_array($el, [
-                                    'generator' => $this->generator,
-                                    'units' => $this->buffer,
-                                ]);
-                            } else {
-                                return $el;
-                            }
+                            return $this->language->evaluate($el, [
+                                'generator' => $this->generator,
+                                'units' => $this->buffer,
+                            ]);
                         }, $unit->getGeneratorMapping());
                         $this->buffer[$unit->getCode()] = $row;
                         $unit->getFilesystem()->writeRow($row);
                         $result->incrementActionProcessed($this->getCode());
                         $rnd--;
                     }
-                } catch (\Exception $e) {
-                    $this->close();
-                    throw $e;
                 }
+                $this->count--;
             }
-            $this->count--;
+        } catch (\Exception $e) {
+            $this->close();
+            throw $e;
         }
         $this->close();
     }
