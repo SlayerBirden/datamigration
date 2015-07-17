@@ -14,6 +14,13 @@ interface ResultInterface
     public function getTotalRowsProcessed();
 
     /**
+     * Get the total number of
+     * rows that went through all actions
+     * @return int
+     */
+    public function getTotalRowsThrough();
+
+    /**
      * Return all errors
      * @return array
      */
@@ -77,35 +84,35 @@ interface ResultInterface
 
     /**
      * @param string $code
-     * @return \DateTime
+     * @return \DateTime|null
      */
     public function getActionStartTime($code);
 
     /**
      * @param string $code
-     * @return \DateTime
+     * @return \DateTime|null
      */
     public function getActionEndTime($code);
 
     /**
-     * @param \DateTime $t
+     * @param \DateTime $time
      */
-    public function setStartTime(\DateTime $t);
+    public function setStartTime(\DateTime $time);
 
     /**
-     * @param \DateTime $t
+     * @param \DateTime $time
      */
-    public function setEndTime(\DateTime $t);
-
-    /**
-     * @param string $code
-     * @param \DateTime $t
-     */
-    public function setActionStartTime($code, \DateTime $t);
+    public function setEndTime(\DateTime $time);
 
     /**
      * @param string $code
-     * @param \DateTime $t
+     * @param \DateTime $time
      */
-    public function setActionEndTime($code, \DateTime $t);
+    public function setActionStartTime($code, \DateTime $time);
+
+    /**
+     * @param string $code
+     * @param \DateTime $time
+     */
+    public function setActionEndTime($code, \DateTime $time);
 }
