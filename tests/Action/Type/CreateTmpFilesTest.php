@@ -10,6 +10,7 @@ use Maketok\DataMigration\MapInterface;
 use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
 use Maketok\DataMigration\Unit\Type\ImportFileUnit;
+use Maketok\DataMigration\Workflow\Result;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
@@ -254,5 +255,51 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
             $unit1->getTmpFileName());
         $this->assertEquals('/tmp/address.csv',
             $unit2->getTmpFileName());
+    }
+
+    public function testFailedWrite()
+    {
+        $unit = $this->getUnit('test');
+        $filesystem = $this->getMockBuilder('\Maketok\DataMigration\Storage\Filesystem\ResourceInterface')
+            ->getMock();
+        $filesystem->expects($this->any())->method('writeRow')->willReturn(false);
+        $input = ['name' => 'Oleg', 'address' => 'Galaxy'];
+        /** @var ResourceInterface $filesystem */
+        $unit->setFilesystem($filesystem);
+        $action = new CreateTmpFiles(
+            $this->getUnitBag([$unit]),
+            $this->getConfig(),
+            new LanguageAdapter(new ExpressionLanguage()),
+            $this->getInputResource([$input, false]),
+            new ArrayMap(),
+            $this->getResourceHelper()
+        );
+        $result = new Result();
+        $action->process($result);
+
+        $this->assertCount(1, $result->getAllErrors());
+        $this->assertEquals(0, $result->getTotalRowsProcessed());
+    }
+
+    public function testInvalidRow()
+    {
+        $unit = $this->getUnit('test');
+        $input = ['name' => 'Oleg', 'address' => 'Galaxy'];
+        $unit->addValidationRule(function (ArrayMap $map) {
+            return $map->name != 'Oleg';
+        });
+        $action = new CreateTmpFiles(
+            $this->getUnitBag([$unit]),
+            $this->getConfig(),
+            new LanguageAdapter(new ExpressionLanguage()),
+            $this->getInputResource([$input, false]),
+            new ArrayMap(),
+            $this->getResourceHelper()
+        );
+        $result = new Result();
+        $action->process($result);
+
+        $this->assertCount(1, $result->getAllErrors());
+        $this->assertEquals(0, $result->getTotalRowsProcessed());
     }
 }

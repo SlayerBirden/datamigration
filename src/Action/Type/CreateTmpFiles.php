@@ -264,8 +264,15 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
                 $handler = $tmpUnit->getFilesystem();
             }
             if (is_object($handler)) {
-                $handler->writeRow(array_values($dataArray));
-                $this->result->incrementActionProcessed($this->getCode());
+                $written = $handler->writeRow(array_values($dataArray));
+                if (false === $written) {
+                    $this->result->addActionError(
+                        $this->getCode(),
+                        sprintf("Could not write row %s to file.", json_encode($dataArray))
+                    );
+                } else {
+                    $this->result->incrementActionProcessed($this->getCode());
+                }
             }
             unset($this->buffer[$key]);
         }

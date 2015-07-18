@@ -14,7 +14,7 @@ interface ResourceInterface
 
     /**
      * @param array $row
-     * @return bool
+     * @return int|bool length of written string or false on failure
      */
     public function writeRow(array $row);
 
@@ -30,7 +30,7 @@ interface ResourceInterface
 
     /**
      * return pointer to start of the file
-     * @return mixed
+     * @return void
      */
     public function rewind();
 

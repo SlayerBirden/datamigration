@@ -5,19 +5,26 @@ namespace Maketok\DataMigration\Storage\Filesystem;
 class Resource implements ResourceInterface
 {
     /**
+     * @var \SplFileObject
+     */
+    private $descriptor;
+
+    /**
      * {@inheritdoc}
      */
     public function open($name, $mode)
     {
-        // TODO: Implement open() method.
+        $this->descriptor = new \SplFileObject($name, $mode);
+        $this->descriptor->setFlags(\SplFileObject::SKIP_EMPTY | \SplFileObject::DROP_NEW_LINE);
+        return true;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function writeRow(array $row)
+    public function writeRow(array $row, $delimiter = ',', $enclosure = '"')
     {
-        // TODO: Implement writeRow() method.
+        return $this->descriptor->fputcsv($row, $delimiter, $enclosure);
     }
 
     /**
@@ -25,15 +32,15 @@ class Resource implements ResourceInterface
      */
     public function close()
     {
-        // TODO: Implement close() method.
+        $this->descriptor = null;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function readRow()
+    public function readRow($delimiter = ',', $enclosure = '"', $escape = "\\")
     {
-        // TODO: Implement readRow() method.
+        return $this->descriptor->fgetcsv($delimiter, $enclosure, $escape);
     }
 
     /**
@@ -41,7 +48,7 @@ class Resource implements ResourceInterface
      */
     public function rewind()
     {
-        // TODO: Implement rewind() method.
+        $this->descriptor->rewind();
     }
 
     /**
@@ -49,6 +56,6 @@ class Resource implements ResourceInterface
      */
     public function isActive()
     {
-        // TODO: Implement isActive() method.
+        return isset($this->descriptor);
     }
 }
