@@ -17,12 +17,12 @@ interface ExportDbUnitInterface extends ImportDbUnitInterface
     /**
      * @return array
      */
-    public function getReverseMoveDirections();
+    public function getReverseMoveDirection();
 
     /**
-     * @param array $directions
+     * @param string $direction
      */
-    public function setReverseMoveDirections(array $directions);
+    public function setReverseMoveDirection($direction);
 
     /**
      * @return array

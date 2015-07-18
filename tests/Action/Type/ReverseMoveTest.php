@@ -32,9 +32,7 @@ class ReverseMoveTest extends \PHPUnit_Framework_TestCase
         $unit->setReverseMoveOrder([
             'id'
         ]);
-        $unit->setReverseMoveDirections([
-            'desc'
-        ]);
+        $unit->setReverseMoveDirection('desc');
         return $unit;
     }
 

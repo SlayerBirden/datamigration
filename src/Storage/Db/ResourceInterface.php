@@ -38,8 +38,8 @@ interface ResourceInterface
         $table,
         $file,
         $local = false,
-        array $columns = null,
-        array $set = null
+        array $columns = [],
+        array $set = []
     );
 
     /**
@@ -49,16 +49,16 @@ interface ResourceInterface
      * @param array $columns
      * @param array $conditions
      * @param array $orderBy
-     * @param array $dir
+     * @param string $dir
      * @return int number of rows moved
      */
     public function move(
         $fromTable,
         $toTable,
-        array $columns = null,
-        array $conditions = null,
-        array $orderBy = null,
-        array $dir = null
+        array $columns = [],
+        array $conditions = [],
+        array $orderBy = [],
+        $dir = 'ASC'
     );
 
     /**
@@ -77,4 +77,22 @@ interface ResourceInterface
      * @return bool
      */
     public function createTmpTable($name, array $columns);
+
+    /**
+     * Start transaction
+     * @return void
+     */
+    public function startTransaction();
+
+    /**
+     * Commit transaction
+     * @return void
+     */
+    public function commit();
+
+    /**
+     * Rollback transaction
+     * @return void
+     */
+    public function rollback();
 }

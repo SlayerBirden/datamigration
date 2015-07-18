@@ -12,10 +12,10 @@ class ExportDbUnit extends ImportDbUnit implements ExportDbUnitInterface
      */
     protected $reverseMoveOrder;
     /**
-     * Directions for reverse move
-     * @var array
+     * Direction for reverse move
+     * @var string
      */
-    protected $reverseDirections;
+    protected $reverseDirection;
     /**
      * Conditions for reverse move
      * @var array
@@ -41,17 +41,17 @@ class ExportDbUnit extends ImportDbUnit implements ExportDbUnitInterface
     /**
      * {@inheritdoc}
      */
-    public function getReverseMoveDirections()
+    public function getReverseMoveDirection()
     {
-        return $this->reverseDirections;
+        return $this->reverseDirection;
     }
 
     /**
      * {@inheritdoc}
      */
-    public function setReverseMoveDirections(array $directions)
+    public function setReverseMoveDirection($direction)
     {
-        $this->reverseDirections = $directions;
+        $this->reverseDirection = $direction;
     }
 
     /**
