@@ -99,17 +99,16 @@ MYSQL;
         $escape = "\\",
         $termination = "\n",
         $optionallyEnclosed = true
-    )
-    {
+    ) {
         $localKey = $local ? 'LOCAL' : '';
         $table = $this->connection->quoteIdentifier($table);
         $optionalKey = $optionallyEnclosed ? 'OPTIONALLY' : '';
-        if ($columns) {
+        if (!empty($columns)) {
             $columns = '(' . implode(',', $columns) . ')';
         } else {
             $columns = '';
         }
-        if ($set) {
+        if (!empty($set)) {
             $setParts = [];
             foreach ($set as $key => $val) {
                 $setParts[] = "$key=$val";
@@ -143,13 +142,12 @@ MYSQL;
         array $conditions = [],
         array $orderBy = [],
         $dir = 'ASC'
-    )
-    {
+    ) {
         $selectColumns = '*';
         $onDuplicate = '';
         $fromTable = $this->connection->quoteIdentifier($fromTable);
         $toTable = $this->connection->quoteIdentifier($toTable);
-        if ($columns) {
+        if (!empty($columns)) {
             $columns = array_map([$this->connection, 'quoteIdentifier'], $columns);
             $selectColumns = implode(',', $columns);
             $duplicateParts = array_map(function ($var) {
@@ -160,7 +158,7 @@ MYSQL;
         } else {
             $columns = '';
         }
-        if ($conditions) {
+        if (!empty($conditions)) {
             $conditionParts = [];
             foreach ($conditions as $key => $val) {
                 $val = $this->connection->quote($val);
@@ -170,7 +168,7 @@ MYSQL;
         } else {
             $conditions = '';
         }
-        if ($orderBy) {
+        if (!empty($orderBy)) {
             $orderBy = implode(',', $orderBy);
         } else {
             $orderBy = 'NULL';
@@ -191,7 +189,7 @@ MYSQL;
     public function dumpData($table, array $columns = null, $limit = 1000, $offset = 0)
     {
         $table = $this->connection->quoteIdentifier($table);
-        if ($columns) {
+        if (!empty($columns)) {
             $columns = array_map([$this->connection, 'quoteIdentifier'], $columns);
             $columns = implode(',', $columns);
         } else {
@@ -222,6 +220,7 @@ MYSQL;
             $table->addColumn($column, 'text');
         }
         $sql = $this->connection->getDatabasePlatform()->getCreateTableSQL($table);
+        // TODO convert to tmp?
         $res = $this->connection->executeUpdate($sql);
         return $res > 0;
     }
