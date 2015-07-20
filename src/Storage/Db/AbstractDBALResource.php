@@ -91,4 +91,12 @@ abstract class AbstractDBALResource implements ResourceInterface
     {
         $this->connection->rollBack();
     }
+
+    /**
+     * @return Connection
+     */
+    public function getConnection()
+    {
+        return $this->connection;
+    }
 }
