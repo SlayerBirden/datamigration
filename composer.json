@@ -21,7 +21,8 @@
     "require": {
         "php": ">=5.4.0",
         "symfony/expression-language": "2.*",
-        "fzaninotto/faker": "~1"
+        "fzaninotto/faker": "~1",
+        "doctrine/dbal": "2.*"
     },
     "require-dev": {
         "phpunit/PHPUnit": "4.*",

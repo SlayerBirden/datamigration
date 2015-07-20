@@ -2,14 +2,16 @@
 
 namespace Maketok\DataMigration\Storage\Db;
 
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Schema\Schema;
 use Maketok\DataMigration\Action\ConfigInterface;
 
-class PdoResource implements ResourceInterface
+class DBALResource implements ResourceInterface
 {
     /**
-     * @var \PDO
+     * @var Connection
      */
-    private $pdo;
+    private $connection;
     /**
      * @var ConfigInterface
      */
@@ -29,12 +31,12 @@ class PdoResource implements ResourceInterface
      */
     public function open()
     {
-        $this->pdo = new \PDO(
-            $this->config['db_dns'],
-            $this->config['db_username'],
-            $this->config['db_password'],
-            $this->config['db_options']
-        );
+        $this->connection = new Connection([
+            'dbname' => $this->config['db_name'],
+            'user' => $this->config['db_user'],
+            'password' => $this->config['db_password'],
+            'host' => $this->config['db_host'],
+        ], $this->config['db_driver']);
     }
 
     /**
@@ -42,7 +44,7 @@ class PdoResource implements ResourceInterface
      */
     public function close()
     {
-        $this->pdo = null;
+        $this->connection->close();
     }
 
     /**
@@ -50,8 +52,8 @@ class PdoResource implements ResourceInterface
      */
     public function __destruct()
     {
-        if (!is_null($this->pdo)) {
-            $this->pdo = null;
+        if ($this->connection->isConnected()) {
+            $this->connection->close();
         }
     }
 
@@ -60,12 +62,22 @@ class PdoResource implements ResourceInterface
      */
     public function deleteUsingTempPK($deleteTable, $tmpTable, $primaryKey = 'id')
     {
+        $deleteTable = $this->connection->quoteIdentifier($deleteTable);
+        $tmpTable = $this->connection->quoteIdentifier($tmpTable);
+        if (!is_array($primaryKey)) {
+            $primaryKey = [$primaryKey];
+        }
+        $primaryKey = array_map([$this->connection, 'quoteIdentifier'], $primaryKey);
+        $conditionParts = [];
+        foreach ($primaryKey as $key) {
+            $conditionParts[] = "main_table.$key = tmp_table.$key";
+        }
+        $condition = implode('AND', $conditionParts);
         $sql = <<<MYSQL
 DELETE main_table FROM $deleteTable AS main_table
-JOIN $tmpTable AS tmp_table ON main_table.$primaryKey = tmp_table.$primaryKey;
+JOIN $tmpTable AS tmp_table ON $condition;
 MYSQL;
-        $stmt = $this->pdo->prepare($sql);
-        return $this->pdo->exec($stmt);
+        return $this->connection->executeUpdate($sql);
     }
 
     /**
@@ -90,6 +102,7 @@ MYSQL;
     )
     {
         $localKey = $local ? 'LOCAL' : '';
+        $table = $this->connection->quoteIdentifier($table);
         $optionalKey = $optionallyEnclosed ? 'OPTIONALLY' : '';
         if ($columns) {
             $columns = '(' . implode(',', $columns) . ')';
@@ -117,8 +130,7 @@ LINES
 $columns
 $set
 MYSQL;
-        $stmt = $this->pdo->prepare($sql);
-        return $this->pdo->exec($stmt);
+        return $this->connection->executeUpdate($sql);
     }
 
     /**
@@ -135,7 +147,10 @@ MYSQL;
     {
         $selectColumns = '*';
         $onDuplicate = '';
+        $fromTable = $this->connection->quoteIdentifier($fromTable);
+        $toTable = $this->connection->quoteIdentifier($toTable);
         if ($columns) {
+            $columns = array_map([$this->connection, 'quoteIdentifier'], $columns);
             $selectColumns = implode(',', $columns);
             $duplicateParts = array_map(function ($var) {
                 return "$var=VALUES($var)";
@@ -148,6 +163,7 @@ MYSQL;
         if ($conditions) {
             $conditionParts = [];
             foreach ($conditions as $key => $val) {
+                $val = $this->connection->quote($val);
                 $conditionParts = "$key=$val";
             }
             $conditions = 'WHERE ' . implode('AND', $conditionParts);
@@ -159,8 +175,6 @@ MYSQL;
         } else {
             $orderBy = 'NULL';
         }
-
-
         $sql = <<<MYSQL
 INSERT INTO `$toTable` $columns
 SELECT $selectColumns FROM `$fromTable`
@@ -168,8 +182,7 @@ $conditions
 ORDER BY $orderBy $dir
 $onDuplicate
 MYSQL;
-        $stmt = $this->pdo->prepare($sql);
-        return $this->pdo->exec($stmt);
+        return $this->connection->executeUpdate($sql);
     }
 
     /**
@@ -177,7 +190,25 @@ MYSQL;
      */
     public function dumpData($table, array $columns = null, $limit = 1000, $offset = 0)
     {
-        // TODO: Implement dumpData() method.
+        $table = $this->connection->quoteIdentifier($table);
+        if ($columns) {
+            $columns = array_map([$this->connection, 'quoteIdentifier'], $columns);
+            $columns = implode(',', $columns);
+        } else {
+            $columns = '*';
+        }
+        $sql = <<<MYSQL
+SELECT $columns FROM $table
+LIMIT ? OFFSET ?
+MYSQL;
+        $stmt = $this->connection->prepare($sql);
+        $stmt->bindValue(1, $limit, \PDO::PARAM_INT);
+        $stmt->bindValue(2, $offset, \PDO::PARAM_INT);
+        $res = $stmt->execute();
+        if ($res === false) {
+            return false;
+        }
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
     /**
@@ -185,7 +216,14 @@ MYSQL;
      */
     public function createTmpTable($name, array $columns)
     {
-        // TODO: Implement createTmpTable() method.
+        $schema = new Schema();
+        $table = $schema->createTable($name);
+        foreach ($columns as $column) {
+            $table->addColumn($column, 'text');
+        }
+        $sql = $this->connection->getDatabasePlatform()->getCreateTableSQL($table);
+        $res = $this->connection->executeUpdate($sql);
+        return $res > 0;
     }
 
     /**
@@ -193,7 +231,7 @@ MYSQL;
      */
     public function startTransaction()
     {
-        $this->pdo->beginTransaction();
+        $this->connection->beginTransaction();
     }
 
     /**
@@ -201,7 +239,7 @@ MYSQL;
      */
     public function commit()
     {
-        $this->pdo->commit();
+        $this->connection->commit();
     }
 
     /**
@@ -209,6 +247,6 @@ MYSQL;
      */
     public function rollback()
     {
-        $this->pdo->rollBack();
+        $this->connection->rollBack();
     }
 }
