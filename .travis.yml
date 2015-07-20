@@ -9,6 +9,10 @@ php:
 
 install: composer install
 
+before_script:
+  - mysql -e 'create database dm_test;'
+  - mysql -e 'CREATE TABLE `test1` (`id` int(11) NOT NULL, `name` varchar(45) DEFAULT NULL, PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;'
+
 script:
   - vendor/bin/phpunit --report-useless-tests --coverage-clover ./coverage.clover
 
