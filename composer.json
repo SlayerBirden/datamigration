@@ -26,11 +26,13 @@
     },
     "require-dev": {
         "phpunit/PHPUnit": "4.*",
-        "mikey179/vfsStream": "~1.0"
+        "mikey179/vfsStream": "~1.0",
+        "phpunit/dbunit": "~1"
     },
     "autoload": {
         "psr-4": {
-            "Maketok\\DataMigration\\": ["src/", "tests/"]
+            "Maketok\\DataMigration\\": ["src/", "tests/"],
+            "Maketok\\DataMigration\\IntegrationTest\\": ["tests/integration"]
         }
     }
 }
