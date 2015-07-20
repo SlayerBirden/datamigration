@@ -69,7 +69,7 @@ interface ResourceInterface
      * @param int $offset
      * @return array|false
      */
-    public function dumpData($table, array $columns = null, $limit = 1000, $offset = 0);
+    public function dumpData($table, array $columns = [], $limit = 1000, $offset = 0);
 
     /**
      * @param string $name
