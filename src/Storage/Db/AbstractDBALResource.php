@@ -40,8 +40,17 @@ abstract class AbstractDBALResource implements ResourceInterface
         if (isset($this->config['db_pdo'])) {
             $params['pdo'] = $this->config['db_pdo'];
         }
+        $params['driverOptions'] = $this->getDriverOptions();
         $this->connection = new Connection($params, $this->getDriver());
         return $this->connection->connect();
+    }
+
+    /**
+     * @return array
+     */
+    protected function getDriverOptions()
+    {
+        return [];
     }
 
     /**

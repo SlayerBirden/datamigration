@@ -1,0 +1,38 @@
+<?xml version="1.0" ?>
+<dataset>
+    <table name="customers">
+        <column>id</column>
+        <column>firstname</column>
+        <column>lastname</column>
+        <column>age</column>
+        <column>email</column>
+        <row>
+            <value>1</value>
+            <value>Oleg</value>
+            <value>K</value>
+            <value>30</value>
+            <value>ok@test.com</value>
+        </row>
+        <row>
+            <value>2</value>
+            <value>Bob</value>
+            <value>Bobbington</value>
+            <value>35</value>
+            <value>bb@example.com</value>
+        </row>
+        <row>
+            <value>3</value>
+            <value>Peter</value>
+            <value>Smith</value>
+            <value>12</value>
+            <value>superpete@hotmail.com</value>
+        </row>
+        <row>
+            <value>4</value>
+            <value>Aaron</value>
+            <value>Smith</value>
+            <value>44</value>
+            <value>father133@example.com</value>
+        </row>
+    </table>
+</dataset>

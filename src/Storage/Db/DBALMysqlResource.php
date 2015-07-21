@@ -5,6 +5,7 @@ namespace Maketok\DataMigration\Storage\Db;
 use Doctrine\DBAL\Driver as DriverInterface;
 use Doctrine\DBAL\Driver\PDOMySql\Driver;
 use Doctrine\DBAL\Schema\Schema;
+use Maketok\DataMigration\Storage\Exception\ParsingException;
 
 class DBALMysqlResource extends AbstractDBALResource
 {
@@ -12,6 +13,16 @@ class DBALMysqlResource extends AbstractDBALResource
      * @var DriverInterface
      */
     private $driver;
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function getDriverOptions()
+    {
+        return [
+            \PDO::MYSQL_ATTR_LOCAL_INFILE => true
+        ];
+    }
 
     /**
      * {@inheritdoc}
@@ -63,8 +74,8 @@ MYSQL;
         array $set = [],
         $delimiter = ",",
         $enclosure = '"',
-        $escape = "\\",
-        $termination = "\n",
+        $escape = '\\',
+        $termination = '\n',
         $optionallyEnclosed = true
     ) {
         $sql = $this->getLoadDataSql($table, $file, $local, $columns, $set, $delimiter, $enclosure,
@@ -94,7 +105,7 @@ MYSQL;
         $delimiter = ",",
         $enclosure = '"',
         $escape = "\\",
-        $termination = "\n",
+        $termination = '\n',
         $optionallyEnclosed = true
     ) {
         $localKey = $local ? 'LOCAL' : '';
@@ -114,13 +125,14 @@ MYSQL;
         } else {
             $set = '';
         }
+        $escape = $this->connection->quote($escape);
         return <<<MYSQL
 LOAD DATA $localKey INFILE '$file'
 INTO TABLE $table
 FIELDS
     TERMINATED BY '$delimiter'
     $optionalKey ENCLOSED BY '$enclosure'
-    ESCAPED BY '$escape'
+    ESCAPED BY $escape
 LINES
     TERMINATED BY '$termination'
 $columns
@@ -179,8 +191,12 @@ MYSQL;
             $conditionParts = [];
             foreach ($conditions as $key => $val) {
                 $key = $this->connection->quoteIdentifier($key);
-                $val = $this->connection->quote($val);
-                $conditionParts[] = "$fromTable.$key=$val";
+                if (is_array($val)) {
+                    $conditionParts[] = $this->getParsedCondition("$fromTable.$key", $val);
+                } else {
+                    $val = $this->connection->quote($val);
+                    $conditionParts[] = "$fromTable.$key=$val";
+                }
             }
             $conditions = 'WHERE ' . implode('AND', $conditionParts);
         } else {
@@ -199,6 +215,49 @@ $conditions
 ORDER BY $orderBy $dir
 $onDuplicate
 MYSQL;
+    }
+
+    /**
+     * Return valid condition
+     * @param $column
+     * @param array $value
+     * @throws ParsingException
+     * @return string
+     */
+    protected function getParsedCondition($column, array $value)
+    {
+        if (count($value) > 1) {
+            throw new ParsingException("Condition should contain only 1 element");
+        }
+        $operation = key($value);
+        $actualValue = current($value);
+        switch ($operation) {
+            case 'neq':
+                $string = "$column<>{$this->connection->quote($actualValue)}";
+                break;
+            case 'eq':
+                $string = "$column={$this->connection->quote($actualValue)}";
+                break;
+            case 'in':
+                if (!is_array($actualValue)) {
+                    throw new ParsingException("Can not use 'in' operation with non array.");
+                }
+                $actualValue = array_map([$this->connection, 'quote'], $actualValue);
+                $glued = implode(',', $actualValue);
+                $string = "$column in ($glued)";
+                break;
+            case 'nin':
+                if (!is_array($actualValue)) {
+                    throw new ParsingException("Can not use 'nin' operation with non array.");
+                }
+                $actualValue = array_map([$this->connection, 'quote'], $actualValue);
+                $glued = implode(',', $actualValue);
+                $string = "$column not in ($glued)";
+                break;
+            default:
+                throw new ParsingException(sprintf("Could not resolve condition operation %s.", $operation));
+        }
+        return $string;
     }
 
     /**

@@ -26,7 +26,7 @@ class DBALMysqlResourceTest extends \PHPUnit_Framework_TestCase
         $this->config['db_driver'] = $driverMock;
         $con = $this->getMockBuilder('\Doctrine\DBAL\Driver\Connection')->getMock();
         $con->expects($this->any())->method('quote')->willReturnCallback(function ($var) {
-            return $var;
+            return '\'' . $var . '\'';
         });
         $this->config['db_pdo'] = $con;
         $this->resource = new DBALMysqlResource($this->config);
@@ -68,11 +68,99 @@ MYSQL;
         $expected = <<<MYSQL
 INSERT INTO `table1` (`id`,`name`)
 SELECT `id`,`name` FROM `tmp_table1`
-WHERE `tmp_table1`.`id`=1
+WHERE `tmp_table1`.`id`='1'
 ORDER BY `name` ASC
 ON DUPLICATE KEY UPDATE `id`=VALUES(`id`),`name`=VALUES(`name`)
 MYSQL;
         $this->assertEquals($expected, $sql);
+    }
+
+    public function testGetMoveSql2()
+    {
+        $sql = $this->resource->getMoveSql('tmp_table1', 'table1', ['id', 'name'], ['id' => ['eq' => 1]], ['name']);
+        $expected = <<<MYSQL
+INSERT INTO `table1` (`id`,`name`)
+SELECT `id`,`name` FROM `tmp_table1`
+WHERE `tmp_table1`.`id`='1'
+ORDER BY `name` ASC
+ON DUPLICATE KEY UPDATE `id`=VALUES(`id`),`name`=VALUES(`name`)
+MYSQL;
+        $this->assertEquals($expected, $sql);
+    }
+
+    public function testGetMoveSql3()
+    {
+        $sql = $this->resource->getMoveSql('tmp_table1', 'table1', ['id', 'name'], ['id' => ['neq' => 1]], ['name']);
+        $expected = <<<MYSQL
+INSERT INTO `table1` (`id`,`name`)
+SELECT `id`,`name` FROM `tmp_table1`
+WHERE `tmp_table1`.`id`<>'1'
+ORDER BY `name` ASC
+ON DUPLICATE KEY UPDATE `id`=VALUES(`id`),`name`=VALUES(`name`)
+MYSQL;
+        $this->assertEquals($expected, $sql);
+    }
+
+    public function testGetMoveSql4()
+    {
+        $sql = $this->resource->getMoveSql('tmp_table1', 'table1', ['id', 'name'], ['id' => ['in' => [1]]], ['name']);
+        $expected = <<<MYSQL
+INSERT INTO `table1` (`id`,`name`)
+SELECT `id`,`name` FROM `tmp_table1`
+WHERE `tmp_table1`.`id` in ('1')
+ORDER BY `name` ASC
+ON DUPLICATE KEY UPDATE `id`=VALUES(`id`),`name`=VALUES(`name`)
+MYSQL;
+        $this->assertEquals($expected, $sql);
+    }
+
+    public function testGetMoveSql5()
+    {
+        $sql = $this->resource->getMoveSql('tmp_table1', 'table1', ['id', 'name'], ['id' => ['nin' => [1]]], ['name']);
+        $expected = <<<MYSQL
+INSERT INTO `table1` (`id`,`name`)
+SELECT `id`,`name` FROM `tmp_table1`
+WHERE `tmp_table1`.`id` not in ('1')
+ORDER BY `name` ASC
+ON DUPLICATE KEY UPDATE `id`=VALUES(`id`),`name`=VALUES(`name`)
+MYSQL;
+        $this->assertEquals($expected, $sql);
+    }
+
+    /**
+     * @expectedException \Maketok\DataMigration\Storage\Exception\ParsingException
+     * @expectedExceptionMessage Condition should contain only 1 element
+     */
+    public function testGetWrongMoveSql1()
+    {
+        $this->resource->getMoveSql('tmp_table1', 'table1', ['id', 'name'], ['id' => ['eq',2]], ['name']);
+    }
+
+    /**
+     * @expectedException \Maketok\DataMigration\Storage\Exception\ParsingException
+     * @expectedExceptionMessage Could not resolve condition operation wrong
+     */
+    public function testGetWrongMoveSql2()
+    {
+        $this->resource->getMoveSql('tmp_table1', 'table1', ['id', 'name'], ['id' => ['wrong' => 2]], ['name']);
+    }
+
+    /**
+     * @expectedException \Maketok\DataMigration\Storage\Exception\ParsingException
+     * @expectedExceptionMessage Can not use 'in' operation with non array
+     */
+    public function testGetWrongMoveSql3()
+    {
+        $this->resource->getMoveSql('tmp_table1', 'table1', ['id', 'name'], ['id' => ['in' => 2]], ['name']);
+    }
+
+    /**
+     * @expectedException \Maketok\DataMigration\Storage\Exception\ParsingException
+     * @expectedExceptionMessage Can not use 'nin' operation with non array
+     */
+    public function testGetWrongMoveSql4()
+    {
+        $this->resource->getMoveSql('tmp_table1', 'table1', ['id', 'name'], ['id' => ['nin' => 2]], ['name']);
     }
 
     public function testGetDumpSql()

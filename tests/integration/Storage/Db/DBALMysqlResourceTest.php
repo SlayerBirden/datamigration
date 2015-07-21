@@ -17,34 +17,39 @@ class DBALMysqlResourceTest extends \PHPUnit_Extensions_Database_TestCase
      * @var DBALMysqlResource
      */
     private $resource;
+    /**
+     * @var \PDO
+     */
+    private $pdo;
 
+    /**
+     * {@inheritdoc}
+     */
     protected function getTearDownOperation()
     {
         return \PHPUnit_Extensions_Database_Operation_Factory::TRUNCATE();
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function setUp()
     {
         $config = include __DIR__ . '/assets/config.php';
         if (isset($config) && $config instanceof ConfigInterface) {
             $this->config = $config;
-            $pdo = new \PDO(
-                "mysql:dbname={$config['db_name']};host={$config['db_host']}",
-                $config['db_user'],
-                $config['db_password']
-            );
-            $this->config['db_pdo'] = $pdo;
+            $this->resource = new DBALMysqlResource($this->config);
+            $ref1 = new \ReflectionProperty(get_class($this->resource->getConnection()), '_conn');
+            $ref1->setAccessible(true);
+            $this->pdo = $ref1->getValue($this->resource->getConnection());
         } else {
             throw new \Exception("Can't find config file.");
         }
 
         parent::setUp();
-        $this->resource = new DBALMysqlResource($this->config);
 
         // assert that 2 pdo's are same
         $pdo1 = $this->getConnection()->getConnection();
-        $ref1 = new \ReflectionProperty(get_class($this->resource->getConnection()), '_conn');
-        $ref1->setAccessible(true);
         $pdo2 = $ref1->getValue($this->resource->getConnection());
 
         $this->assertSame($pdo1, $pdo2);
@@ -57,8 +62,8 @@ class DBALMysqlResourceTest extends \PHPUnit_Extensions_Database_TestCase
      */
     protected function getConnection()
     {
-        if (isset($this->config['db_pdo'])) {
-            return $this->createDefaultDBConnection($this->config['db_pdo']);
+        if (isset($this->pdo)) {
+            return $this->createDefaultDBConnection($this->pdo);
         }
         throw new \Exception("Can't find pdo in config.");
     }
@@ -106,8 +111,73 @@ class DBALMysqlResourceTest extends \PHPUnit_Extensions_Database_TestCase
 
         // 1 customer left
         $this->assertEquals(1, $this->getConnection()->getRowCount('customers'));
+        // assert table
         $expected = $this->createXMLDataSet(__DIR__ . '/assets/expectedCustomersAfterDelete.xml');
-        $actual = $this->getConnection()->createQueryTable("customers", "SELECT * FROM customers");
+        $actual = $this->getConnection()->createQueryTable("customers", "SELECT * FROM `customers`");
         $this->assertTablesEqual($expected->getTable('customers'), $actual);
+    }
+
+    public function testLoad()
+    {
+        $file = __DIR__ . '/assets/toLoad.csv';
+        $this->resource->loadData('customers', $file, true);
+
+        $this->assertEquals(4, $this->getConnection()->getRowCount('customers'));
+        // assert table
+        $expected = $this->createXMLDataSet(__DIR__ . '/assets/expectedCustomersAfterLoad.xml');
+        $actual = $this->getConnection()->createQueryTable("customers", "SELECT * FROM `customers`");
+        $this->assertTablesEqual($expected->getTable('customers'), $actual);
+    }
+
+    /**
+     * @depends testCreateTmpTable
+     */
+    public function testMove1()
+    {
+        $this->resource->createTmpTable('tmp_123', ['id' => 'integer', 'firstname' => 'string']);
+
+        $this->resource->move('customers', 'tmp_123', ['id', 'firstname'], [], ['id'], 'DESC');
+
+        $this->assertEquals(2, $this->getConnection()->getRowCount('tmp_123'));
+        // assert table
+        $expected = $this->createXMLDataSet(__DIR__ . '/assets/expectedCustomersAfterMove1.xml');
+        $actual = $this->getConnection()->createQueryTable("tmp_123", "SELECT * FROM `tmp_123`");
+        $this->assertTablesEqual($expected->getTable('tmp_123'), $actual);
+    }
+
+    /**
+     * @depends testCreateTmpTable
+     */
+    public function testMove2()
+    {
+        $this->resource->createTmpTable('tmp_123', ['id' => 'integer', 'firstname' => 'string']);
+
+        $this->resource->move(
+            'customers',
+            'tmp_123',
+            ['id', 'firstname'],
+            ['firstname' => [
+                'nin' => ['Bob']
+            ]]
+        );
+
+        $this->assertEquals(1, $this->getConnection()->getRowCount('tmp_123'));
+        // assert table
+        $expected = $this->createXMLDataSet(__DIR__ . '/assets/expectedCustomersAfterMove2.xml');
+        $actual = $this->getConnection()->createQueryTable("tmp_123", "SELECT * FROM `tmp_123`");
+        $this->assertTablesEqual($expected->getTable('tmp_123'), $actual);
+    }
+
+    public function testDump()
+    {
+        $expected1 = array(
+            array('id' => '1', 'firstname' => 'Oleg'),
+        );
+        $this->assertSame($expected1, $this->resource->dumpData('customers', ['id', 'firstname'], 1));
+        $expected2 = array(
+            array('id' => '2', 'firstname' => 'Bob', 'lastname' => 'Bobbington',
+                'age' => '35', 'email' => 'bb@example.com')
+        );
+        $this->assertSame($expected2, $this->resource->dumpData('customers', [], 1, 1));
     }
 }
