@@ -321,8 +321,9 @@ MYSQL;
         foreach ($columns as $column => $type) {
             $table->addColumn($column, $type);
         }
-        // conditional?
-        $table->addOption('temporary', true);
+        if (!$this->config['db_debug']) {
+            $table->addOption('temporary', true);
+        }
         return $this->connection->getDatabasePlatform()->getCreateTableSQL($table);
     }
 

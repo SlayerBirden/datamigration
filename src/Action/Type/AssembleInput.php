@@ -7,6 +7,7 @@ use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Action\Exception\ConflictException;
 use Maketok\DataMigration\Action\Exception\FlowRegulationException;
 use Maketok\DataMigration\Action\Exception\WrongContextException;
+use Maketok\DataMigration\ArrayUtilsTrait;
 use Maketok\DataMigration\Expression\LanguageInterface;
 use Maketok\DataMigration\Input\InputResourceInterface;
 use Maketok\DataMigration\MapInterface;
@@ -19,6 +20,8 @@ use Maketok\DataMigration\Workflow\ResultInterface;
  */
 class AssembleInput extends AbstractAction implements ActionInterface
 {
+    use ArrayUtilsTrait;
+
     const FLOW_CONTINUE = 100;
     const FLOW_ABORT = 200;
 
@@ -254,22 +257,6 @@ class AssembleInput extends AbstractAction implements ActionInterface
             return array_combine(array_keys($unit->getMapping()), $row);
         }
         return false;
-    }
-
-    /**
-     * recursive array_filter
-     * @param array $data
-     * @return bool
-     */
-    public function isEmptyData(array $data)
-    {
-        $filteredData = array_filter($data, function ($var) {
-            if (is_array($var)) {
-                return !$this->isEmptyData($var);
-            }
-            return !empty($var);
-        });
-        return empty($filteredData);
     }
 
     /**

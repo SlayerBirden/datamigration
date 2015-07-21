@@ -14,6 +14,9 @@ class Resource implements ResourceInterface
      */
     public function open($name, $mode)
     {
+        if (!file_exists(dirname($name))) {
+            mkdir(dirname($name), 0755, true);
+        }
         $this->descriptor = new \SplFileObject($name, $mode);
         $this->descriptor->setFlags(\SplFileObject::SKIP_EMPTY | \SplFileObject::DROP_NEW_LINE);
         return true;

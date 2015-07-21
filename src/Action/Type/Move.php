@@ -32,7 +32,7 @@ class Move extends AbstractDbAction implements ActionInterface
                     $unit->getCode()
                 ));
             }
-            $moved = $this->resource->move($unit->getTmpTable(), $unit->getTable());
+            $moved = $this->resource->move($unit->getTmpTable(), $unit->getTable(), array_keys($unit->getMapping()));
             $result->incrementActionProcessed($this->getCode(), $moved);
         }
         $result->setActionEndTime($this->getCode(), new \DateTime());

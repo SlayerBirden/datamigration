@@ -1,0 +1,48 @@
+<?xml version="1.0" ?>
+<dataset>
+    <table name="customers">
+        <column>id</column>
+        <column>firstname</column>
+        <column>lastname</column>
+        <column>age</column>
+        <column>email</column>
+        <row>
+            <value>1</value>
+            <value>Oleg</value>
+            <value>K</value>
+            <value>30</value>
+            <value>ok@test.com</value>
+        </row>
+        <row>
+            <value>2</value>
+            <value>Bob</value>
+            <value>Bobbington</value>
+            <value>35</value>
+            <value>bb@example.com</value>
+        </row>
+    </table>
+    <table name="addresses">
+        <column>id</column>
+        <column>street</column>
+        <column>city</column>
+        <column>parent_id</column>
+        <row>
+            <value>1</value>
+            <value>4000 Marine Dr</value>
+            <value>Chicago</value>
+            <value>1</value>
+        </row>
+        <row>
+            <value>2</value>
+            <value>111 W Jackson</value>
+            <value>Chicago</value>
+            <value>1</value>
+        </row>
+        <row>
+            <value>3</value>
+            <value>144-19 Northern Blvd</value>
+            <value>New York</value>
+            <value>2</value>
+        </row>
+    </table>
+</dataset>

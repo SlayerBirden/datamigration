@@ -29,6 +29,7 @@ class QueueWorkflow implements WorkflowInterface
     {
         $this->config = $config;
         $this->result = $result;
+        $this->queue = new \SplQueue();
     }
 
     /**

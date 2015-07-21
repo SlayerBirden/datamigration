@@ -43,11 +43,11 @@ class AbstractAction
     {
         return rtrim($this->config->offsetGet('tmp_folder'), '/') .
         '/' .
-        sprintf(
+        ltrim(sprintf(
             $this->config->offsetGet('tmp_file_mask'),
             $unit->getCode(),
             $this->getDate()
-        );
+        ), '/');
     }
 
     /**

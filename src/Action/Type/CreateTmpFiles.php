@@ -8,6 +8,7 @@ use Maketok\DataMigration\Expression\LanguageInterface;
 use Maketok\DataMigration\Input\InputResourceInterface;
 use Maketok\DataMigration\MapInterface;
 use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
+use Maketok\DataMigration\Storage\Exception\ParsingException;
 use Maketok\DataMigration\Unit\ImportFileUnitInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 use Maketok\DataMigration\Workflow\ResultInterface;
@@ -86,13 +87,24 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
     {
         $this->result = $result;
         $this->start();
-        while (($row = $this->input->get()) !== false) {
+        while (true) {
             try {
+                $row = $this->input->get();
+                if ($row === false) {
+                    break 1;
+                }
                 if ($this->map->isFresh($row)) {
                     $this->map->feed($row);
                 }
                 $this->processDump();
                 $this->processWrite();
+            } catch (ParsingException $e) {
+                if ($this->config['continue_on_error']) {
+                    $this->result->addActionException($this->getCode(), $e);
+                } else {
+                    $this->close();
+                    throw $e;
+                }
             } catch (\Exception $e) {
                 $this->close();
                 throw $e;
