@@ -7,13 +7,6 @@
         <column>age</column>
         <column>email</column>
         <row>
-            <value>1</value>
-            <value>Oleg</value>
-            <value>K</value>
-            <value>30</value>
-            <value>ok@test.com</value>
-        </row>
-        <row>
             <value>2</value>
             <value>Bob</value>
             <value>Bobbington</value>

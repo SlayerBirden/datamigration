@@ -87,13 +87,15 @@ MYSQL;
 
     public function testGetCreateTableSql()
     {
-        $sql = $this->resource->getCreateTableSql('tmp_table1', ['id', 'name']);
+        $columns = ['id' => 'integer', 'name' => 'string'];
+        $sql = $this->resource->getCreateTableSql('tmp_table1', $columns);
 
         $platform = new MySqlPlatform();
         $schema = new Schema();
         $table = $schema->createTable('tmp_table1');
-        $table->addColumn('id', 'text');
-        $table->addColumn('name', 'text');
+        foreach ($columns as $column => $type) {
+            $table->addColumn($column, $type);
+        }
         $table->addOption('temporary', true);
         $expected = $platform->getCreateTableSQL($table);
 

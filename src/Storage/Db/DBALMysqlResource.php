@@ -243,8 +243,10 @@ MYSQL;
     public function createTmpTable($name, array $columns)
     {
         $sql = $this->getCreateTableSql($name, $columns);
-        $res = $this->connection->executeUpdate($sql);
-        return $res > 0;
+        foreach ($sql as $directive) {
+            $this->connection->executeUpdate($directive);
+        }
+        return true;
     }
 
     /**
@@ -257,8 +259,8 @@ MYSQL;
     {
         $schema = new Schema();
         $table = $schema->createTable($name);
-        foreach ($columns as $column) {
-            $table->addColumn($column, 'text');
+        foreach ($columns as $column => $type) {
+            $table->addColumn($column, $type);
         }
         // conditional?
         $table->addOption('temporary', true);

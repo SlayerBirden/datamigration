@@ -4,7 +4,7 @@ $config = new \Maketok\DataMigration\Action\ArrayConfig();
 $config->assign([
     'db_name' => 'dm_test',
     'db_user' => 'root',
-    'db_password' => 'test123',
-    'db_host' => 'localhost',
+    'db_password' => '',
+    'db_host' => '127.0.0.1',
 ]);
 return $config;
