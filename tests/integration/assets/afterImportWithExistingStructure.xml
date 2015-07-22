@@ -1,0 +1,67 @@
+<?xml version="1.0" ?>
+<dataset>
+    <table name="customers">
+        <column>id</column>
+        <column>firstname</column>
+        <column>lastname</column>
+        <column>age</column>
+        <column>email</column>
+        <row>
+            <value>1</value>
+            <value>Oleg</value>
+            <value>Kulik</value>
+            <value>99</value>
+            <value>ok@test.com</value>
+        </row>
+        <row>
+            <value>2</value>
+            <value>Bob</value>
+            <value>Bobbington</value>
+            <value>35</value>
+            <value>bb@example.com</value>
+        </row>
+        <row>
+            <value>3</value>
+            <value>Charles</value>
+            <value/>
+            <value>23</value>
+            <value>charles111@gmail.com</value>
+        </row>
+    </table>
+    <table name="addresses">
+        <column>id</column>
+        <column>parent_id</column>
+        <column>street</column>
+        <column>city</column>
+        <row>
+            <value>1</value>
+            <value>1</value>
+            <value>4000 Marine Dr</value>
+            <value>Chicago</value>
+        </row>
+        <row>
+            <value>2</value>
+            <value>1</value>
+            <value>111 W Jackson</value>
+            <value>Chicago</value>
+        </row>
+        <row>
+            <value>3</value>
+            <value>2</value>
+            <value>144-19 Northern Blvd</value>
+            <value>New York</value>
+        </row>
+        <row>
+            <value>4</value>
+            <value>1</value>
+            <value>111 W Jackson</value>
+            <value>Chicago</value>
+        </row>
+        <row>
+            <value>5</value>
+            <value>3</value>
+            <value>20 Chestnut Terrace, Bloomfield, NJ 07003</value>
+            <value>New York</value>
+        </row>
+    </table>
+</dataset>

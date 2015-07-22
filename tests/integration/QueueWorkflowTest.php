@@ -79,6 +79,9 @@ class QueueWorkflowTest extends \PHPUnit_Extensions_Database_TestCase
      */
     protected function getTearDownOperation()
     {
+        if ($this->config['db_debug']) {
+            return \PHPUnit_Extensions_Database_Operation_Factory::NONE();
+        }
         return \PHPUnit_Extensions_Database_Operation_Factory::TRUNCATE();
     }
 
@@ -118,7 +121,7 @@ map.offsetSet(
     'customer_id',
     (isset(hashmaps['email-id'][trim(map.email)]) ?
         hashmaps['email-id'][trim(map.email)] :
-        map.frozenIncr('customer_id', 3))
+        map.frozenIncr('new_customer_id', 3))
 )
 CONTRIBUTION;
         $customerUnit->addContribution($contribution1);
@@ -205,8 +208,42 @@ CONTRIBUTION;
         $this->assertDataSetsEqual($expected, $actual);
     }
 
+    /**
+     * @test
+     * @throws \Exception
+     */
     public function testImportWithExisting()
     {
+        // SET THESE TO TRUE TO DEBUG
+        $this->config['db_debug'] = false;
+        $this->config['file_debug'] = false;
+        //=====================================================================
+        $result = new Result();
+        $workflow = new QueueWorkflow($this->config, $result);
+        $customerUnit = $this->prepareCustomerImportUnit();
+        $addressUnit = $this->prepareAddressImportUnit();
+        $bag = new SimpleBag();
+        //=====================================================================
+        // order matters ;)
+        $bag->add($customerUnit);
+        $bag->add($addressUnit);
+        //=====================================================================
+        $input = new Csv(__DIR__ . '/assets/customers_2.csv', 'r');
+        $createTmpFiles = new CreateTmpFiles($bag, $this->config, $this->getLanguageAdapter(),
+            $input, new ArrayMap(), new DBALMysqlResourceHelper($this->resource));
+        $load = new Load($bag, $this->config, $this->resource);
+        $move = new Move($bag, $this->config, $this->resource);
+        //=====================================================================
+        $workflow->add($createTmpFiles);
+        $workflow->add($load);
+        $workflow->add($move);
+        $workflow->execute();
+        //=====================================================================
+        // time to assert things
 
+        // assert schema
+        $expected = $this->createXMLDataSet(__DIR__ . '/assets/afterImportWithExistingStructure.xml');
+        $actual = $this->getConnection()->createDataSet(['customers', 'addresses']);
+        $this->assertDataSetsEqual($expected, $actual);
     }
 }
