@@ -7,6 +7,7 @@ use Maketok\DataMigration\Action\Type\CreateTmpFiles;
 use Maketok\DataMigration\Action\Type\Load;
 use Maketok\DataMigration\Action\Type\Move;
 use Maketok\DataMigration\ArrayMap;
+use Maketok\DataMigration\Expression\HelperExpressionsProvider;
 use Maketok\DataMigration\Expression\LanguageAdapter;
 use Maketok\DataMigration\Hashmap\ArrayHashmap;
 use Maketok\DataMigration\Input\Csv;
@@ -95,44 +96,16 @@ class QueueWorkflowTest extends \PHPUnit_Extensions_Database_TestCase
     public function getLanguageAdapter()
     {
         $language = new ExpressionLanguage();
-        $language->register('empty', function ($str) {
-            return sprintf('empty(%1$s)', $str);
-        }, function ($arguments, $str) {
-            return empty($str);
-        });
-        $language->register('trim', function ($str) {
-            return sprintf('trim(%1$s)', $str);
-        }, function ($arguments, $str) {
-            return trim($str);
-        });
-        $language->register('isset', function ($expr) {
-            return sprintf('isset(%1$s)', $expr);
-        }, function ($arguments, $expr) {
-            return isset($expr);
-        });
-        $language->register('count', function ($expr) {
-            return sprintf('count(%1$s)', $expr);
-        }, function ($arguments, $expr) {
-            return count($expr);
-        });
-        $language->register('explode', function ($str, $expression) {
-            return sprintf('explode(%1$s)', $str, $expression);
-        }, function ($arguments, $str, $expression) {
-            return explode($str, $expression);
-        });
+        $language->registerProvider(new HelperExpressionsProvider());
         return new LanguageAdapter($language);
     }
 
     /**
-     * @test
+     * @return ImportDbUnit
      * @throws \Doctrine\DBAL\DBALException
      */
-    public function testSimpleImport()
+    public function prepareCustomerImportUnit()
     {
-        $result = new Result();
-        $workflow = new QueueWorkflow($this->config, $result);
-        //=====================================================================
-        // setting up customer Unit
         $customerUnit = new ImportDbUnit('customers');
         $customerUnit->setTable('customers');
         $hashMap = new ArrayHashmap('email-id');
@@ -178,8 +151,14 @@ CONTRIBUTION;
             'email' => 'trim(map.email)',
         ]);
         $customerUnit->setIsEntityCondition("trim(map.email) != trim(oldmap.email)");
-        //=====================================================================
-        // setting up address unit
+        return $customerUnit;
+    }
+
+    /**
+     * @return ImportDbUnit
+     */
+    public function prepareAddressImportUnit()
+    {
         $addressUnit = new ImportDbUnit("addresses");
         $addressUnit->setTable('addresses');
         $addressUnit->setMapping([
@@ -188,6 +167,19 @@ CONTRIBUTION;
             'city' => 'map.city',
             'parent_id' => 'map.customer_id',
         ]);
+        return $addressUnit;
+    }
+
+    /**
+     * @test
+     * @throws \Doctrine\DBAL\DBALException
+     */
+    public function testSimpleImport()
+    {
+        $result = new Result();
+        $workflow = new QueueWorkflow($this->config, $result);
+        $customerUnit = $this->prepareCustomerImportUnit();
+        $addressUnit = $this->prepareAddressImportUnit();
         $bag = new SimpleBag();
         //=====================================================================
         // order matters ;)
@@ -211,5 +203,10 @@ CONTRIBUTION;
         $expected = $this->createXMLDataSet(__DIR__ . '/assets/afterSimpleImportStructure.xml');
         $actual = $this->getConnection()->createDataSet(['customers', 'addresses']);
         $this->assertDataSetsEqual($expected, $actual);
+    }
+
+    public function testImportWithExisting()
+    {
+
     }
 }

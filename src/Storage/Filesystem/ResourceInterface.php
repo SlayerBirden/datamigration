@@ -39,4 +39,12 @@ interface ResourceInterface
      * @return bool
      */
     public function isActive();
+
+    /**
+     * delete the filename
+     * also attempts to delete the directory the file's in if that's empty
+     * @param string $filename
+     * @return void
+     */
+    public function cleanUp($filename);
 }

@@ -46,6 +46,9 @@ class Load extends AbstractDbAction implements ActionInterface
                 $this->config->offsetGet('local_infile')
             );
             $result->incrementActionProcessed($this->getCode(), $loaded);
+            if (!$this->config['file_debug']) {
+                $unit->getFilesystem()->cleanUp($unit->getTmpFileName());
+            }
         }
         $result->setActionEndTime($this->getCode(), new \DateTime());
     }

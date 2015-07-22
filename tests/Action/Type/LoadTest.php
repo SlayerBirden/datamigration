@@ -3,6 +3,7 @@
 namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Storage\Db\ResourceInterface;
+use Maketok\DataMigration\Storage\Filesystem\ResourceInterface as FsResourceInterface;
 use Maketok\DataMigration\Unit\Type\ImportDbUnit;
 
 class LoadTest extends \PHPUnit_Framework_TestCase
@@ -28,6 +29,10 @@ class LoadTest extends \PHPUnit_Framework_TestCase
         $unit = new ImportDbUnit($code);
         $unit->setTable('table');
         $unit->setPk('id');
+        /** @var FsResourceInterface $filesystem */
+        $filesystem = $this->getMockBuilder('\Maketok\DataMigration\Storage\Filesystem\ResourceInterface')
+            ->getMock();
+        $unit->setFilesystem($filesystem);
         return $unit;
     }
 

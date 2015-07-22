@@ -94,4 +94,58 @@ class ResourceTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($filesystem->isActive());
         $filesystem->close();
     }
+
+    public function testCleanup()
+    {
+        $dir = vfsStream::newDirectory('tmp');
+        $dir->at($this->root);
+        vfsStream::newFile('file1')->at($dir);
+
+        $this->assertTrue(file_exists(vfsStream::url('root/tmp/file1')));
+
+        $filesystem = new Resource();
+        $filesystem->cleanUp(vfsStream::url('root/tmp/file1'));
+
+        $this->assertFalse(file_exists(vfsStream::url('root/tmp/file1')));
+        $this->assertFalse(file_exists(vfsStream::url('root/tmp')));
+    }
+
+    public function testCleanupNotEmpty()
+    {
+        $dir = vfsStream::newDirectory('tmp');
+        $dir->at($this->root);
+        vfsStream::newFile('file1')->at($dir);
+        vfsStream::newFile('file2')->at($dir);
+
+        $this->assertTrue(file_exists(vfsStream::url('root/tmp/file1')));
+
+        $filesystem = new Resource();
+        $filesystem->cleanUp(vfsStream::url('root/tmp/file1'));
+
+        $this->assertFalse(file_exists(vfsStream::url('root/tmp/file1')));
+        $this->assertTrue(file_exists(vfsStream::url('root/tmp')));
+    }
+
+    /**
+     * @test
+     */
+    public function testIsEmptyDir()
+    {
+        $dir1 = vfsStream::newDirectory('tmp');
+        $dir1->at($this->root);
+        $dir2 = vfsStream::newDirectory('tmp_locked', 0111);
+        $dir2->at($this->root);
+        $file1 = vfsStream::newFile('tmpfile');
+        $file1->at($this->root);
+        $dir3 = vfsStream::newDirectory('tmp2');
+        $dir3->at($this->root);
+        $file2 = vfsStream::newFile('tmpfile2');
+        $file2->at($dir3);
+
+        $filesystem = new Resource();
+        $this->assertSame(true, $filesystem->isEmptyDir(vfsStream::url('root/tmp')));
+        $this->assertSame(null, $filesystem->isEmptyDir(vfsStream::url('root/tmp_locked')));
+        $this->assertSame(null, $filesystem->isEmptyDir(vfsStream::url('root/tmpfile')));
+        $this->assertSame(false, $filesystem->isEmptyDir(vfsStream::url('root/tmp2')));
+    }
 }

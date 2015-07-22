@@ -61,4 +61,28 @@ class Resource implements ResourceInterface
     {
         return isset($this->descriptor);
     }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function cleanUp($filename)
+    {
+        $dir = dirname($filename);
+        unlink($filename);
+        if ($this->isEmptyDir($dir)) {
+            rmdir($dir);
+        }
+    }
+
+    /**
+     * @param $directory
+     * @return bool|null
+     */
+    public function isEmptyDir($directory)
+    {
+        if (!file_exists($directory) || !is_dir($directory) || !is_readable($directory)) {
+            return null;
+        }
+        return count(scandir($directory)) == 2;
+    }
 }
