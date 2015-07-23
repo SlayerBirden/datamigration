@@ -4,6 +4,8 @@ namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ActionInterface;
 use Maketok\DataMigration\Action\ConfigInterface;
+use Maketok\DataMigration\Action\Exception\NormalizationException;
+use Maketok\DataMigration\ArrayUtilsTrait;
 use Maketok\DataMigration\Expression\LanguageInterface;
 use Maketok\DataMigration\Input\InputResourceInterface;
 use Maketok\DataMigration\MapInterface;
@@ -18,6 +20,8 @@ use Maketok\DataMigration\Workflow\ResultInterface;
  */
 class CreateTmpFiles extends AbstractAction implements ActionInterface
 {
+    use ArrayUtilsTrait;
+
     /**
      * @var UnitBagInterface|ImportFileUnitInterface[]
      */
@@ -184,6 +188,7 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
         foreach ($this->bag as $unit) {
             $unit->getFilesystem()->close();
         }
+        $this->input->reset();
         $this->result->setActionEndTime($this->getCode(), new \DateTime());
     }
 
@@ -218,13 +223,22 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
             }
         }
         if ($shouldAdd) {
-            $this->buffer[$unit->getCode()] = array_map(function ($var) use ($unit) {
+            $row = array_map(function ($var) use ($unit) {
                 return $this->language->evaluate($var, [
                     'map' => $this->map,
                     'resource' => $this->helperResource,
                     'hashmaps' => $unit->getHashmaps(),
                 ]);
             }, $unit->getMapping());
+            /**
+             * Each unit can return rows multiple times in case it needs
+             * but each mapped part should be returned equal times
+             */
+            try {
+                $this->buffer[$unit->getCode()] = $this->normalize($row);
+            } catch (NormalizationException $e) {
+                $this->result->addActionException($this->getCode(), $e);
+            }
         }
     }
 
@@ -276,14 +290,16 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
                 $handler = $tmpUnit->getFilesystem();
             }
             if (is_object($handler)) {
-                $written = $handler->writeRow(array_values($dataArray));
-                if (false === $written) {
-                    $this->result->addActionError(
-                        $this->getCode(),
-                        sprintf("Could not write row %s to file.", json_encode($dataArray))
-                    );
-                } else {
-                    $this->result->incrementActionProcessed($this->getCode());
+                foreach ($dataArray as $row) {
+                    $written = $handler->writeRow(array_values($row));
+                    if (false === $written) {
+                        $this->result->addActionError(
+                            $this->getCode(),
+                            sprintf("Could not write row %s to file.", json_encode($row))
+                        );
+                    } else {
+                        $this->result->incrementActionProcessed($this->getCode());
+                    }
                 }
             }
             unset($this->buffer[$key]);

@@ -266,6 +266,9 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
         $input = ['name' => 'Oleg', 'address' => 'Galaxy'];
         /** @var ResourceInterface $filesystem */
         $unit->setFilesystem($filesystem);
+        $unit->setMapping([
+            'name' => 'map.name',
+        ]);
         $action = new CreateTmpFiles(
             $this->getUnitBag([$unit]),
             $this->getConfig(),

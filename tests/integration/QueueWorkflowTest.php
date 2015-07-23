@@ -4,6 +4,7 @@ namespace Maketok\DataMigration\IntegrationTest;
 
 use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Action\Type\CreateTmpFiles;
+use Maketok\DataMigration\Action\Type\Delete;
 use Maketok\DataMigration\Action\Type\Load;
 use Maketok\DataMigration\Action\Type\Move;
 use Maketok\DataMigration\ArrayMap;
@@ -179,12 +180,10 @@ CONTRIBUTION;
      */
     public function testSimpleImport()
     {
-        $result = new Result();
-        $workflow = new QueueWorkflow($this->config, $result);
         $customerUnit = $this->prepareCustomerImportUnit();
         $addressUnit = $this->prepareAddressImportUnit();
-        $bag = new SimpleBag();
         //=====================================================================
+        $bag = new SimpleBag();
         // order matters ;)
         $bag->add($customerUnit);
         $bag->add($addressUnit);
@@ -195,6 +194,8 @@ CONTRIBUTION;
         $load = new Load($bag, $this->config, $this->resource);
         $move = new Move($bag, $this->config, $this->resource);
         //=====================================================================
+        $result = new Result();
+        $workflow = new QueueWorkflow($this->config, $result);
         $workflow->add($createTmpFiles);
         $workflow->add($load);
         $workflow->add($move);
@@ -210,7 +211,6 @@ CONTRIBUTION;
 
     /**
      * @test
-     * @throws \Exception
      */
     public function testImportWithExisting()
     {
@@ -218,13 +218,11 @@ CONTRIBUTION;
         $this->config['db_debug'] = false;
         $this->config['file_debug'] = false;
         //=====================================================================
-        $result = new Result();
-        $workflow = new QueueWorkflow($this->config, $result);
         $customerUnit = $this->prepareCustomerImportUnit();
         $addressUnit = $this->prepareAddressImportUnit();
-        $bag = new SimpleBag();
         //=====================================================================
         // order matters ;)
+        $bag = new SimpleBag();
         $bag->add($customerUnit);
         $bag->add($addressUnit);
         //=====================================================================
@@ -234,6 +232,8 @@ CONTRIBUTION;
         $load = new Load($bag, $this->config, $this->resource);
         $move = new Move($bag, $this->config, $this->resource);
         //=====================================================================
+        $result = new Result();
+        $workflow = new QueueWorkflow($this->config, $result);
         $workflow->add($createTmpFiles);
         $workflow->add($load);
         $workflow->add($move);
@@ -243,6 +243,83 @@ CONTRIBUTION;
 
         // assert schema
         $expected = $this->createXMLDataSet(__DIR__ . '/assets/afterImportWithExistingStructure.xml');
+        $actual = $this->getConnection()->createDataSet(['customers', 'addresses']);
+        $this->assertDataSetsEqual($expected, $actual);
+    }
+
+    /**
+     * @test
+     */
+    public function testImportDeleteAddresses()
+    {
+        // SET THESE TO TRUE TO DEBUG
+        $this->config['db_debug'] = false;
+        $this->config['file_debug'] = true;
+        //=====================================================================
+        $customerUnit = $this->prepareCustomerImportUnit();
+        $addressUnit = $this->prepareAddressImportUnit();
+        //=====================================================================
+        // order matters ;)
+        $bag = new SimpleBag();
+        $bag->add($customerUnit);
+        $bag->add($addressUnit);
+        //=====================================================================
+        $input = new Csv(__DIR__ . '/assets/customers_2.csv', 'r');
+        $createTmpFiles = new CreateTmpFiles($bag, $this->config, $this->getLanguageAdapter(),
+            $input, new ArrayMap(), new DBALMysqlResourceHelper($this->resource));
+        $load = new Load($bag, $this->config, $this->resource);
+        $move = new Move($bag, $this->config, $this->resource);
+        //=====================================================================
+        $deleteAddressUnit = new ImportDbUnit('deleteAddress');
+        $deleteAddressUnit->setTable('addresses');
+        $deleteAddressUnit->addWriteCondition("isset(map.address_id)");
+        $contribution = <<<CONTRIBUTION
+map.offsetSet(
+    'address_id',
+    (isset(hashmaps['email-address'][trim(map.email)]) ?
+        hashmaps['email-address'][trim(map.email)] :
+        null)
+)
+CONTRIBUTION;
+
+        $deleteAddressUnit->addContribution($contribution);
+        $deleteAddressUnit->setMapping(['id' => 'explode(",", map.address_id)']);
+
+        $hashMap = new ArrayHashmap('email-address');
+        $sql = <<<MYSQL
+SELECT c.email,GROUP_CONCAT(a.id) FROM customers c
+LEFT JOIN addresses a ON a.parent_id = c.id
+GROUP BY c.email
+MYSQL;
+
+        $hashMap->load($this->resource->getConnection()
+            ->executeQuery($sql)
+            ->fetchAll(\PDO::FETCH_KEY_PAIR));
+        $deleteAddressUnit->addHashmap($hashMap);
+        $deleteAddressUnit->setPk('id');
+
+        $deleteBag = new SimpleBag();
+        $deleteBag->add($deleteAddressUnit);
+
+        $delCreateTmpFiles = new CreateTmpFiles($deleteBag, $this->config, $this->getLanguageAdapter(),
+            $input, new ArrayMap(), new DBALMysqlResourceHelper($this->resource));
+        $delLoad = new Load($deleteBag, $this->config, $this->resource);
+        $delete = new Delete($deleteBag, $this->config, $this->resource);
+        //=====================================================================
+        $result = new Result();
+        $workflow = new QueueWorkflow($this->config, $result);
+        $workflow->add($createTmpFiles);
+        $workflow->add($load);
+        $workflow->add($delCreateTmpFiles);
+        $workflow->add($delLoad);
+        $workflow->add($delete);
+        $workflow->add($move);
+        $workflow->execute();
+        //=====================================================================
+        // time to assert things
+
+        // assert schema
+        $expected = $this->createXMLDataSet(__DIR__ . '/assets/afterImportDeleteAddressStructure.xml');
         $actual = $this->getConnection()->createDataSet(['customers', 'addresses']);
         $this->assertDataSetsEqual($expected, $actual);
     }
