@@ -13,6 +13,9 @@ namespace Maketok\DataMigration\Expression;
 use Symfony\Component\ExpressionLanguage\ExpressionFunction;
 use Symfony\Component\ExpressionLanguage\ExpressionFunctionProviderInterface;
 
+/**
+ * @codeCoverageIgnore
+ */
 class HelperExpressionsProvider implements ExpressionFunctionProviderInterface
 {
     /**

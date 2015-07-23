@@ -64,6 +64,12 @@ class QueueWorkflowTest extends \PHPUnit_Extensions_Database_TestCase
         $this->assertSame($pdo1, $pdo2);
     }
 
+    public function tearDown()
+    {
+        parent::tearDown();
+        $this->resource->close();
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -314,7 +320,14 @@ MYSQL;
         $workflow->add($delLoad);
         $workflow->add($delete);
         $workflow->add($move);
-        $workflow->execute();
+        try {
+            $this->resource->startTransaction();
+            $workflow->execute();
+            $this->resource->commit();
+        } catch (\Exception $e) {
+            $this->resource->rollback();
+            throw $e;
+        }
         //=====================================================================
         // time to assert things
 
