@@ -4,14 +4,14 @@ namespace Maketok\DataMigration\Unit\Type;
 
 use Maketok\DataMigration\Unit\GenerateUnitInterface;
 
-class GeneratorUnit extends ImportFileUnit implements GenerateUnitInterface
+class GeneratorUnit extends ExportDbUnit implements GenerateUnitInterface
 {
     /**
      * @var array
      */
     protected $generatorMapping;
     /**
-     * Max number with and center of dispersion
+     * Max number and center of dispersion
      * @var \SplFixedArray
      */
     protected $generationSeed;

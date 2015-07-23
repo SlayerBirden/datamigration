@@ -33,7 +33,10 @@ class DBALMysqlResourceHelper implements ResourceHelperInterface
         $stmt->bindValue(2, $table);
         $stmt->execute();
         $result = $stmt->fetch(\PDO::FETCH_NUM);
-        if ($result !== false && isset($result[0])) {
+        if ($result !== false && is_array($result)) {
+            if (is_null($result[0])) {
+                return 1;
+            }
             return $result[0];
         }
         throw new \Exception("Could not fetch last increment id.");

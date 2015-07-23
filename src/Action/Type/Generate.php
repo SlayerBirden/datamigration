@@ -6,7 +6,10 @@ use Faker\Generator;
 use Maketok\DataMigration\Action\ActionInterface;
 use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Action\Exception\WrongContextException;
+use Maketok\DataMigration\ArrayUtilsTrait;
 use Maketok\DataMigration\Expression\LanguageInterface;
+use Maketok\DataMigration\MapInterface;
+use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
 use Maketok\DataMigration\Unit\GenerateUnitInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 use Maketok\DataMigration\Workflow\ResultInterface;
@@ -16,6 +19,8 @@ use Maketok\DataMigration\Workflow\ResultInterface;
  */
 class Generate extends AbstractAction implements ActionInterface
 {
+    use ArrayUtilsTrait;
+
     /**
      * @var UnitBagInterface|GenerateUnitInterface[]
      */
@@ -40,6 +45,14 @@ class Generate extends AbstractAction implements ActionInterface
      * @var ResultInterface
      */
     protected $result;
+    /**
+     * @var ResourceHelperInterface
+     */
+    private $helperResource;
+    /**
+     * @var MapInterface
+     */
+    private $map;
 
     /**
      * @param UnitBagInterface $bag
@@ -47,18 +60,24 @@ class Generate extends AbstractAction implements ActionInterface
      * @param LanguageInterface $language
      * @param Generator $generator
      * @param int $count
+     * @param MapInterface $map
+     * @param ResourceHelperInterface $helperResource
      */
     public function __construct(
         UnitBagInterface $bag,
         ConfigInterface $config,
         LanguageInterface $language,
         Generator $generator,
-        $count
+        $count,
+        MapInterface $map,
+        ResourceHelperInterface $helperResource
     ) {
         parent::__construct($bag, $config);
         $this->count = $count;
         $this->generator = $generator;
         $this->language = $language;
+        $this->helperResource = $helperResource;
+        $this->map = $map;
     }
 
     /**
@@ -72,13 +91,22 @@ class Generate extends AbstractAction implements ActionInterface
         try {
             $this->start();
             while ($this->count > 0) {
+                $this->map->freeze();
                 foreach ($this->bag as $unit) {
                     list($max, $center) = $unit->getGenerationSeed();
                     $rnd = $this->getRandom($max, $center);
                     while ($rnd > 0) {
+                        if (!empty($this->buffer)) {
+                            $assembledBuffer = $this->assemble($this->buffer, true);
+                            if ($this->map->isFresh($assembledBuffer)) {
+                                $this->map->feed($assembledBuffer);
+                            }
+                        }
                         $row = array_map(function ($el) {
                             return $this->language->evaluate($el, [
                                 'generator' => $this->generator,
+                                'resource' => $this->helperResource,
+                                'map' => $this->map,
                                 'units' => $this->buffer,
                             ]);
                         }, $unit->getGeneratorMapping());
@@ -88,6 +116,7 @@ class Generate extends AbstractAction implements ActionInterface
                         $rnd--;
                     }
                 }
+                $this->map->unFreeze();
                 $this->count--;
             }
         } catch (\Exception $e) {

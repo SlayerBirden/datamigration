@@ -2,7 +2,6 @@
 
 namespace Maketok\DataMigration\Action\Type;
 
-use Maketok\DataMigration\Action\Exception\ConflictException;
 use Maketok\DataMigration\ArrayMap;
 use Maketok\DataMigration\Expression\LanguageAdapter;
 use Maketok\DataMigration\Input\InputResourceInterface;
@@ -394,84 +393,5 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
     {
         $action = $this->getAction([$this->getUnit('test121312')]);
         $action->process($this->getResultMock());
-    }
-
-    /**
-     * @param $data
-     * @param $expectedRow
-     * @dataProvider tmpUnitsProvider
-     */
-    public function testAssemble($data, $expectedRow)
-    {
-        $this->assertEquals($expectedRow, $this->action->assemble($data));
-    }
-
-    /**
-     * @expectedException \Maketok\DataMigration\Action\Exception\ConflictException
-     */
-    public function testAssembleConflict()
-    {
-        $data = [
-            'unit1' => [
-                'id' => 1,
-                'name' => 'u1',
-            ],
-            'unit2' => [
-                'id' => 1,
-                'name' => 'u2',
-            ],
-        ];
-        try {
-            $this->action->assemble($data);
-        } catch (ConflictException $e) {
-            $this->assertSame(['unit1', 'unit2'], $e->getUnitsInConflict());
-            $this->assertSame('name', $e->getConflictedKey());
-            throw $e;
-        }
-        $this->fail("Failed asserting that ConflictException was thrown");
-    }
-
-    /**
-     * @return array
-     */
-    public function tmpUnitsProvider()
-    {
-        return [
-            // simple merge
-            [
-                [
-                    'unit1' => [
-                        'id' => 1,
-                        'name' => 'tmp1',
-                    ],
-                    'unit2' => [
-                        'code' => 't1',
-                    ],
-                ],
-                [
-                    'id' => 1,
-                    'name' => 'tmp1',
-                    'code' => 't1',
-                ],
-            ],
-            // merge with equal keys
-            [
-                [
-                    'unit1' => [
-                        'id' => 1,
-                        'name' => 'tmp1',
-                    ],
-                    'unit2' => [
-                        'id' => 1,
-                        'code' => 't1',
-                    ],
-                ],
-                [
-                    'id' => 1,
-                    'name' => 'tmp1',
-                    'code' => 't1',
-                ],
-            ],
-        ];
     }
 }

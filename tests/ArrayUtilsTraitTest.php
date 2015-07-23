@@ -2,8 +2,22 @@
 
 namespace Maketok\DataMigration;
 
+use Maketok\DataMigration\Action\Exception\ConflictException;
+
 class ArrayUtilsTraitTest extends \PHPUnit_Framework_TestCase
 {
+    /**
+     * @var ArrayUtilsTrait
+     */
+    protected $trait;
+
+    /**
+     * set up trait
+     */
+    public function setUp()
+    {
+        $this->trait = $this->getMockBuilder('Maketok\DataMigration\ArrayUtilsTrait')->getMockForTrait();
+    }
     /**
      * @param array $data
      * @param bool $expected
@@ -11,9 +25,7 @@ class ArrayUtilsTraitTest extends \PHPUnit_Framework_TestCase
      */
     public function testIsEmptyData(array $data, $expected)
     {
-        /** @var ArrayUtilsTrait $trait */
-        $trait = $this->getMockBuilder('Maketok\DataMigration\ArrayUtilsTrait')->getMockForTrait();
-        $this->assertEquals($expected, $trait->isEmptyData($data));
+        $this->assertEquals($expected, $this->trait->isEmptyData($data));
     }
 
     /**
@@ -51,9 +63,7 @@ class ArrayUtilsTraitTest extends \PHPUnit_Framework_TestCase
      */
     public function normalize(array $row, $expected)
     {
-        /** @var ArrayUtilsTrait $trait */
-        $trait = $this->getMockBuilder('Maketok\DataMigration\ArrayUtilsTrait')->getMockForTrait();
-        $this->assertSame($expected, $trait->normalize($row));
+        $this->assertSame($expected, $this->trait->normalize($row));
     }
 
     /**
@@ -62,10 +72,8 @@ class ArrayUtilsTraitTest extends \PHPUnit_Framework_TestCase
      */
     public function normalizeError()
     {
-        /** @var ArrayUtilsTrait $trait */
-        $trait = $this->getMockBuilder('Maketok\DataMigration\ArrayUtilsTrait')->getMockForTrait();
         $row = ['str', [1,2], 'boo'];
-        $trait->normalize($row);
+        $this->trait->normalize($row);
     }
 
     /**
@@ -84,5 +92,83 @@ class ArrayUtilsTraitTest extends \PHPUnit_Framework_TestCase
                 [], []
             ),
         );
+    }
+
+    /**
+     * @param $data
+     * @param $expectedRow
+     * @dataProvider tmpUnitsProvider
+     */
+    public function testAssemble($data, $expectedRow)
+    {
+        $this->assertEquals($expectedRow, $this->trait->assemble($data));
+    }
+
+    /**
+     * @expectedException \Maketok\DataMigration\Action\Exception\ConflictException
+     */
+    public function testAssembleConflict()
+    {
+        $data = [
+            'unit1' => [
+                'id' => 1,
+                'name' => 'u1',
+            ],
+            'unit2' => [
+                'id' => 1,
+                'name' => 'u2',
+            ],
+        ];
+        try {
+            $this->trait->assemble($data);
+        } catch (ConflictException $e) {
+            $this->assertSame(['unit1', 'unit2'], $e->getUnitsInConflict());
+            $this->assertSame('name', $e->getConflictedKey());
+            throw $e;
+        }
+    }
+
+    /**
+     * @return array
+     */
+    public function tmpUnitsProvider()
+    {
+        return [
+            // simple merge
+            [
+                [
+                    'unit1' => [
+                        'id' => 1,
+                        'name' => 'tmp1',
+                    ],
+                    'unit2' => [
+                        'code' => 't1',
+                    ],
+                ],
+                [
+                    'id' => 1,
+                    'name' => 'tmp1',
+                    'code' => 't1',
+                ],
+            ],
+            // merge with equal keys
+            [
+                [
+                    'unit1' => [
+                        'id' => 1,
+                        'name' => 'tmp1',
+                    ],
+                    'unit2' => [
+                        'id' => 1,
+                        'code' => 't1',
+                    ],
+                ],
+                [
+                    'id' => 1,
+                    'name' => 'tmp1',
+                    'code' => 't1',
+                ],
+            ],
+        ];
     }
 }

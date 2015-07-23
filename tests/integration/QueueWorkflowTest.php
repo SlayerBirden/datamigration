@@ -2,9 +2,16 @@
 
 namespace Maketok\DataMigration\IntegrationTest;
 
+use Faker\Generator;
+use Faker\Provider\Address;
+use Faker\Provider\Base;
+use Faker\Provider\Internet;
+use Faker\Provider\Lorem;
+use Faker\Provider\Person;
 use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Action\Type\CreateTmpFiles;
 use Maketok\DataMigration\Action\Type\Delete;
+use Maketok\DataMigration\Action\Type\Generate;
 use Maketok\DataMigration\Action\Type\Load;
 use Maketok\DataMigration\Action\Type\Move;
 use Maketok\DataMigration\ArrayMap;
@@ -16,6 +23,7 @@ use Maketok\DataMigration\QueueWorkflow;
 use Maketok\DataMigration\Storage\Db\DBALMysqlResource;
 use Maketok\DataMigration\Storage\Db\DBALMysqlResourceHelper;
 use Maketok\DataMigration\Unit\SimpleBag;
+use Maketok\DataMigration\Unit\Type\GeneratorUnit;
 use Maketok\DataMigration\Unit\Type\ImportDbUnit;
 use Maketok\DataMigration\Workflow\Result;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
@@ -260,7 +268,7 @@ CONTRIBUTION;
     {
         // SET THESE TO TRUE TO DEBUG
         $this->config['db_debug'] = false;
-        $this->config['file_debug'] = true;
+        $this->config['file_debug'] = false;
         //=====================================================================
         $customerUnit = $this->prepareCustomerImportUnit();
         $addressUnit = $this->prepareAddressImportUnit();
@@ -335,5 +343,86 @@ MYSQL;
         $expected = $this->createXMLDataSet(__DIR__ . '/assets/afterImportDeleteAddressStructure.xml');
         $actual = $this->getConnection()->createDataSet(['customers', 'addresses']);
         $this->assertDataSetsEqual($expected, $actual);
+    }
+
+    /**
+     * @test
+     * @throws \Doctrine\DBAL\DBALException
+     * @throws \Exception
+     */
+    public function testImportGenerate()
+    {
+        // SET THESE TO TRUE TO DEBUG
+        $this->config['db_debug'] = false;
+        $this->config['file_debug'] = false;
+        //=====================================================================
+        $customerUnit = new GeneratorUnit('customers');
+        $customerUnit->setGeneratorMapping([
+            'id' => 'map.incr("customer_id", resource.getLastIncrement("customers"))',
+            'firstname' => 'generator.firstName',
+            'lastname' => 'generator.lastName',
+            'age' => 'generator.numberBetween(10, 60)',
+            'email' => 'generator.unique().email',
+        ]);
+        $customerUnit->setMapping([
+            'id' => "",
+            'firstname' => "",
+            'lastname' => "",
+            'age' => "",
+            'email' => "",
+        ]);
+        $customerUnit->setTable("customers");
+        $addressUnit = new GeneratorUnit('addresses');
+        $seed = new \SplFixedArray(2);
+        $seed[0] = 4;
+        $seed[1] = 1;
+        $addressUnit->setGenerationSeed($seed);
+        $addressUnit->setGeneratorMapping([
+            'id' => 'map.incr("address_id", resource.getLastIncrement("addresses"))',
+            'parent_id' => 'map.customer_id',
+            'street' => 'generator.streetAddress',
+            'city' => 'generator.city',
+        ]);
+        $addressUnit->setMapping([
+            'id' => '',
+            'parent_id' => '',
+            'street' => '',
+            'city' => '',
+        ]);
+        $addressUnit->setTable('addresses');
+        $bag = new SimpleBag();
+        $bag->add($customerUnit);
+        $bag->add($addressUnit);
+
+        $generator = new Generator();
+        $generator->addProvider(new Base($generator));
+        $generator->addProvider(new Lorem($generator));
+        $generator->addProvider(new Person($generator));
+        $generator->addProvider(new Address($generator));
+        $generator->addProvider(new Internet($generator));
+
+        // truncate all info beforehand to not run into issue with duplicate email
+        $this->resource->getConnection()->executeUpdate("DELETE FROM customers");
+
+        $generate = new Generate($bag, $this->config, $this->getLanguageAdapter(),
+            $generator, 100, new ArrayMap(), new DBALMysqlResourceHelper($this->resource));
+        $load = new Load($bag, $this->config, $this->resource);
+        $move = new Move($bag, $this->config, $this->resource);
+
+        $result = new Result();
+        $workflow = new QueueWorkflow($this->config, $result);
+        $workflow->add($generate);
+        $workflow->add($load);
+        $workflow->add($move);
+        try {
+            $this->resource->startTransaction();
+            $workflow->execute();
+            $this->resource->commit();
+        } catch (\Exception $e) {
+            $this->resource->rollback();
+            throw $e;
+        }
+
+        $this->assertTableRowCount('customers', 100);
     }
 }

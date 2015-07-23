@@ -2,6 +2,7 @@
 
 namespace Maketok\DataMigration;
 
+use Maketok\DataMigration\Action\Exception\ConflictException;
 use Maketok\DataMigration\Action\Exception\NormalizationException;
 
 trait ArrayUtilsTrait
@@ -54,5 +55,34 @@ trait ArrayUtilsTrait
             }, $arrayRow);
         }
         return $extracted;
+    }
+
+    /**
+     * @param array $data
+     * @param bool $force
+     * @return array
+     * @throws ConflictException
+     */
+    public function assemble(array $data, $force = false)
+    {
+        if (count($data) > 1) {
+            $byKeys = call_user_func_array('array_intersect_key', $data);
+            $byKeysAndValues = call_user_func_array('array_intersect_assoc', $data);
+            if ($byKeys != $byKeysAndValues && !$force) {
+                $keys = array_keys(array_diff_assoc($byKeys, $byKeysAndValues));
+                $key = array_shift($keys);
+                $unitsInConflict = array_keys(array_filter($data, function ($var) use ($key) {
+                    return array_key_exists($key, $var);
+                }));
+                throw new ConflictException(
+                    sprintf("Conflict with data %s", json_encode($data)),
+                    0,
+                    null,
+                    $unitsInConflict,
+                    $key
+                );
+            }
+        }
+        return call_user_func_array('array_replace', $data);
     }
 }

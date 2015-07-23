@@ -5,7 +5,9 @@ namespace Maketok\DataMigration\Action\Type;
 use Faker\Generator;
 use Faker\Provider\Base;
 use Faker\Provider\Lorem;
+use Maketok\DataMigration\ArrayMap;
 use Maketok\DataMigration\Expression\LanguageAdapter;
+use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
 use Maketok\DataMigration\Unit\Type\GeneratorUnit;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
@@ -26,7 +28,9 @@ class GenerateTest extends \PHPUnit_Framework_TestCase
             $this->getConfig(),
             new LanguageAdapter(),
             new Generator(),
-            2
+            2,
+            new ArrayMap(),
+            $this->getResourceHelper()
         );
     }
 
@@ -40,6 +44,16 @@ class GenerateTest extends \PHPUnit_Framework_TestCase
         $arr = \SplFixedArray::fromArray([1,1]);
         $unit->setGenerationSeed($arr);
         return $unit;
+    }
+
+    /**
+     * @return ResourceHelperInterface
+     */
+    protected function getResourceHelper()
+    {
+        $helper = $this->getMockBuilder('\Maketok\DataMigration\Storage\Db\ResourceHelperInterface')
+            ->getMock();
+        return $helper;
     }
 
     public function testGetCode()
@@ -78,7 +92,9 @@ class GenerateTest extends \PHPUnit_Framework_TestCase
             $this->getConfig(),
             new LanguageAdapter(new ExpressionLanguage()),
             $generator,
-            2
+            2,
+            new ArrayMap(),
+            $this->getResourceHelper()
         );
         $action->process($this->getResultMock());
 
@@ -100,7 +116,9 @@ class GenerateTest extends \PHPUnit_Framework_TestCase
             $this->getConfig(),
             new LanguageAdapter(),
             new Generator(),
-            2
+            2,
+            new ArrayMap(),
+            $this->getResourceHelper()
         );
         $action->process($this->getResultMock());
     }
