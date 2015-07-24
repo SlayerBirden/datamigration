@@ -4,6 +4,7 @@ namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Unit\AbstractUnit;
+use Maketok\DataMigration\Unit\SimpleBag;
 use Maketok\DataMigration\Unit\Type\Unit;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 use Maketok\DataMigration\Workflow\ResultInterface;
@@ -17,25 +18,10 @@ trait ServiceGetterTrait
     protected function getUnitBag($units = [])
     {
         /** @var \PHPUnit_Framework_TestCase $this */
-        $unitBag = $this->getMockBuilder('\Maketok\DataMigration\Unit\UnitBagInterface')
-            ->getMock();
-        $unitBag->expects($this->any())->method('add')->willReturnSelf();
-        $unitBag->expects($this->any())
-            ->method('getIterator')
-            ->willReturn(new \ArrayIterator($units));
-        $unitBag->expects($this->any())
-            ->method('count')
-            ->willReturn(count($units));
-        $map = [];
+        $unitBag = new SimpleBag();
         foreach ($units as $unit) {
-            $map[] = [$unit->getCode(), $unit];
+            $unitBag->add($unit);
         }
-        $unitBag->expects($this->any())
-            ->method('getUnitByCode')
-            ->willReturnMap($map);
-        $unitBag->expects($this->any())
-            ->method('count')
-            ->willReturn(count($units));
         return $unitBag;
     }
 

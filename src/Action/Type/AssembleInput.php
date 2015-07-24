@@ -143,6 +143,14 @@ class AssembleInput extends AbstractAction implements ActionInterface
                 $this->processed[$code] = $tmpRow = $this->buffer[$code];
             } elseif (($tmpRow = $this->readRow($unit)) !== false) {
                 $this->processed[$code] = $tmpRow;
+                if ($this->bag->hasLeaf() && !$this->bag->isLeaf($code)) {
+                    /**
+                     * when bag contains leafs it's important to always buffer
+                     * branches each time we read
+                     * buffer will be constantly cleared when conflicts arise
+                     */
+                    $this->buffer[$code] = $this->processed[$code];
+                }
             } else {
                 continue;
             }
@@ -182,10 +190,10 @@ class AssembleInput extends AbstractAction implements ActionInterface
             // checking if input has the correct # of mapped entries
             $intersected = array_intersect_key($this->connectBuffer, $this->buffer);
             foreach (array_keys($intersected) as $purgeKey) {
-                $this->buffer[$purgeKey] = null;
-                $this->connectBuffer[$purgeKey] = null;
+                unset($this->buffer[$purgeKey]);
+                unset($this->connectBuffer[$purgeKey]);
             }
-            if (!empty($this->connectBuffer)) {
+            if (!$this->isEmptyData($this->connectBuffer)) {
                 throw new \LogicException(
                     sprintf(
                         "Orphaned rows in some of the units %s",
@@ -200,26 +208,38 @@ class AssembleInput extends AbstractAction implements ActionInterface
     /**
      * @param string[] $codes
      * @throws FlowRegulationException
+     * @throws \LogicException
      */
     private function handleConflict(array $codes)
     {
-        if (empty($codes)) {
-            throw new \LogicException("Can not resolve conflicted state of units.");
+        $clearedBranches = false;
+        $leafs = array_filter($codes, [$this->bag, 'isLeaf']);
+        $branches = array_diff($codes, $leafs);
+        foreach ($branches as $code) {
+            if (isset($this->buffer[$code])) {
+                unset($this->buffer[$code]);
+                $clearedBranches = true;
+            } elseif (isset($this->lastAdded[$code]) && isset($this->processed[$code])) {
+                $this->buffer[$code] = $this->processed[$code];
+                $this->processed[$code] = $this->lastAdded[$code];
+            } else {
+                // it seem we've got wrong connection from the start
+                throw new \LogicException("Conflict is in the first row of given units. Will not process further.");
+            }
         }
-        // assume 1st unit is major entity (which goes on multiple rows)
-        $code = array_shift($codes);
-        if (isset($this->buffer[$code])) {
-            // time to purge buffer for conflicted code
-            $this->buffer[$code] = null;
-            $this->handleConflict($codes);
-            throw new FlowRegulationException("", self::FLOW_CONTINUE);
-        } elseif (isset($this->lastAdded[$code]) && isset($this->processed[$code])) {
-            $this->buffer[$code] = $this->processed[$code];
-            $this->processed[$code] = $this->lastAdded[$code];
-        } else {
-            // it seem we've got wrong connection from the start
-            throw new \LogicException("Conflict is in the first row of given units. Will not process further.");
+        if (!$clearedBranches) {
+            return;
         }
+        foreach ($leafs as $code) {
+            if (isset($this->lastAdded[$code]) && isset($this->processed[$code])) {
+                $this->buffer[$code] = $this->processed[$code];
+                $this->processed[$code] = $this->lastAdded[$code];
+            } else {
+                // it seem we've got wrong connection from the start
+                throw new \LogicException("Conflict is in the first row of given units. Will not process further.");
+            }
+        }
+        throw new FlowRegulationException("", self::FLOW_CONTINUE);
     }
 
     /**
@@ -240,6 +260,11 @@ class AssembleInput extends AbstractAction implements ActionInterface
                 ]);
             }, $unit->getReversedMapping());
             $this->lastAdded[$unitCode] = $unitData;
+        }
+        foreach ($this->bag as $unit) {
+            if ($this->bag->isLeaf($unit->getCode())) {
+                unset($this->buffer[$unit->getCode()]);
+            }
         }
         $this->input->add(
             $this->assemble($toAdd)

@@ -162,14 +162,16 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
                 [1, '4100 Marine dr. App. 54', 'Chicago', 1],
                 [2, '3300 St. George, Suite 300', 'New York', 1],
                 [3, '111 W Jackson', 'Chicago', 2],
-                [4, '111 W Jackson-2', 'Chicago', 2],
-                [5, 'Hollywood', 'LA', 3],
-                [6, 'fake', 'LA', 3],
-                [7, 'Fairy Tale', 'NY', 4],
+                [4, '111 W Jackson-2', 'Chicago', 3],
+                [5, '111 W Jackson-3', 'Chicago', 3],
+                [6, 'Hollywood', 'LA', 3],
+                [7, 'fake', 'LA', 3],
+                [8, 'Fairy Tale', 'NY', 4],
                 false,
             ]
         ));
         $unit3->setTmpFileName('address_tmp.csv');
+        $unit3->setParent($unit1);
 
         $expected = [
             [['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr_city' => 'Chicago',
@@ -178,8 +180,10 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
                 'addr_street' => '3300 St. George, Suite 300']],
             [['email' => 'pete111@eol.com', 'name' => 'Peter Ostridge', 'age' => 33, 'addr_city' => 'Chicago',
                 'addr_street' => '111 W Jackson']],
-            [['email' => 'pete111@eol.com', 'name' => 'Peter Ostridge', 'age' => 33, 'addr_city' => 'Chicago',
+            [['email' => 'bm@gmail.com', 'name' => 'Bill Murray', 'age' => 55, 'addr_city' => 'Chicago',
                 'addr_street' => '111 W Jackson-2']],
+            [['email' => 'bm@gmail.com', 'name' => 'Bill Murray', 'age' => 55, 'addr_city' => 'Chicago',
+                'addr_street' => '111 W Jackson-3']],
             [['email' => 'bm@gmail.com', 'name' => 'Bill Murray', 'age' => 55, 'addr_city' => 'LA',
                 'addr_street' => 'Hollywood']],
             [['email' => 'bm@gmail.com', 'name' => 'Bill Murray', 'age' => 55, 'addr_city' => 'LA',
@@ -261,6 +265,7 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
             ]
         ));
         $unit2->setTmpFileName('address_tmp.csv');
+        $unit2->setParent($unit1);
 
         $expected = [
             [['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr_city' => 'Chicago',

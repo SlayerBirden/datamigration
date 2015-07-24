@@ -9,4 +9,14 @@ interface UnitInterface
      * @return string
      */
     public function getCode();
+
+    /**
+     * @param UnitInterface $parent
+     */
+    public function setParent(UnitInterface $parent);
+
+    /**
+     * @return UnitInterface
+     */
+    public function getParent();
 }

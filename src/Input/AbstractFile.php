@@ -19,12 +19,20 @@ abstract class AbstractFile implements InputResourceInterface
     }
 
     /**
-     * clean internal pointer
+     * close file resource
      */
-    public function __destruct()
+    public function close()
     {
         if (isset($this->descriptor)) {
             $this->descriptor = null;
         }
+    }
+
+    /**
+     * clean internal pointer
+     */
+    public function __destruct()
+    {
+        $this->close();
     }
 }

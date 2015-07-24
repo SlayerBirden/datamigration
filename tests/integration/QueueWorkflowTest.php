@@ -465,6 +465,7 @@ MYSQL;
             'street' => 'map.street',
             'city' => 'map.city',
         ]);
+        $aUnit->setParent($cUnit);
 
         $bag = new SimpleBag();
         $bag->add($cUnit);
@@ -497,20 +498,99 @@ MYSQL;
         // assert that customers are in the file
 
         $this->assertFileExists($fname);
-        $fileReader = new \SplFileObject($fname, 'r');
-        $this->assertGreaterThan(100, $this->getNumberOfLines($fileReader));
+        $this->assertGreaterThan(100, $this->getNumberOfLines($fname));
     }
 
     /**
-     * @param \SplFileObject $fileObject
+     * @test
+     */
+    public function testGenerateExport2Branches()
+    {
+        // SET THESE TO TRUE TO DEBUG
+        $this->config['db_debug'] = false;
+        $this->config['file_debug'] = false;
+        //=====================================================================
+        $cUnit = $this->getGenerateCustomerUnit();
+        $cUnit->setReversedConnection([
+            'customer_id' => 'id',
+        ]);
+        $cUnit->setReversedMapping([
+            'email' => 'map.email',
+            'age' => 'map.age',
+        ]);
+        $cdUnit = new Unit('customer_data');
+        $seed = new \SplFixedArray(2);
+        $seed[0] = 1;
+        $seed[1] = 1;
+        $cdUnit->setGenerationSeed($seed);
+        $cdUnit->setGeneratorMapping([
+            'id' => 'map.incr("gen_id", 1)',
+            'parent_id' => 'map.customer_id',
+            'firstname' => 'generator.firstName',
+            'lastname' => 'generator.lastName',
+        ]);
+        $cdUnit->setMapping([
+            'id' => '',
+            'parent_id' => '',
+            'firstname' => '',
+            'lastname' => '',
+        ]);
+        $cdUnit->setTable('customers');
+        $cdUnit->setReversedConnection([
+            'customer_id' => 'parent_id',
+        ]);
+        $cdUnit->setReversedMapping([
+            'name' => 'map.firstname ~ " " ~ map.lastname',
+        ]);
+
+        $bag = new SimpleBag();
+        $bag->add($cUnit);
+        $bag->add($cdUnit);
+
+        $generator = new Generator();
+        $generator->addProvider(new Base($generator));
+        $generator->addProvider(new Lorem($generator));
+        $generator->addProvider(new Person($generator));
+        $generator->addProvider(new Address($generator));
+        $generator->addProvider(new Internet($generator));
+
+        // truncate all info beforehand to not run into issue with duplicate email
+        $this->resource->getConnection()->executeUpdate("DELETE FROM customers");
+
+        $fname = __DIR__ . '/assets/customers_data_generated.csv';
+        $input = new Csv($fname, 'w');
+
+        $generate = new Generate($bag, $this->config, $this->getLanguageAdapter(),
+            $generator, 100, new ArrayMap(), new DBALMysqlResourceHelper($this->resource));
+        $assemble = new AssembleInput($bag, $this->config, $this->getLanguageAdapter(), $input, new ArrayMap());
+
+        $result = new Result();
+        $workflow = new QueueWorkflow($this->config, $result);
+        $workflow->add($generate);
+        $workflow->add($assemble);
+
+        $workflow->execute();
+        //=====================================================================
+        // assert that customers are in the file
+
+        $this->assertFileExists($fname);
+        $this->assertEquals(101, $this->getNumberOfLines($fname));
+    }
+
+    /**
+     * @param string $fname
      * @return int
      */
-    public function getNumberOfLines(\SplFileObject $fileObject)
+    public function getNumberOfLines($fname)
     {
+        $fileObject = new \SplFileObject($fname, 'r');
         $i = 0;
         while (!$fileObject->eof()) {
             $fileObject->next();
-            $i++;
+            $current = $fileObject->current();
+            if (!empty($current)) {
+                $i++;
+            }
         }
         return $i;
     }

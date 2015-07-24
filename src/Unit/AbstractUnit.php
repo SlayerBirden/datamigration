@@ -8,6 +8,10 @@ abstract class AbstractUnit implements UnitInterface
      * @var string
      */
     protected $code;
+    /**
+     * @var UnitInterface
+     */
+    protected $parent;
 
     /**
      * @param string $code
@@ -23,5 +27,21 @@ abstract class AbstractUnit implements UnitInterface
     public function getCode()
     {
         return $this->code;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getParent()
+    {
+        return $this->parent;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setParent(UnitInterface $parent)
+    {
+        $this->parent = $parent;
     }
 }
