@@ -12,6 +12,7 @@ use Maketok\DataMigration\Expression\LanguageInterface;
 use Maketok\DataMigration\Input\InputResourceInterface;
 use Maketok\DataMigration\MapInterface;
 use Maketok\DataMigration\Unit\ExportFileUnitInterface;
+use Maketok\DataMigration\Unit\ImportFileUnitInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 use Maketok\DataMigration\Workflow\ResultInterface;
 
@@ -26,7 +27,7 @@ class AssembleInput extends AbstractAction implements ActionInterface
     const FLOW_ABORT = 200;
 
     /**
-     * @var UnitBagInterface|ExportFileUnitInterface[]
+     * @var UnitBagInterface|ExportFileUnitInterface[]|ImportFileUnitInterface[]
      */
     protected $bag;
     /**
@@ -181,8 +182,8 @@ class AssembleInput extends AbstractAction implements ActionInterface
             // checking if input has the correct # of mapped entries
             $intersected = array_intersect_key($this->connectBuffer, $this->buffer);
             foreach (array_keys($intersected) as $purgeKey) {
-                unset($this->buffer[$purgeKey]);
-                unset($this->connectBuffer[$purgeKey]);
+                $this->buffer[$purgeKey] = null;
+                $this->connectBuffer[$purgeKey] = null;
             }
             if (!empty($this->connectBuffer)) {
                 throw new \LogicException(
@@ -230,7 +231,7 @@ class AssembleInput extends AbstractAction implements ActionInterface
         $tmpRow = $this->assemble($this->processed, true);
         $this->map->feed($tmpRow);
         foreach ($this->processed as $unitCode => $unitData) {
-            /** @var ExportFileUnitInterface $unit */
+            /** @var ExportFileUnitInterface|ImportFileUnitInterface $unit */
             $unit = $this->bag->getUnitByCode($unitCode);
             $toAdd[$unitCode] = array_map(function ($var) use ($unit) {
                 return $this->language->evaluate($var, [
@@ -246,11 +247,11 @@ class AssembleInput extends AbstractAction implements ActionInterface
     }
 
     /**
-     * @param ExportFileUnitInterface $unit
+     * @param ImportFileUnitInterface $unit
      * @return array|bool
      * @throws WrongContextException
      */
-    private function readRow(ExportFileUnitInterface $unit)
+    private function readRow(ImportFileUnitInterface $unit)
     {
         $row = $unit->getFilesystem()->readRow();
         if (is_array($row)) {
@@ -284,6 +285,11 @@ class AssembleInput extends AbstractAction implements ActionInterface
     {
         foreach ($this->bag as $unit) {
             $unit->getFilesystem()->close();
+        }
+        if (!$this->config['file_debug']) {
+            foreach ($this->bag as $unit) {
+                $unit->getFilesystem()->cleanUp($unit->getTmpFileName());
+            }
         }
         $this->result->setActionEndTime($this->getCode(), new \DateTime());
     }

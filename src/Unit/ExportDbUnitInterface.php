@@ -2,7 +2,7 @@
 
 namespace Maketok\DataMigration\Unit;
 
-interface ExportDbUnitInterface extends ImportDbUnitInterface
+interface ExportDbUnitInterface extends UnitInterface
 {
     /**
      * @return array

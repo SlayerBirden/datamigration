@@ -4,7 +4,6 @@ namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Storage\Db\ResourceInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface as FsResourceInterface;
-use Maketok\DataMigration\Unit\Type\ExportFileUnit;
 
 class DumpTest extends \PHPUnit_Framework_TestCase
 {
@@ -32,15 +31,6 @@ class DumpTest extends \PHPUnit_Framework_TestCase
             ->method('dumpData');
         call_user_func_array([$method, 'willReturnOnConsecutiveCalls'], $returns);
         return $resource;
-    }
-
-    /**
-     * @param string $code
-     * @return ExportFileUnit
-     */
-    public function getUnit($code)
-    {
-        return new ExportFileUnit($code);
     }
 
     /**

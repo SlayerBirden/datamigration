@@ -4,7 +4,7 @@ namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Storage\Db\ResourceInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface as FsResourceInterface;
-use Maketok\DataMigration\Unit\Type\ImportDbUnit;
+use Maketok\DataMigration\Unit\Type\Unit;
 
 class LoadTest extends \PHPUnit_Framework_TestCase
 {
@@ -22,11 +22,11 @@ class LoadTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @param string $code
-     * @return ImportDbUnit
+     * @return Unit
      */
     public function getUnit($code)
     {
-        $unit = new ImportDbUnit($code);
+        $unit = new Unit($code);
         $unit->setTable('table');
         $unit->setPk('id');
         /** @var FsResourceInterface $filesystem */

@@ -2,7 +2,7 @@
 
 namespace Maketok\DataMigration\Unit;
 
-interface ExportFileUnitInterface extends ExportDbUnitInterface
+interface ExportFileUnitInterface extends UnitInterface
 {
     /**
      * get the connection array by which Assembler is going to connect rows

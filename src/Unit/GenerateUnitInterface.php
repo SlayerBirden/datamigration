@@ -2,7 +2,7 @@
 
 namespace Maketok\DataMigration\Unit;
 
-interface GenerateUnitInterface extends ImportFileUnitInterface
+interface GenerateUnitInterface extends UnitInterface
 {
     /**
      * @return array

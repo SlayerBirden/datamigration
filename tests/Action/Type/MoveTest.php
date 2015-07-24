@@ -3,7 +3,6 @@
 namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Storage\Db\ResourceInterface;
-use Maketok\DataMigration\Unit\Type\ImportDbUnit;
 
 class MoveTest extends \PHPUnit_Framework_TestCase
 {
@@ -17,15 +16,6 @@ class MoveTest extends \PHPUnit_Framework_TestCase
             $this->getResource()
         );
         $this->assertEquals('move', $action->getCode());
-    }
-
-    /**
-     * @param string $code
-     * @return ImportDbUnit
-     */
-    public function getUnit($code)
-    {
-        return new ImportDbUnit($code);
     }
 
     /**

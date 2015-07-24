@@ -11,6 +11,7 @@ use Maketok\DataMigration\Expression\LanguageInterface;
 use Maketok\DataMigration\MapInterface;
 use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
 use Maketok\DataMigration\Unit\GenerateUnitInterface;
+use Maketok\DataMigration\Unit\ImportFileUnitInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 use Maketok\DataMigration\Workflow\ResultInterface;
 
@@ -22,7 +23,7 @@ class Generate extends AbstractAction implements ActionInterface
     use ArrayUtilsTrait;
 
     /**
-     * @var UnitBagInterface|GenerateUnitInterface[]
+     * @var UnitBagInterface|GenerateUnitInterface[]|ImportFileUnitInterface[]
      */
     protected $bag;
     /**

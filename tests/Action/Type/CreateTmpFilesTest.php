@@ -9,7 +9,7 @@ use Maketok\DataMigration\Input\InputResourceInterface;
 use Maketok\DataMigration\MapInterface;
 use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
-use Maketok\DataMigration\Unit\Type\ImportFileUnit;
+use Maketok\DataMigration\Unit\Type\Unit;
 use Maketok\DataMigration\Workflow\Result;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
@@ -42,11 +42,11 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @param string $code
-     * @return ImportFileUnit
+     * @return Unit
      */
     public function getUnit($code)
     {
-        $unit = new ImportFileUnit($code);
+        $unit = new Unit($code);
         $dummy = function () {
             return true;
         };

@@ -7,7 +7,6 @@ use Maketok\DataMigration\Expression\LanguageAdapter;
 use Maketok\DataMigration\Input\InputResourceInterface;
 use Maketok\DataMigration\MapInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
-use Maketok\DataMigration\Unit\Type\ExportFileUnit;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 class AssembleInputTest extends \PHPUnit_Framework_TestCase
@@ -75,15 +74,6 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @param string $code
-     * @return ExportFileUnit
-     */
-    public function getUnit($code)
-    {
-        return new ExportFileUnit($code);
-    }
-
-    /**
      * standard process
      */
     public function testProcess()
@@ -91,9 +81,6 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         $unit1 = $this->getUnit('customer');
         $unit1->setReversedMapping([
             'email' => 'map.email',
-            'name' => function ($map) {
-                return $map['fname'] . ' ' . $map['lname'];
-            },
             'age' => 'map.age',
         ]);
         $unit1->setReversedConnection([
@@ -101,22 +88,15 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         ]);
         $unit1->setMapping([
             'id' => 'map.id',
-            'fname' => function ($map) {
-                list($fname) = explode(" ", $map['name']);
-                return $fname;
-            },
-            'lname' => function ($map) {
-                list(, $lname) = explode(" ", $map['name']);
-                return $lname;
-            },
             'email' => 'map.email',
             'age' => 'map.age',
         ]);
         $unit1->setFilesystem($this->getFS(
             [
-                [1, 'Olaf', 'Stone', 'tst1@example.com', 30],
-                [2, 'Peter', 'Ostridge', 'pete111@eol.com', 33],
-                [3, 'Bill', 'Murray', 'bm@gmail.com', 55],
+                [1, 'tst1@example.com', 30],
+                [2, 'pete111@eol.com', 33],
+                [3, 'bm@gmail.com', 55],
+                [4, 'pp@gmail.com', 11],
                 false,
             ]
         ));
@@ -128,34 +108,68 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         });
         $unit1->setTmpFileName('customer_tmp.csv');
 
-        $unit2 = $this->getUnit('address');
+        $unit2 = $this->getUnit('customer_data');
         $unit2->setReversedMapping([
-            'addr_city' => 'map.city',
-            'addr_street' => 'map.street',
+            'name' => function ($map) {
+                return $map['fname'] . ' ' . $map['lname'];
+            },
         ]);
         $unit2->setReversedConnection([
             'customer_id' => 'parent_id',
         ]);
         $unit2->setMapping([
+            'id' => 'map.data_id',
+            'parent_id' => 'map.id',
+            'fname' => function ($map) {
+                list($fname) = explode(" ", $map['name']);
+                return $fname;
+            },
+            'lname' => function ($map) {
+                list(, $lname) = explode(" ", $map['name']);
+                return $lname;
+            },
+        ]);
+        $unit2->setTmpFileName('customer_data_tmp.csv');
+        $unit2->setFilesystem($this->getFS(
+            [
+                [1, 1, 'Olaf', 'Stone'],
+                [2, 2,  'Peter', 'Ostridge'],
+                [3, 3, 'Bill', 'Murray'],
+                [4, 4, 'Peter', 'Pan'],
+                false,
+            ]
+        ));
+
+        $unit3 = $this->getUnit('address');
+        $unit3->setReversedMapping([
+            'addr_city' => 'map.city',
+            'addr_street' => 'map.street',
+        ]);
+        $unit3->setReversedConnection([
+            'customer_id' => 'parent_id',
+        ]);
+        $unit3->setMapping([
             'id' => 'map.addr_id',
             'street' => 'map.addr_street',
             'city' => 'map.addr_city',
             'parent_id' => 'map.id',
         ]);
-        $unit2->addContribution(function (MapInterface $map) {
+        $unit3->addContribution(function (MapInterface $map) {
             $map->incr('addr_id', 1);
         });
-        $unit2->setFilesystem($this->getFS(
+        $unit3->setFilesystem($this->getFS(
             [
                 [1, '4100 Marine dr. App. 54', 'Chicago', 1],
                 [2, '3300 St. George, Suite 300', 'New York', 1],
                 [3, '111 W Jackson', 'Chicago', 2],
                 [4, '111 W Jackson-2', 'Chicago', 2],
                 [5, 'Hollywood', 'LA', 3],
+                [6, 'fake', 'LA', 3],
+                [7, 'Fairy Tale', 'NY', 4],
                 false,
             ]
         ));
-        $unit2->setTmpFileName('address_tmp.csv');
+        $unit3->setTmpFileName('address_tmp.csv');
 
         $expected = [
             [['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr_city' => 'Chicago',
@@ -168,9 +182,13 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
                 'addr_street' => '111 W Jackson-2']],
             [['email' => 'bm@gmail.com', 'name' => 'Bill Murray', 'age' => 55, 'addr_city' => 'LA',
                 'addr_street' => 'Hollywood']],
+            [['email' => 'bm@gmail.com', 'name' => 'Bill Murray', 'age' => 55, 'addr_city' => 'LA',
+                'addr_street' => 'fake']],
+            [['email' => 'pp@gmail.com', 'name' => 'Peter Pan', 'age' => 11, 'addr_city' => 'NY',
+                'addr_street' => 'Fairy Tale']],
         ];
 
-        $action = $this->getAction([$unit1, $unit2], $expected);
+        $action = $this->getAction([$unit1, $unit2, $unit3], $expected);
         $action->process($this->getResultMock());
     }
 

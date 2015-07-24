@@ -4,6 +4,7 @@ namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Unit\AbstractUnit;
+use Maketok\DataMigration\Unit\Type\Unit;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 use Maketok\DataMigration\Workflow\ResultInterface;
 
@@ -62,5 +63,14 @@ trait ServiceGetterTrait
     {
         /** @var \PHPUnit_Framework_TestCase $this */
         return $this->getMockBuilder('\Maketok\DataMigration\Workflow\ResultInterface')->getMock();
+    }
+
+    /**
+     * @param string $code
+     * @return Unit
+     */
+    public function getUnit($code)
+    {
+        return new Unit($code);
     }
 }

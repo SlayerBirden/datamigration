@@ -9,6 +9,7 @@ use Faker\Provider\Internet;
 use Faker\Provider\Lorem;
 use Faker\Provider\Person;
 use Maketok\DataMigration\Action\ConfigInterface;
+use Maketok\DataMigration\Action\Type\AssembleInput;
 use Maketok\DataMigration\Action\Type\CreateTmpFiles;
 use Maketok\DataMigration\Action\Type\Delete;
 use Maketok\DataMigration\Action\Type\Generate;
@@ -23,8 +24,7 @@ use Maketok\DataMigration\QueueWorkflow;
 use Maketok\DataMigration\Storage\Db\DBALMysqlResource;
 use Maketok\DataMigration\Storage\Db\DBALMysqlResourceHelper;
 use Maketok\DataMigration\Unit\SimpleBag;
-use Maketok\DataMigration\Unit\Type\GeneratorUnit;
-use Maketok\DataMigration\Unit\Type\ImportDbUnit;
+use Maketok\DataMigration\Unit\Type\Unit;
 use Maketok\DataMigration\Workflow\Result;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
@@ -119,12 +119,12 @@ class QueueWorkflowTest extends \PHPUnit_Extensions_Database_TestCase
     }
 
     /**
-     * @return ImportDbUnit
+     * @return Unit
      * @throws \Doctrine\DBAL\DBALException
      */
     public function prepareCustomerImportUnit()
     {
-        $customerUnit = new ImportDbUnit('customers');
+        $customerUnit = new Unit('customers');
         $customerUnit->setTable('customers');
         $hashMap = new ArrayHashmap('email-id');
         $hashMap->load($this->resource->getConnection()
@@ -173,11 +173,11 @@ CONTRIBUTION;
     }
 
     /**
-     * @return ImportDbUnit
+     * @return Unit
      */
     public function prepareAddressImportUnit()
     {
-        $addressUnit = new ImportDbUnit("addresses");
+        $addressUnit = new Unit("addresses");
         $addressUnit->setTable('addresses');
         $addressUnit->setMapping([
             'id' => 'map.incr("address_id", 4)',
@@ -284,7 +284,7 @@ CONTRIBUTION;
         $load = new Load($bag, $this->config, $this->resource);
         $move = new Move($bag, $this->config, $this->resource);
         //=====================================================================
-        $deleteAddressUnit = new ImportDbUnit('deleteAddress');
+        $deleteAddressUnit = new Unit('deleteAddress');
         $deleteAddressUnit->setTable('addresses');
         $deleteAddressUnit->addWriteCondition("isset(map.address_id)");
         $contribution = <<<CONTRIBUTION
@@ -356,43 +356,9 @@ MYSQL;
         $this->config['db_debug'] = false;
         $this->config['file_debug'] = false;
         //=====================================================================
-        $customerUnit = new GeneratorUnit('customers');
-        $customerUnit->setGeneratorMapping([
-            'id' => 'map.incr("customer_id", resource.getLastIncrement("customers"))',
-            'firstname' => 'generator.firstName',
-            'lastname' => 'generator.lastName',
-            'age' => 'generator.numberBetween(10, 60)',
-            'email' => 'generator.unique().email',
-        ]);
-        $customerUnit->setMapping([
-            'id' => "",
-            'firstname' => "",
-            'lastname' => "",
-            'age' => "",
-            'email' => "",
-        ]);
-        $customerUnit->setTable("customers");
-        $addressUnit = new GeneratorUnit('addresses');
-        $seed = new \SplFixedArray(2);
-        $seed[0] = 4;
-        $seed[1] = 1;
-        $addressUnit->setGenerationSeed($seed);
-        $addressUnit->setGeneratorMapping([
-            'id' => 'map.incr("address_id", resource.getLastIncrement("addresses"))',
-            'parent_id' => 'map.customer_id',
-            'street' => 'generator.streetAddress',
-            'city' => 'generator.city',
-        ]);
-        $addressUnit->setMapping([
-            'id' => '',
-            'parent_id' => '',
-            'street' => '',
-            'city' => '',
-        ]);
-        $addressUnit->setTable('addresses');
         $bag = new SimpleBag();
-        $bag->add($customerUnit);
-        $bag->add($addressUnit);
+        $bag->add($this->getGenerateCustomerUnit());
+        $bag->add($this->getGenerateAddressUnit());
 
         $generator = new Generator();
         $generator->addProvider(new Base($generator));
@@ -424,5 +390,128 @@ MYSQL;
         }
 
         $this->assertTableRowCount('customers', 100);
+    }
+
+    /**
+     * @return Unit
+     */
+    protected function getGenerateCustomerUnit()
+    {
+        $customerUnit = new Unit('customers');
+        $customerUnit->setGeneratorMapping([
+            'id' => 'map.incr("customer_id", resource.getLastIncrement("customers"))',
+            'firstname' => 'generator.firstName',
+            'lastname' => 'generator.lastName',
+            'age' => 'generator.numberBetween(10, 60)',
+            'email' => 'generator.unique().email',
+        ]);
+        $customerUnit->setMapping([
+            'id' => "",
+            'firstname' => "",
+            'lastname' => "",
+            'age' => "",
+            'email' => "",
+        ]);
+        $customerUnit->setTable("customers");
+        return $customerUnit;
+    }
+
+    protected function getGenerateAddressUnit()
+    {
+        $addressUnit = new Unit('addresses');
+        $seed = new \SplFixedArray(2);
+        $seed[0] = 4;
+        $seed[1] = 1;
+        $addressUnit->setGenerationSeed($seed);
+        $addressUnit->setGeneratorMapping([
+            'id' => 'map.incr("address_id", resource.getLastIncrement("addresses"))',
+            'parent_id' => 'map.customer_id',
+            'street' => 'generator.streetAddress',
+            'city' => 'generator.city',
+        ]);
+        $addressUnit->setMapping([
+            'id' => '',
+            'parent_id' => '',
+            'street' => '',
+            'city' => '',
+        ]);
+        $addressUnit->setTable('addresses');
+        return $addressUnit;
+    }
+
+    /**
+     * @test
+     */
+    public function testGenerateExport()
+    {
+        // SET THESE TO TRUE TO DEBUG
+        $this->config['db_debug'] = false;
+        $this->config['file_debug'] = false;
+        //=====================================================================
+        $cUnit = $this->getGenerateCustomerUnit();
+        $cUnit->setReversedConnection([
+            'customer_id' => 'id',
+        ]);
+        $cUnit->setReversedMapping([
+            'email' => 'map.email',
+            'name' => 'map.firstname ~ " " ~ map.lastname',
+            'age' => 'map.age',
+        ]);
+        $aUnit = $this->getGenerateAddressUnit();
+        $aUnit->setReversedConnection([
+            'customer_id' => 'parent_id',
+        ]);
+        $aUnit->setReversedMapping([
+            'street' => 'map.street',
+            'city' => 'map.city',
+        ]);
+
+        $bag = new SimpleBag();
+        $bag->add($cUnit);
+        $bag->add($aUnit);
+
+        $generator = new Generator();
+        $generator->addProvider(new Base($generator));
+        $generator->addProvider(new Lorem($generator));
+        $generator->addProvider(new Person($generator));
+        $generator->addProvider(new Address($generator));
+        $generator->addProvider(new Internet($generator));
+
+        // truncate all info beforehand to not run into issue with duplicate email
+        $this->resource->getConnection()->executeUpdate("DELETE FROM customers");
+
+        $fname = __DIR__ . '/assets/customers_generated.csv';
+        $input = new Csv($fname, 'w');
+
+        $generate = new Generate($bag, $this->config, $this->getLanguageAdapter(),
+            $generator, 100, new ArrayMap(), new DBALMysqlResourceHelper($this->resource));
+        $assemble = new AssembleInput($bag, $this->config, $this->getLanguageAdapter(), $input, new ArrayMap());
+
+        $result = new Result();
+        $workflow = new QueueWorkflow($this->config, $result);
+        $workflow->add($generate);
+        $workflow->add($assemble);
+
+        $workflow->execute();
+        //=====================================================================
+        // assert that customers are in the file
+
+        $this->assertFileExists($fname);
+        $fileReader = new \SplFileObject($fname, 'r');
+        $this->assertGreaterThan(100, $this->getNumberOfLines($fileReader));
+    }
+
+    /**
+     * @param \SplFileObject $fileObject
+     * @return int
+     */
+    public function getNumberOfLines(\SplFileObject $fileObject)
+    {
+        $i = 0;
+        while (!$fileObject->eof()) {
+            $fileObject->next();
+            $i++;
+        }
+        return $i;
     }
 }

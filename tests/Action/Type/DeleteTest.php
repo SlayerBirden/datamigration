@@ -3,7 +3,6 @@
 namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Storage\Db\ResourceInterface;
-use Maketok\DataMigration\Unit\Type\ImportDbUnit;
 
 class DeleteTest extends \PHPUnit_Framework_TestCase
 {
@@ -31,15 +30,6 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
             $resource->expects($this->atLeastOnce())->method('deleteUsingTempPK');
         }
         return $resource;
-    }
-
-    /**
-     * @param string $code
-     * @return ImportDbUnit
-     */
-    public function getUnit($code)
-    {
-        return new ImportDbUnit($code);
     }
 
     public function testProcess()

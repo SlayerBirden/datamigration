@@ -8,7 +8,7 @@ use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
 use Maketok\DataMigration\Unit\AbstractUnit;
 use Maketok\DataMigration\Unit\ImportFileUnitInterface;
 
-class ImportFileUnit extends AbstractUnit implements ImportFileUnitInterface
+abstract class ImportFileUnit extends AbstractUnit implements ImportFileUnitInterface
 {
     /**
      * @var string|callable
@@ -43,13 +43,10 @@ class ImportFileUnit extends AbstractUnit implements ImportFileUnitInterface
      */
     protected $hashmaps;
 
-    public function __construct($code, ResourceInterface $fileSystem = null)
+    public function __construct($code)
     {
         parent::__construct($code);
-        if (is_null($fileSystem)) {
-            $fileSystem = new Resource();
-        }
-        $this->filesystem = $fileSystem;
+        $this->filesystem = new Resource();
     }
 
     /**

@@ -4,7 +4,7 @@ namespace Maketok\DataMigration\Unit\Type;
 
 use Maketok\DataMigration\Unit\ExportFileUnitInterface;
 
-class ExportFileUnit extends ExportDbUnit implements ExportFileUnitInterface
+abstract class ExportFileUnit extends ExportDbUnit implements ExportFileUnitInterface
 {
     /**
      * @var array

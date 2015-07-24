@@ -3,7 +3,7 @@
 namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Storage\Db\ResourceInterface;
-use Maketok\DataMigration\Unit\Type\ExportDbUnit;
+use Maketok\DataMigration\Unit\Type\Unit;
 
 class ReverseMoveTest extends \PHPUnit_Framework_TestCase
 {
@@ -21,11 +21,11 @@ class ReverseMoveTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @param string $code
-     * @return ExportDbUnit
+     * @return Unit
      */
     public function getUnit($code)
     {
-        $unit = new ExportDbUnit($code);
+        $unit = new Unit($code);
         $unit->setReverseMoveConditions([
             "id != 5"
         ]);

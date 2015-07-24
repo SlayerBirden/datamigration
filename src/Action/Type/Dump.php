@@ -4,7 +4,9 @@ namespace Maketok\DataMigration\Action\Type;
 
 use Maketok\DataMigration\Action\ActionInterface;
 use Maketok\DataMigration\Action\Exception\WrongContextException;
-use Maketok\DataMigration\Unit\ExportFileUnitInterface;
+use Maketok\DataMigration\Unit\ExportDbUnitInterface;
+use Maketok\DataMigration\Unit\ImportDbUnitInterface;
+use Maketok\DataMigration\Unit\ImportFileUnitInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 use Maketok\DataMigration\Workflow\ResultInterface;
 
@@ -14,7 +16,7 @@ use Maketok\DataMigration\Workflow\ResultInterface;
 class Dump extends AbstractDbAction implements ActionInterface
 {
     /**
-     * @var UnitBagInterface|ExportFileUnitInterface[]
+     * @var UnitBagInterface|ExportDbUnitInterface[]|ImportFileUnitInterface[]|ImportDbUnitInterface[]
      */
     protected $bag;
     /**

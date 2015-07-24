@@ -4,7 +4,7 @@ namespace Maketok\DataMigration\Unit\Type;
 
 use Maketok\DataMigration\Unit\ExportDbUnitInterface;
 
-class ExportDbUnit extends ImportDbUnit implements ExportDbUnitInterface
+abstract class ExportDbUnit extends ImportDbUnit implements ExportDbUnitInterface
 {
     /**
      * Order by columns for reverse move

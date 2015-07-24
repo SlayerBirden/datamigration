@@ -4,7 +4,7 @@ namespace Maketok\DataMigration\Unit\Type;
 
 use Maketok\DataMigration\Unit\ImportDbUnitInterface;
 
-class ImportDbUnit extends ImportFileUnit implements ImportDbUnitInterface
+abstract class ImportDbUnit extends ImportFileUnit implements ImportDbUnitInterface
 {
     /**
      * @var string

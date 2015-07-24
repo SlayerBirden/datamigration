@@ -4,7 +4,7 @@ namespace Maketok\DataMigration\Unit\Type;
 
 use Maketok\DataMigration\Unit\GenerateUnitInterface;
 
-class GeneratorUnit extends ExportDbUnit implements GenerateUnitInterface
+abstract class GeneratorUnit extends ExportFileUnit implements GenerateUnitInterface
 {
     /**
      * @var array
@@ -18,16 +18,13 @@ class GeneratorUnit extends ExportDbUnit implements GenerateUnitInterface
 
     /**
      * @param string $code
-     * @param \SplFixedArray $generationSeed
      */
-    public function __construct($code, \SplFixedArray $generationSeed = null)
+    public function __construct($code)
     {
         parent::__construct($code);
-        if (is_null($generationSeed)) {
-            $this->generationSeed = new \SplFixedArray(2);
-            $this->generationSeed[0] = 1;
-            $this->generationSeed[1] = 1;
-        }
+        $this->generationSeed = new \SplFixedArray(2);
+        $this->generationSeed[0] = 1;
+        $this->generationSeed[1] = 1;
     }
 
     /**

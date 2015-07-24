@@ -9,7 +9,7 @@ use Maketok\DataMigration\ArrayMap;
 use Maketok\DataMigration\Expression\LanguageAdapter;
 use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
 use Maketok\DataMigration\Storage\Filesystem\ResourceInterface;
-use Maketok\DataMigration\Unit\Type\GeneratorUnit;
+use Maketok\DataMigration\Unit\Type\Unit;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 class GenerateTest extends \PHPUnit_Framework_TestCase
@@ -36,11 +36,11 @@ class GenerateTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @param string $code
-     * @return GeneratorUnit
+     * @return Unit
      */
     public function getUnit($code)
     {
-        $unit = new GeneratorUnit($code);
+        $unit = new Unit($code);
         $arr = \SplFixedArray::fromArray([1,1]);
         $unit->setGenerationSeed($arr);
         return $unit;

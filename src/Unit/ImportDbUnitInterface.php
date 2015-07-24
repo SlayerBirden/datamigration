@@ -2,7 +2,7 @@
 
 namespace Maketok\DataMigration\Unit;
 
-interface ImportDbUnitInterface extends ImportFileUnitInterface
+interface ImportDbUnitInterface extends UnitInterface
 {
     /**
      * set main table unit is working with
