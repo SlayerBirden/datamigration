@@ -10,17 +10,17 @@ abstract class ExportDbUnit extends ImportDbUnit implements ExportDbUnitInterfac
      * Order by columns for reverse move
      * @var array
      */
-    protected $reverseMoveOrder;
+    protected $reverseMoveOrder = [];
     /**
      * Direction for reverse move
      * @var string
      */
-    protected $reverseDirection;
+    protected $reverseDirection = 'asc';
     /**
      * Conditions for reverse move
      * @var array
      */
-    protected $reverseConditions;
+    protected $reverseConditions = [];
 
     /**
      * {@inheritdoc}

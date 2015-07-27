@@ -12,9 +12,11 @@ use Maketok\DataMigration\Action\ConfigInterface;
 use Maketok\DataMigration\Action\Type\AssembleInput;
 use Maketok\DataMigration\Action\Type\CreateTmpFiles;
 use Maketok\DataMigration\Action\Type\Delete;
+use Maketok\DataMigration\Action\Type\Dump;
 use Maketok\DataMigration\Action\Type\Generate;
 use Maketok\DataMigration\Action\Type\Load;
 use Maketok\DataMigration\Action\Type\Move;
+use Maketok\DataMigration\Action\Type\ReverseMove;
 use Maketok\DataMigration\ArrayMap;
 use Maketok\DataMigration\Expression\HelperExpressionsProvider;
 use Maketok\DataMigration\Expression\LanguageAdapter;
@@ -576,6 +578,81 @@ MYSQL;
 
         $this->assertFileExists($fname);
         $this->assertEquals(101, $this->getNumberOfLines($fname));
+    }
+
+    /**
+     * @test
+     */
+    public function testSimpleExport()
+    {
+        // SET THESE TO TRUE TO DEBUG
+        $this->config['db_debug'] = false;
+        $this->config['file_debug'] = false;
+        //=====================================================================
+        $this->config['dump_limit'] = 100;
+
+        $cUnit = new Unit('customers');
+        $aUnit = new Unit('addresses');
+        //=====================================================================
+        $cUnit->setTable('customers');
+        $aUnit->setTable('addresses');
+        $cUnit->setReverseMoveOrder(['id']);
+        $cUnit->setReverseMoveDirection('asc');
+        $aUnit->setReverseMoveOrder(['parent_id']);
+        $aUnit->setReverseMoveDirection('asc');
+        //=====================================================================
+        $cUnit->setMapping([
+            'id' => "",
+            'firstname' => "",
+            'lastname' => "",
+            'age' => "",
+            'email' => "",
+        ]);
+        $aUnit->setMapping([
+            'id' => '',
+            'parent_id' => '',
+            'street' => '',
+            'city' => '',
+        ]);
+        $cUnit->setReversedConnection([
+            'customer_id' => 'id',
+        ]);
+        $cUnit->setReversedMapping([
+            'email' => 'map.email',
+            'name' => 'map.firstname ~ " " ~ map.lastname',
+            'age' => 'map.age',
+        ]);
+        $aUnit->setReversedConnection([
+            'customer_id' => 'parent_id',
+        ]);
+        $aUnit->setReversedMapping([
+            'street' => 'map.street',
+            'city' => 'map.city',
+        ]);
+        $aUnit->setParent($cUnit);
+        //=====================================================================
+        $bag = new SimpleBag();
+        $bag->addSet([$cUnit, $aUnit]);
+
+        $fname = __DIR__ . '/assets/customers_data_exported.csv';
+        $input = new Csv($fname, 'w');
+
+        $reverseMove = new ReverseMove($bag, $this->config, $this->resource);
+        $dump = new Dump($bag, $this->config, $this->resource);
+        $assemble = new AssembleInput($bag, $this->config, $this->getLanguageAdapter(), $input, new ArrayMap());
+
+        $result = new Result();
+        $workflow = new QueueWorkflow($this->config, $result);
+        $workflow->add($reverseMove);
+        $workflow->add($dump);
+        $workflow->add($assemble);
+
+        $workflow->execute();
+        //=====================================================================
+        // assert that customers are in the file
+
+        $this->assertFileExists($fname);
+        $this->assertEquals(4, $this->getNumberOfLines($fname));
     }
 
     /**

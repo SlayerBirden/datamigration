@@ -37,7 +37,7 @@ class ReverseMove extends AbstractDbAction implements ActionInterface
             $moved = $this->resource->move(
                 $unit->getTable(),
                 $unit->getTmpTable(),
-                array_keys($unit->getMapping()),
+                [],
                 // set export filters
                 $unit->getReverseMoveConditions(),
                 // need to be able to set order, as assemble depends on that

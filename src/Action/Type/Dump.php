@@ -31,16 +31,16 @@ class Dump extends AbstractDbAction implements ActionInterface
      */
     public function process(ResultInterface $result)
     {
-        $offset = 0;
         $limit = $this->config->offsetGet('dump_limit');
         $this->result = $result;
         try {
             $this->start();
             foreach ($this->bag as $unit) {
+                $offset = 0;
                 while (($data = $this->resource->dumpData($unit->getTmpTable(),
                         array_keys($unit->getMapping()),
                         $limit,
-                        $offset)) !== false) {
+                        $offset)) !== false && !empty($data)) {
                     $offset += $limit;
                     foreach ($data as $row) {
                         $unit->getFilesystem()->writeRow($row);
