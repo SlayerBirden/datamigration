@@ -202,7 +202,7 @@ class SimpleBag implements UnitBagInterface
             }, $setA);
             $codesB = array_map(function (UnitInterface $unit) {
                 return $unit->getCode();
-            }, $setA);
+            }, $setB);
             $codeAGlued = implode($codesA);
             $codeBGlued = implode($codesB);
             return strcmp($codeAGlued, $codeBGlued);

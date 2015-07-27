@@ -55,8 +55,8 @@ class SimpleBagTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals([
             ['pc' => ['test4' => $unit4,'test6' => $unit6]],
             ['s' => ['test3' => $unit3, 'test2' => $unit2]],
-            ['pc' => ['test4' => $unit4, 'test1' => $unit]],
             ['pc' => ['test2' => $unit2, 'test1' => $unit]],
+            ['pc' => ['test4' => $unit4, 'test1' => $unit]],
             ['s' => ['test1' => $unit, 'test5' => $unit5]],
         ], $this->bag->getRelations());
     }
