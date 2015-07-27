@@ -219,27 +219,54 @@ class AssembleInput extends AbstractAction implements ActionInterface
     private function handleConflict(array $codes)
     {
         foreach ($codes as $code) {
-            if (isset($this->buffer[$code])) {
-                unset($this->buffer[$code]);
-                $unit = $this->bag->getUnitByCode($code);
-                $siblings = $unit->getSiblings();
-                foreach ($siblings as $sibling) {
-                    if (isset($this->buffer[$sibling->getCode()])) {
-                        unset($this->buffer[$sibling->getCode()]);
-                    }
-                }
-            } elseif (isset($this->processed[$code])) {
-                $this->buffer[$code] = $this->processed[$code];
-                $unit = $this->bag->getUnitByCode($code);
-                $siblings = $unit->getSiblings();
-                foreach ($siblings as $sibling) {
-                    if (!isset($this->buffer[$sibling->getCode()]) && isset($this->processed[$sibling->getCode()])) {
-                        $this->buffer[$sibling->getCode()] = $this->processed[$sibling->getCode()];
-                    }
-                }
+            if ($this->cleanBuffer($code)) {
+                continue;
             }
+            $this->fillBuffer($code);
         }
         throw new FlowRegulationException("", self::FLOW_CONTINUE);
+    }
+
+    /**
+     * clean buffer for code
+     * @param string $code
+     * @return bool
+     */
+    protected function cleanBuffer($code)
+    {
+        $unit = $this->bag->getUnitByCode($code);
+        $siblings = $unit->getSiblings();
+        $cleaned = false;
+        while (isset($this->buffer[$code])) {
+            unset($this->buffer[$code]);
+            $cleaned = true;
+            $sibling = array_shift($siblings);
+            if ($sibling) {
+                $code = $sibling->getCode();
+            }
+        }
+        return $cleaned;
+    }
+
+    /**
+     * fill buffer for code
+     * @param string $code
+     * @return bool
+     */
+    public function fillBuffer($code)
+    {
+        $unit = $this->bag->getUnitByCode($code);
+        $siblings = $unit->getSiblings();
+        $filled = false;
+        while (!isset($this->buffer[$code]) && isset($this->processed[$code])) {
+            $this->buffer[$code] = $this->processed[$code];
+            $filled = true;
+            $sibling = array_shift($siblings);
+            if ($sibling) {
+                $code = $sibling->getCode();
+            }
+        }
+        return $filled;
     }
 
     /**

@@ -71,7 +71,16 @@ class SimpleBag implements UnitBagInterface
      */
     public function compileTree()
     {
-        // compile children
+        $this->compileChildren();
+        $this->compileLevels();
+        $this->compileSiblings();
+    }
+
+    /**
+     * compile children array
+     */
+    protected function compileChildren()
+    {
         foreach ($this->units as $parent) {
             foreach ($this->units as $unit) {
                 if (($innerP = $unit->getParent()) && $innerP->getCode() == $parent->getCode()) {
@@ -79,7 +88,13 @@ class SimpleBag implements UnitBagInterface
                 }
             }
         }
-        // compile levels
+    }
+
+    /**
+     * compile levels array
+     */
+    protected function compileLevels()
+    {
         foreach ($this->units as $unit) {
             $toCheck = clone $unit;
             $parentLevel = 1;
@@ -105,7 +120,13 @@ class SimpleBag implements UnitBagInterface
             }
             $this->levels[$level][] = $unit->getCode();
         }
-        // compile siblings
+    }
+
+    /**
+     * Compile siblings array
+     */
+    public function compileSiblings()
+    {
         foreach ($this->units as $unit) {
             $siblings = $unit->getSiblings();
             if (!empty($siblings)) {
