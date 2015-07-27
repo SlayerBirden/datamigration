@@ -197,7 +197,15 @@ class SimpleBag implements UnitBagInterface
             } elseif ($averageB > $averageA) {
                 return 1;
             }
-            return 0;
+            $codesA = array_map(function (UnitInterface $unit) {
+                return $unit->getCode();
+            }, $setA);
+            $codesB = array_map(function (UnitInterface $unit) {
+                return $unit->getCode();
+            }, $setA);
+            $codeAGlued = implode($codesA);
+            $codeBGlued = implode($codesB);
+            return strcmp($codeAGlued, $codeBGlued);
         });
         return $sets;
     }
