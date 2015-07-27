@@ -2,8 +2,6 @@
 
 namespace Maketok\DataMigration;
 
-use Maketok\DataMigration\Action\Exception\ConflictException;
-
 class ArrayUtilsTraitTest extends \PHPUnit_Framework_TestCase
 {
     /**
@@ -119,13 +117,42 @@ class ArrayUtilsTraitTest extends \PHPUnit_Framework_TestCase
                 'name' => 'u2',
             ],
         ];
-        try {
-            $this->trait->assemble($data);
-        } catch (ConflictException $e) {
-            $this->assertSame(['unit1', 'unit2'], $e->getUnitsInConflict());
-            $this->assertSame('name', $e->getConflictedKey());
-            throw $e;
-        }
+        $this->trait->assemble($data);
+    }
+
+    /**
+     * @expectedException \Maketok\DataMigration\Action\Exception\ConflictException
+     */
+    public function testAssembleConflict2()
+    {
+        $data = [
+            'unit2' => [
+                'id' => 1,
+                'name' => 'u2',
+            ],
+            'unit3' => [
+                'id' => 2,
+            ],
+        ];
+        $this->trait->assemble($data);
+    }
+
+    /**
+     * @expectedException \Maketok\DataMigration\Action\Exception\ConflictException
+     */
+    public function testAssembleConflict3()
+    {
+        $data = [
+            'unit1' => [
+                'name' => 'u1',
+                'id' => 3,
+            ],
+            'unit2' => [
+                'id' => 1,
+                'name' => 'u2',
+            ],
+        ];
+        $this->trait->assemble($data);
     }
 
     /**

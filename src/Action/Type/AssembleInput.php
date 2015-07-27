@@ -14,6 +14,7 @@ use Maketok\DataMigration\MapInterface;
 use Maketok\DataMigration\Unit\ExportFileUnitInterface;
 use Maketok\DataMigration\Unit\ImportFileUnitInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
+use Maketok\DataMigration\Unit\UnitInterface;
 use Maketok\DataMigration\Workflow\ResultInterface;
 
 /**
@@ -53,11 +54,6 @@ class AssembleInput extends AbstractAction implements ActionInterface
      * @var array
      */
     private $connectBuffer = [];
-    /**
-     * Last added rows buffer
-     * @var array
-     */
-    private $lastAdded = [];
     /**
      * Units that are empty
      * @var string[]
@@ -143,12 +139,7 @@ class AssembleInput extends AbstractAction implements ActionInterface
                 $this->processed[$code] = $tmpRow = $this->buffer[$code];
             } elseif (($tmpRow = $this->readRow($unit)) !== false) {
                 $this->processed[$code] = $tmpRow;
-                if ($this->bag->hasLeaf() && !$this->bag->isLeaf($code)) {
-                    /**
-                     * when bag contains leafs it's important to always buffer
-                     * branches each time we read
-                     * buffer will be constantly cleared when conflicts arise
-                     */
+                if (!$this->bag->isLowest($code)) {
                     $this->buffer[$code] = $this->processed[$code];
                 }
             } else {
@@ -162,11 +153,26 @@ class AssembleInput extends AbstractAction implements ActionInterface
                 }
             }, $unit->getReversedConnection());
         }
+
         $this->analyzeRow();
-        try {
-            $this->assemble($this->connectBuffer);
-        } catch (ConflictException $e) {
-            $this->handleConflict($e->getUnitsInConflict());
+        foreach ($this->bag->getRelations() as $rel) {
+            $code = key($rel);
+            $set = current($rel);
+            $setCodes = array_map(function (UnitInterface $unit) {
+                return $unit->getCode();
+            }, $set);
+            $codes = array_intersect_key($this->connectBuffer, array_flip($setCodes));
+            switch ($code) {
+                case 'pc': //parent-child
+                    try {
+                        $this->assemble($codes);
+                    } catch (ConflictException $e) {
+                        $this->handleConflict(array_keys($codes));
+                    }
+                    break;
+                case 's'://siblings
+                    $this->assemble($codes);
+            }
         }
     }
 
@@ -212,31 +218,25 @@ class AssembleInput extends AbstractAction implements ActionInterface
      */
     private function handleConflict(array $codes)
     {
-        $clearedBranches = false;
-        $leafs = array_filter($codes, [$this->bag, 'isLeaf']);
-        $branches = array_diff($codes, $leafs);
-        foreach ($branches as $code) {
+        foreach ($codes as $code) {
             if (isset($this->buffer[$code])) {
                 unset($this->buffer[$code]);
-                $clearedBranches = true;
-            } elseif (isset($this->lastAdded[$code]) && isset($this->processed[$code])) {
+                $unit = $this->bag->getUnitByCode($code);
+                $siblings = $unit->getSiblings();
+                foreach ($siblings as $sibling) {
+                    if (isset($this->buffer[$sibling->getCode()])) {
+                        unset($this->buffer[$sibling->getCode()]);
+                    }
+                }
+            } elseif (isset($this->processed[$code])) {
                 $this->buffer[$code] = $this->processed[$code];
-                $this->processed[$code] = $this->lastAdded[$code];
-            } else {
-                // it seem we've got wrong connection from the start
-                throw new \LogicException("Conflict is in the first row of given units. Will not process further.");
-            }
-        }
-        if (!$clearedBranches) {
-            return;
-        }
-        foreach ($leafs as $code) {
-            if (isset($this->lastAdded[$code]) && isset($this->processed[$code])) {
-                $this->buffer[$code] = $this->processed[$code];
-                $this->processed[$code] = $this->lastAdded[$code];
-            } else {
-                // it seem we've got wrong connection from the start
-                throw new \LogicException("Conflict is in the first row of given units. Will not process further.");
+                $unit = $this->bag->getUnitByCode($code);
+                $siblings = $unit->getSiblings();
+                foreach ($siblings as $sibling) {
+                    if (!isset($this->buffer[$sibling->getCode()]) && isset($this->processed[$sibling->getCode()])) {
+                        $this->buffer[$sibling->getCode()] = $this->processed[$sibling->getCode()];
+                    }
+                }
             }
         }
         throw new FlowRegulationException("", self::FLOW_CONTINUE);
@@ -259,10 +259,9 @@ class AssembleInput extends AbstractAction implements ActionInterface
                     'hashmaps' => $unit->getHashmaps(),
                 ]);
             }, $unit->getReversedMapping());
-            $this->lastAdded[$unitCode] = $unitData;
         }
         foreach ($this->bag as $unit) {
-            if ($this->bag->isLeaf($unit->getCode())) {
+            if ($this->bag->isLowest($unit->getCode())) {
                 unset($this->buffer[$unit->getCode()]);
             }
         }
@@ -292,6 +291,7 @@ class AssembleInput extends AbstractAction implements ActionInterface
     private function start()
     {
         $this->result->setActionStartTime($this->getCode(), new \DateTime());
+        $this->bag->compileTree();
         foreach ($this->bag as $unit) {
             if ($unit->getTmpFileName() === null) {
                 throw new WrongContextException(sprintf(

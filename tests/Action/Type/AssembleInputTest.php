@@ -75,6 +75,7 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
 
     /**
      * standard process
+     * 2 branches 1 leaf
      */
     public function testProcess()
     {
@@ -139,6 +140,7 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
                 false,
             ]
         ));
+        $unit2->addSibling($unit1);
 
         $unit3 = $this->getUnit('address');
         $unit3->setReversedMapping([
@@ -172,6 +174,136 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         ));
         $unit3->setTmpFileName('address_tmp.csv');
         $unit3->setParent($unit1);
+
+        $expected = [
+            [['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr_city' => 'Chicago',
+                'addr_street' => '4100 Marine dr. App. 54']],
+            [['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr_city' => 'New York',
+                'addr_street' => '3300 St. George, Suite 300']],
+            [['email' => 'pete111@eol.com', 'name' => 'Peter Ostridge', 'age' => 33, 'addr_city' => 'Chicago',
+                'addr_street' => '111 W Jackson']],
+            [['email' => 'bm@gmail.com', 'name' => 'Bill Murray', 'age' => 55, 'addr_city' => 'Chicago',
+                'addr_street' => '111 W Jackson-2']],
+            [['email' => 'bm@gmail.com', 'name' => 'Bill Murray', 'age' => 55, 'addr_city' => 'Chicago',
+                'addr_street' => '111 W Jackson-3']],
+            [['email' => 'bm@gmail.com', 'name' => 'Bill Murray', 'age' => 55, 'addr_city' => 'LA',
+                'addr_street' => 'Hollywood']],
+            [['email' => 'bm@gmail.com', 'name' => 'Bill Murray', 'age' => 55, 'addr_city' => 'LA',
+                'addr_street' => 'fake']],
+            [['email' => 'pp@gmail.com', 'name' => 'Peter Pan', 'age' => 11, 'addr_city' => 'NY',
+                'addr_street' => 'Fairy Tale']],
+        ];
+
+        $action = $this->getAction([$unit1, $unit2, $unit3], $expected);
+        $action->process($this->getResultMock());
+    }
+
+    /**
+     * standard process
+     * 1 branch 2 leaf
+     */
+    public function testProcess1b2l()
+    {
+        $unit1 = $this->getUnit('customer');
+        $unit1->setReversedMapping([
+            'email' => 'map.email',
+            'name' => function ($map) {
+                return $map['fname'] . ' ' . $map['lname'];
+            },
+            'age' => 'map.age',
+        ]);
+        $unit1->setReversedConnection([
+            'customer_id' => 'id',
+        ]);
+        $unit1->setMapping([
+            'id' => 'map.id',
+            'email' => 'map.email',
+            'age' => 'map.age',
+            'fname' => function ($map) {
+                list($fname) = explode(" ", $map['name']);
+                return $fname;
+            },
+            'lname' => function ($map) {
+                list(, $lname) = explode(" ", $map['name']);
+                return $lname;
+            },
+        ]);
+        $unit1->setFilesystem($this->getFS(
+            [
+                [1, 'tst1@example.com', 30, 'Olaf', 'Stone'],
+                [2, 'pete111@eol.com', 33, 'Peter', 'Ostridge'],
+                [3, 'bm@gmail.com', 55, 'Bill', 'Murray'],
+                [4, 'pp@gmail.com', 11, 'Peter', 'Pan'],
+                false,
+            ]
+        ));
+        $unit1->setIsEntityCondition(function (
+            MapInterface $map,
+            MapInterface $oldmap
+        ) {
+            return $oldmap->offsetGet('email') != $map->offsetGet('email');
+        });
+        $unit1->setTmpFileName('customer_tmp.csv');
+
+        $unit3 = $this->getUnit('address');
+        $unit3->setReversedMapping([
+            'addr_city' => 'map.city',
+        ]);
+        $unit3->setReversedConnection([
+            'customer_id' => 'parent_id',
+            'address_id' => 'id',
+        ]);
+        $unit3->setMapping([
+            'id' => 'map.addr_id',
+            'city' => 'map.addr_city',
+            'parent_id' => 'map.id',
+        ]);
+        $unit3->addContribution(function (MapInterface $map) {
+            $map->incr('addr_id', 1);
+        });
+        $unit3->setFilesystem($this->getFS(
+            [
+                [1, 'Chicago', 1],
+                [2, 'New York', 1],
+                [3, 'Chicago', 2],
+                [4, 'Chicago', 3],
+                [5, 'Chicago', 3],
+                [6, 'LA', 3],
+                [7, 'LA', 3],
+                [8, 'NY', 4],
+                false,
+            ]
+        ));
+        $unit3->setTmpFileName('address_tmp.csv');
+        $unit3->setParent($unit1);
+
+        $unit2 = $this->getUnit('address_data');
+        $unit2->setReversedMapping([
+            'addr_street' => 'map.street',
+        ]);
+        $unit2->setReversedConnection([
+            'address_id' => 'parent_id',
+        ]);
+        $unit2->setMapping([
+            'id' => 'map.addr_data_id',
+            'street' => 'map.addr_street',
+            'parent_id' => 'map.address_id',
+        ]);
+        $unit2->setTmpFileName('customer_data_tmp.csv');
+        $unit2->setFilesystem($this->getFS(
+            [
+                [1, '4100 Marine dr. App. 54', 1],
+                [2, '3300 St. George, Suite 300', 2],
+                [3, '111 W Jackson', 3],
+                [4, '111 W Jackson-2', 4],
+                [5, '111 W Jackson-3', 5],
+                [6, 'Hollywood', 6],
+                [7, 'fake', 7],
+                [8, 'Fairy Tale', 8],
+                false,
+            ]
+        ));
+        $unit2->addSibling($unit3);
 
         $expected = [
             [['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr_city' => 'Chicago',
@@ -309,64 +441,13 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
 
     /**
      * try to process units that do not match
-     * @expectedException \LogicException
-     * @expectedExceptionMessage Conflict is in the first row of given units. Will not process further.
+     * no additions should be done
      */
     public function testProcessWeirdCase1()
     {
         $unit1 = $this->getUnit('test');
         $unit1->setReversedMapping([
-            'name' => 'field1',
-        ]);
-        $unit1->setReversedConnection([
-            'tid' => 'id',
-        ]);
-        $unit1->setMapping([
-            'field1' => 'name',
-            'field2' => 'code',
-            'id' => 'id',
-        ]);
-        $unit1->setFilesystem($this->getFS(
-            [
-                ['Pete', 'tst1', '1']
-            ]
-        ));
-        $unit1->setTmpFileName('customer_tmp.csv');
-
-        $unit2 = $this->getUnit('test2');
-        $unit2->setReversedMapping([
-            'name' => 'field1',
-        ]);
-        $unit2->setReversedConnection([
-            'tid' => 'parent_id',
-        ]);
-        $unit2->setMapping([
-            'field1' => 'name',
-            'field2' => 'code',
-            'parent_id' => 'id',
-        ]);
-        $unit2->setFilesystem($this->getFS(
-            [
-                ['Pete', 'tst1', '2']
-            ]
-        ));
-        $unit2->setTmpFileName('customer_tmp.csv');
-
-        $action = $this->getAction([$unit1, $unit2]);
-        $action->process($this->getResultMock());
-    }
-
-    /**
-     * try to process 2 units one of which is empty
-     * nothing should happen here (not single addition nor exceptions)
-     * @expectedException \LogicException
-     * @expectedExceptionMessage Orphaned rows in some of the units
-     */
-    public function testProcessWeirdCase2()
-    {
-        $unit1 = $this->getUnit('test');
-        $unit1->setReversedMapping([
-            'name' => 'field1',
+            'name' => 'map.field1',
         ]);
         $unit1->setReversedConnection([
             'tid' => 'id',
@@ -379,15 +460,65 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         $unit1->setFilesystem($this->getFS(
             [
                 ['Pete', 'tst1', '1'],
-                // next rows will not be read due to LogicException
-                // false,
+                false,
             ]
         ));
         $unit1->setTmpFileName('customer_tmp.csv');
 
         $unit2 = $this->getUnit('test2');
         $unit2->setReversedMapping([
-            'name' => 'field1',
+            'name' => 'map.field1',
+        ]);
+        $unit2->setReversedConnection([
+            'tid' => 'parent_id',
+        ]);
+        $unit2->setMapping([
+            'field1' => 'name',
+            'field2' => 'code',
+            'parent_id' => 'id',
+        ]);
+        $unit2->setFilesystem($this->getFS(
+            [
+                ['Pete', 'tst1', '2'],
+                false,
+            ]
+        ));
+        $unit2->setTmpFileName('customer_tmp.csv');
+        $unit2->setParent($unit1);
+
+        $action = $this->getAction([$unit1, $unit2]);
+        $action->process($this->getResultMock());
+    }
+
+    /**
+     * try to process 2 units one of which is empty
+     * nothing should happen here (not single addition nor exceptions)
+     */
+    public function testProcessWeirdCase2()
+    {
+        $unit1 = $this->getUnit('test');
+        $unit1->setReversedMapping([
+            'name' => 'map.field1',
+        ]);
+        $unit1->setReversedConnection([
+            'tid' => 'id',
+        ]);
+        $unit1->setMapping([
+            'field1' => 'name',
+            'field2' => 'code',
+            'id' => 'id',
+        ]);
+        $unit1->setFilesystem($this->getFS(
+            [
+                ['Pete', 'tst1', '1'],
+                 false,
+            ]
+        ));
+        $unit1->setTmpFileName('customer_tmp.csv');
+
+        $unit2 = $this->getUnit('test2');
+        $unit2->setReversedMapping([
+            'name' => 'map.field1',
         ]);
         $unit2->setReversedConnection([
             'tid' => 'parent_id',
@@ -403,6 +534,7 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
             ]
         ));
         $unit2->setTmpFileName('customer_tmp.csv');
+        $unit2->setParent($unit1);
 
         $action = $this->getAction([$unit1, $unit2]);
         $action->process($this->getResultMock());

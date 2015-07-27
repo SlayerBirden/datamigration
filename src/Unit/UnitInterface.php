@@ -19,4 +19,15 @@ interface UnitInterface
      * @return UnitInterface
      */
     public function getParent();
+
+    /**
+     * @param UnitInterface $sibling
+     * @param bool $addBack
+     */
+    public function addSibling(UnitInterface $sibling, $addBack = true);
+
+    /**
+     * @return UnitInterface[]
+     */
+    public function getSiblings();
 }

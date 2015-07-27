@@ -542,6 +542,7 @@ MYSQL;
         $cdUnit->setReversedMapping([
             'name' => 'map.firstname ~ " " ~ map.lastname',
         ]);
+        $cdUnit->addSibling($cUnit);
 
         $bag = new SimpleBag();
         $bag->add($cUnit);

@@ -16,15 +16,52 @@ interface UnitBagInterface extends \IteratorAggregate, \Countable
     public function getUnitByCode($code);
 
     /**
-     * return if current unit is leaf
+     * Units can be related in a tree-like structure:
+     *
+     *         1 - 2
+     *        / \   \
+     *       3  4    5 - 6
+     * this should compile the structure to assign proper level and parentage to units
+     * @return mixed
+     */
+    public function compileTree();
+
+    /**
+     * check if current unit is on the lowest level
      * @param string $code
      * @return bool
      */
-    public function isLeaf($code);
+    public function isLowest($code);
 
     /**
-     * checks if bag contains a single leaf
-     * @return bool
+     * get bag's lowest level
+     * @return int
      */
-    public function hasLeaf();
+    public function getLowestLevel();
+
+    /**
+     * @param string $code
+     * @return int
+     */
+    public function getUnitLevel($code);
+
+    /**
+     * get unit's children
+     * @param string $code
+     * @return UnitInterface[]
+     */
+    public function getChildren($code);
+
+    /**
+     * @param int $level
+     * @return string[]
+     */
+    public function getUnitsFromLevel($level);
+
+    /**
+     * Return sets of units that relate to each other somehow (either parent-child or siblings)
+     * Lowest levels first
+     * @return array
+     */
+    public function getRelations();
 }

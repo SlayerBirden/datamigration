@@ -69,17 +69,8 @@ trait ArrayUtilsTrait
             $byKeys = call_user_func_array('array_intersect_key', $data);
             $byKeysAndValues = call_user_func_array('array_intersect_assoc', $data);
             if ($byKeys != $byKeysAndValues && !$force) {
-                $keys = array_keys(array_diff_assoc($byKeys, $byKeysAndValues));
-                $key = array_shift($keys);
-                $unitsInConflict = array_keys(array_filter($data, function ($var) use ($key) {
-                    return array_key_exists($key, $var);
-                }));
                 throw new ConflictException(
-                    sprintf("Conflict with data %s", json_encode($data)),
-                    0,
-                    null,
-                    $unitsInConflict,
-                    $key
+                    sprintf("Conflict with data %s", json_encode($data))
                 );
             }
         }
