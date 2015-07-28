@@ -60,7 +60,7 @@ kk2,3,"curly \nhair"
 
 CSV;
         $sql = <<<MYSQL
-INSERT INTO `table1`
+INSERT INTO `table1` 
 VALUES (?,?,?)
 MYSQL;
 
