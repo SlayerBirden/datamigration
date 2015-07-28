@@ -35,7 +35,7 @@ class Load extends AbstractDbAction implements ActionInterface
             }
             $unit->setTmpTable($this->getTmpTableName($unit));
             $values = array_map(function () {
-                return 'text';
+                return ['text', ['notnull' => false]];
             }, $unit->getMapping());
             $this->resource->createTmpTable(
                 $unit->getTmpTable(),

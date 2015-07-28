@@ -47,6 +47,12 @@ MYSQL;
             $row != [null] &&
             $row !== false
         ) {
+            $row = array_map(function ($var) {
+                if ($var === '\N') {
+                    return null;
+                }
+                return $var;
+            }, $row);
             $count += $this->connection->executeUpdate($sql, $row);
         }
         return $count;

@@ -30,7 +30,7 @@ try {
     $table->addColumn('id', 'integer');
     $table->addColumn('firstname', 'string');
     $table->addColumn('lastname', 'string');
-    $table->addColumn('age', 'integer');
+    $table->addColumn('age', 'integer', ['notnull' => false]);
     $table->addColumn('email', 'string');
     $table->setPrimaryKey(array("id"));
     $addressTable = $schema->createTable('addresses');

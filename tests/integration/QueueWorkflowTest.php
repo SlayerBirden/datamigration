@@ -655,6 +655,78 @@ MYSQL;
         $this->assertEquals(4, $this->getNumberOfLines($fname));
     }
 
+    public function testExportNull()
+    {
+        // SET THESE TO TRUE TO DEBUG
+        $this->config['db_debug'] = false;
+        $this->config['file_debug'] = false;
+        //=====================================================================
+        $this->config['dump_limit'] = 100;
+
+        $cUnit = new Unit('customers');
+        //=====================================================================
+        $cUnit->setTable('customers');
+        $cUnit->setReverseMoveOrder(['id']);
+        $cUnit->setReverseMoveDirection('asc');
+        //=====================================================================
+        $cUnit->setMapping([
+            'id' => "",
+            'firstname' => "",
+            'lastname' => "",
+            'age' => "",
+            'email' => "",
+        ]);
+        $cUnit->setReversedConnection([
+            'customer_id' => 'id',
+        ]);
+        $cUnit->setReversedMapping([
+            'email' => 'map.email',
+            'name' => 'map.firstname ~ " " ~ map.lastname',
+            'age' => 'map.age',
+        ]);
+        //=====================================================================
+        $bag = new SimpleBag();
+        $bag->add($cUnit);
+
+        // truncate all info beforehand to not run into issue with duplicate email
+        $this->resource->getConnection()->executeUpdate("DELETE FROM customers");
+        $this->resource->getConnection()->insert('customers', [
+            'id' => 1,
+            'firstname' => 'test1',
+            'lastname' => 'test1',
+            'age' => null,
+            'email' => 'test@example.com',
+        ]);
+
+        $fname = __DIR__ . '/assets/customers_data_exported_with_nulls.csv';
+        $input = new Csv($fname, 'w');
+
+        $reverseMove = new ReverseMove($bag, $this->config, $this->resource);
+        $dump = new Dump($bag, $this->config, $this->resource);
+        $assemble = new AssembleInput($bag, $this->config, $this->getLanguageAdapter(), $input, new ArrayMap());
+
+        $result = new Result();
+        $workflow = new QueueWorkflow($this->config, $result);
+        $workflow->add($reverseMove);
+        $workflow->add($dump);
+        $workflow->add($assemble);
+
+        $workflow->execute();
+        //=====================================================================
+        // assert that customers are in the file
+
+        $this->assertFileExists($fname);
+        $this->assertEquals(2, $this->getNumberOfLines($fname));
+        $csvObject = new \SplFileObject($fname, 'r');
+        $csvObject->fgetcsv();
+        $actual = $csvObject->fgetcsv();
+        $this->assertEquals([
+            'test@example.com',
+            'test1 test1',
+            '\N',
+        ], $actual);
+    }
+
     /**
      * @param string $fname
      * @return int

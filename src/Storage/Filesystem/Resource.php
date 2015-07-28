@@ -27,6 +27,12 @@ class Resource implements ResourceInterface
      */
     public function writeRow(array $row, $delimiter = ',', $enclosure = '"')
     {
+        $row = array_map(function ($var) {
+            if (is_null($var)) {
+                return '\N';
+            }
+            return $var;
+        }, $row);
         return $this->descriptor->fputcsv($row, $delimiter, $enclosure);
     }
 

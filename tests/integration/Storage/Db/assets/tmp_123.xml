@@ -1,0 +1,11 @@
+<?xml version="1.0" ?>
+<dataset>
+    <table name="tmp_123">
+        <column>id</column>
+        <column>testnull</column>
+        <row>
+            <value>1</value>
+            <null/>
+        </row>
+    </table>
+</dataset>

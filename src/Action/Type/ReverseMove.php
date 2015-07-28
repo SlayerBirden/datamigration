@@ -28,7 +28,7 @@ class ReverseMove extends AbstractDbAction implements ActionInterface
         foreach ($this->bag as $unit) {
             $unit->setTmpTable($this->getTmpTableName($unit));
             $values = array_map(function () {
-                return 'text';
+                return ['text', ['notnull' => false]];
             }, $unit->getMapping());
             $this->resource->createTmpTable(
                 $unit->getTmpTable(),

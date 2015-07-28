@@ -84,13 +84,20 @@ class DBALMysqlResourceTest extends \PHPUnit_Extensions_Database_TestCase
 
     public function testCreateTmpTable()
     {
-        $this->resource->createTmpTable('tmp_123', ['id' => 'integer']);
+        $this->resource->createTmpTable('tmp_123', [
+            'id' => 'integer',
+            'testnull' => ['text', ['notnull' => false]]
+        ]);
 
         $builder = $this->resource->getConnection()->createQueryBuilder();
         $builder->insert('tmp_123')->values(['id' => 1]);
         $this->resource->getConnection()->executeUpdate($builder->getSQL());
 
         $this->assertEquals(1, $this->getConnection()->getRowCount('tmp_123'));
+        // assert table
+        $expected = $this->createXMLDataSet(__DIR__ . '/assets/tmp_123.xml');
+        $actual = $this->getConnection()->createQueryTable("tmp_123", "SELECT * FROM `tmp_123`");
+        $this->assertTablesEqual($expected->getTable('tmp_123'), $actual);
     }
 
     /**

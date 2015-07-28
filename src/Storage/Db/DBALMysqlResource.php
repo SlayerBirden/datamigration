@@ -318,8 +318,15 @@ MYSQL;
     {
         $schema = new Schema();
         $table = $schema->createTable($name);
-        foreach ($columns as $column => $type) {
-            $table->addColumn($column, $type);
+        foreach ($columns as $column => $definition) {
+            if (is_array($definition)) {
+                $type = array_shift($definition);
+                $options = array_shift($definition);
+            } else {
+                $type = $definition;
+                $options = [];
+            }
+            $table->addColumn($column, $type, $options);
         }
         if (!$this->config['db_debug']) {
             $table->addOption('temporary', true);
