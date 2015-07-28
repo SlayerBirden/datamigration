@@ -36,9 +36,13 @@ abstract class AbstractDBALResource implements ResourceInterface
             'user' => $this->config['db_user'],
             'password' => $this->config['db_password'],
             'host' => $this->config['db_host'],
+            'port' => $this->config['db_port'],
         ];
         if (isset($this->config['db_pdo'])) {
             $params['pdo'] = $this->config['db_pdo'];
+        }
+        if (isset($this->config['db_url'])) {
+            $params['url'] = $this->config['db_url'];
         }
         $params['driverOptions'] = $this->getDriverOptions();
         $this->connection = new Connection($params, $this->getDriver());
