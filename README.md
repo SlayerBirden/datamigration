@@ -78,30 +78,46 @@ $customerUnit = new Unit('customers');
 $customerUnit->setTable('customers');
 $customerUnit->setMapping([
     'id' => 'map.customer_id'
-    'email' => 'mail.email', // ExpressionLanguage is used to interpret string expressions
-    'name' => function (MapInterface $map) { // closure or any other callable is also acceptable
+    // ExpressionLanguage is used to interpret string expressions
+    'email' => 'mail.email',
+    // closure or any other callable is also acceptable
+    'name' => function (MapInterface $map) {
         return $map['name'];
     },
     'age' => 'map.age',
 ]);
-// the is_entity condition resolves whether unit should consider current row as the entity
-// some utility functions are available in Maketok\DataMigration\Expression\HelperExpressionsProvider
+/**
+ * the is_entity condition resolves whether
+ *  unit should consider current row as the entity
+ * some utility functions are available in
+ *  Maketok\DataMigration\Expression\HelperExpressionsProvider
+ */
 $customerUnit->setIsEntityCondition("trim(map.email) is not empty");
-// the contributions is the way for unit to add some data into general pool for every
-// other unit to use
-$customerUnit->addContribution(function (MapInterface $map, ResourceHelperInterface $resource, array $hashmaps) {
-    if (isset($hashmaps['email-id'][trim($map->email)])) {
-        $map['customer_id'] = $hashmaps['email-id'][trim($map->email)];
-    } else {
-        $map['customer_id'] = $map->frozenIncr('new_customer_id', $resource->getLastIncrementId('customers'))
-    }
-});
+/**
+ * the contributions is the way for unit to
+ *  add some data into general pool for every other unit to use
+ */
+$customerUnit->addContribution(function (
+    MapInterface $map,
+    ResourceHelperInterface $resource,
+    array $hashmaps
+    ) {
+        if (isset($hashmaps['email-id'][trim($map->email)])) {
+            $map['customer_id'] = $hashmaps['email-id'][trim($map->email)];
+        } else {
+            $map['customer_id'] = $map->frozenIncr(
+                'new_customer_id',
+                 $resource->getLastIncrementId('customers')
+             )
+        }
+    });
 /**
  * This is really complex logic for assigning customer_id
  * First it checks if it exists in the pre-compiled Hashmap
  * If it does not, it's calling for frozen increment for "new_customer_id" key
  * and assign the last increment id if it's non existent
- * The frozenIncr is different from incr in that it's incremented only once is_entity condition resolves for current row
+ * The frozenIncr is different from incr in that it's incremented only once
+ *  is_entity condition resolves for current row
  * So it's perfect for incrementing "parent" entities
  */
 
@@ -119,7 +135,8 @@ $bag = new SimpleBag();
 $bag->addSet([$customerUnit, $addressUnit]);
 
 $workflow = new QueueWorkflow($config, $result);
-$workflow->add(new CreateTmpFiles($bag, $config, $languageAdapter, $input, new ArrayMap(), $helperResource));
+$workflow->add(new CreateTmpFiles($bag, $config, $languageAdapter,
+    $input, new ArrayMap(), $helperResource));
 $workflow->add(new Load($bag, $config, $resource));
 $workflow->add(new Move($bag, $config, $resource));
 $workflow->execute();
