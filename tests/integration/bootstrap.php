@@ -58,3 +58,7 @@ try {
     $connection = null;
     // passing on exception, letting Unit suite to run
 }
+$dir = __DIR__ . '/assets/results';
+if (!file_exists($dir)) {
+    mkdir($dir);
+}

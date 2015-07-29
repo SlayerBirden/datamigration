@@ -483,7 +483,7 @@ MYSQL;
         // truncate all info beforehand to not run into issue with duplicate email
         $this->resource->getConnection()->executeUpdate("DELETE FROM customers");
 
-        $fname = __DIR__ . '/assets/customers_generated.csv';
+        $fname = __DIR__ . '/assets/results/customers_generated.csv';
         $input = new Csv($fname, 'w');
 
         $generate = new Generate($bag, $this->config, $this->getLanguageAdapter(),
@@ -560,7 +560,7 @@ MYSQL;
         // truncate all info beforehand to not run into issue with duplicate email
         $this->resource->getConnection()->executeUpdate("DELETE FROM customers");
 
-        $fname = __DIR__ . '/assets/customers_data_generated.csv';
+        $fname = __DIR__ . '/assets/results/customers_data_generated.csv';
         $input = new Csv($fname, 'w');
 
         $generate = new Generate($bag, $this->config, $this->getLanguageAdapter(),
@@ -634,7 +634,7 @@ MYSQL;
         $bag = new SimpleBag();
         $bag->addSet([$cUnit, $aUnit]);
 
-        $fname = __DIR__ . '/assets/customers_data_exported.csv';
+        $fname = __DIR__ . '/assets/results/customers_data_exported.csv';
         $input = new Csv($fname, 'w');
 
         $reverseMove = new ReverseMove($bag, $this->config, $this->resource);
@@ -698,7 +698,7 @@ MYSQL;
             'email' => 'test@example.com',
         ]);
 
-        $fname = __DIR__ . '/assets/customers_data_exported_with_nulls.csv';
+        $fname = __DIR__ . '/assets/results/customers_data_exported_with_nulls.csv';
         $input = new Csv($fname, 'w');
 
         $reverseMove = new ReverseMove($bag, $this->config, $this->resource);
