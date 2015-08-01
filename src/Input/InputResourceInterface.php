@@ -10,7 +10,7 @@ interface InputResourceInterface
     public function get();
 
     /**
-     * add row to input resource
+     * add entity to input resource
      * @param array $entity
      * @return void
      */

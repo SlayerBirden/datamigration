@@ -17,8 +17,7 @@ The unit (workers) structure allows it to parse a complex import file and
  extract a multi-level data structure from it.
 
 The same's true for reverse process as well: the multi-level data structure
- can be flattened and inserted into a single file.
-
+ can be inserted into a single file.
 
 ## Installation
 
@@ -28,41 +27,19 @@ Use composer to include it in your project:
 composer require maketok/datamigration
 ```
 
-## Structure
-
-### Units
-**Unit** is the smallest structure unit of each Workflow, and the most important one.
-Each unit contains data required for different actions to work.
-Unit by itself doesn't do any work, however the configuration of units is the most important part of each workflow.
-The `Maketok\DataMigration\Unit\Type\Unit` class encapsulates all config properties needed for every Action.
-
-### Action
-**Action** is the logical division of complex processes like *import* or *export*.
-The typical import consists of `CreateTmpFiles`, `Load` and `Move`.
-Export: `ReverseMove`, `Dump`, `AssembleInput`.
-There are a couple of reasons why both import and export are moving data using temporary CSV files.
-
-* MySQL's `LOAD DATA INFILE` only works with CSV-like files (the delimiter doesn't necessarily need to be a comma).
-And it's really important to have that in place for big files.
-That allows utilize this powerful feature for other input formats like XML,
- YAML or even different (non-file) resources entirely
-* Allows to debug the intermediate state of mapped data safely.
-
-There's also a Generate action that can be utilized both to generate data and populate DB
- and to create a sample import file without the need to have anything ready in the DB to export.
-
-### Workflow
-**Workflow** consists of Actions that it utilizes in predefined order. The is the wrapper entity.
-Workflow accepts config instance and `Result` object that will contain meta info after Workflow is executed.
-
 ## Examples
 
 There are few examples in `tests/integration/QueueWorkflowTest` integration test.
 Here's the typical uses.
 ### Import
 
-Import customers and addresses. The flat structure can be possible only if customer data is either duplicated or
- omitted for consequent address entities.
+Import customers and addresses from flat CSV file.
+
+| email | name | age | street | city | zip |
+| ----- | ---- | --- | ------ | ---- | --- |
+| bart22@example.com | Bart Robbinson | 32 | 20 Chestnut Terrace | New York | 07003 |
+| vilkron@aim.at.com | Kale D | 15 | 123 Manson | LA | 90023 |
+| | | | 111 Dale str. | Chicago | 60333 |
 
 ```php
 use Maketok\DataMigration\MapInterface;
@@ -86,16 +63,25 @@ $customerUnit->setMapping([
     },
     'age' => 'map.age',
 ]);
-/**
+/*
  * the is_entity condition resolves whether
  *  unit should consider current row as the entity
  * some utility functions are available in
  *  Maketok\DataMigration\Expression\HelperExpressionsProvider
  */
 $customerUnit->setIsEntityCondition("trim(map.email) is not empty");
-/**
+/*
  * the contributions is the way for unit to
  *  add some data into general pool for every other unit to use
+ */
+/*
+ * This is really complex logic for assigning customer_id
+ * First it checks if it exists in the pre-compiled Hashmap
+ * If it does not, it's calling for frozen increment for "new_customer_id" key
+ * and assign the last increment id if it's non existent
+ * The frozenIncr is different from incr in that it's incremented only once
+ *  is_entity condition resolves for current row
+ * So it's perfect for incrementing "parent" entities
  */
 $customerUnit->addContribution(function (
     MapInterface $map,
@@ -111,15 +97,6 @@ $customerUnit->addContribution(function (
              )
         }
     });
-/**
- * This is really complex logic for assigning customer_id
- * First it checks if it exists in the pre-compiled Hashmap
- * If it does not, it's calling for frozen increment for "new_customer_id" key
- * and assign the last increment id if it's non existent
- * The frozenIncr is different from incr in that it's incremented only once
- *  is_entity condition resolves for current row
- * So it's perfect for incrementing "parent" entities
- */
 
 $addressUnit = new Unit('addresses');
 $addressUnit->setTable('addresses');
