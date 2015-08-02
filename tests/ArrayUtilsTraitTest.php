@@ -196,6 +196,19 @@ class ArrayUtilsTraitTest extends \PHPUnit_Framework_TestCase
                     'code' => 't1',
                 ],
             ],
+            // merge one unit
+            [
+                [
+                    'unit1' => [
+                        'id' => 1,
+                        'name' => 'tmp1',
+                    ],
+                ],
+                [
+                    'id' => 1,
+                    'name' => 'tmp1',
+                ],
+            ],
         ];
     }
 }

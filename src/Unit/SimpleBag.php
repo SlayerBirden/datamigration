@@ -20,6 +20,10 @@ class SimpleBag implements UnitBagInterface
      * @var array
      */
     protected $siblings = [];
+    /**
+     * @var bool
+     */
+    private $compiled = false;
 
     /**
      * {@inheritdoc}
@@ -71,9 +75,13 @@ class SimpleBag implements UnitBagInterface
      */
     public function compileTree()
     {
+        if ($this->compiled) {
+            return;
+        }
         $this->compileChildren();
         $this->compileLevels();
         $this->compileSiblings();
+        $this->compiled = true;
     }
 
     /**

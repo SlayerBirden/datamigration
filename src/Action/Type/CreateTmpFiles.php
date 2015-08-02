@@ -231,7 +231,7 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
                 ]);
             }, $unit->getMapping());
             /**
-             * Each unit can return rows multiple times in case it needs
+             * Each unit can return rows multiple times in case it needs to
              * but each mapped part should be returned equal times
              */
             try {

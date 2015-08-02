@@ -5,7 +5,7 @@ namespace Maketok\DataMigration\Input;
 interface InputResourceInterface
 {
     /**
-     * @return array - hashmap of current entity
+     * @return array|bool (false) - hashmap of current entity
      */
     public function get();
 
@@ -18,7 +18,7 @@ interface InputResourceInterface
 
     /**
      * reset internal counter
-     * @return mixed
+     * @return void
      */
     public function reset();
 }
