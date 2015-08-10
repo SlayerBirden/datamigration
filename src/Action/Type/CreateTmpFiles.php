@@ -35,10 +35,6 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
      */
     private $map;
     /**
-     * @var MapInterface
-     */
-    private $oldmap;
-    /**
      * @var ResourceHelperInterface
      */
     private $helperResource;
@@ -93,15 +89,12 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
         $this->start();
         while (true) {
             try {
-                $row = $this->input->get();
-                if ($row === false) {
+                $entity = $this->input->get();
+                if ($entity === false) {
                     break 1;
                 }
-                if ($this->map->isFresh($row)) {
-                    $this->map->feed($row);
-                }
-                $this->processDump();
-                $this->processWrite();
+                $this->processWrite($entity);
+                $this->dumpBuffer();
             } catch (ParsingException $e) {
                 if ($this->config['continue_on_error']) {
                     $this->result->addActionException($this->getCode(), $e);
@@ -119,53 +112,36 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
     }
 
     /**
-     * dump buffered row (if needed)
-     * @throws \LogicException
-     */
-    private function processDump()
-    {
-        $shouldUnfreeze = true;
-        foreach ($this->bag as $unit) {
-            $isEntity = $unit->getIsEntityCondition();
-            if (!isset($this->oldmap) || empty($isEntity)) {
-                $shouldDump = true;
-            } elseif (is_callable($isEntity) || is_string($isEntity)) {
-                $shouldDump = $this->language->evaluate($isEntity, [
-                    'map' => $this->map,
-                    'oldmap' => $this->oldmap,
-                    'resource' => $this->helperResource,
-                ]);
-            } else {
-                throw new \LogicException(
-                    sprintf("Can not understand is Entity Condition for %s unit.", $unit->getCode())
-                );
-            }
-            if ($shouldDump) {
-                $this->dumpBuffer($unit);
-            }
-            $shouldUnfreeze &= $shouldDump;
-        }
-        // if all Units were dumped this row
-        if ($shouldUnfreeze) {
-            $this->map->unFreeze();
-        }
-    }
-
-    /**
      * write row to buffer
+     * @param array $entity
+     * @param int $level
      */
-    private function processWrite()
+    private function processWrite(array $entity, $level = 1)
     {
         $this->isValid = true;
-        foreach ($this->bag as $unit) {
+        // parsing entity according to the relation tree
+        $topUnits = $this->bag->getUnitsFromLevel($level);
+        foreach ($topUnits as $code) {
+            if ($this->map->isFresh($entity)) {
+                $this->map->feed($entity);
+            }
+            /** @var ImportFileUnitInterface $unit */
+            $unit = $this->bag->getUnitByCode($code);
             $this->processAdditions($unit);
             if (!$this->validate($unit)) {
                 $this->isValid = false;
             }
             $this->writeRowBuffered($unit);
+            $children = $this->bag->getChildren($code);
+            foreach ($children as $child) {
+                if (isset($entity[$child->getCode()])) {
+                    $childData = $entity[$child->getCode()];
+                    foreach ($childData as $childEntity) {
+                        $this->processWrite($childEntity, $this->bag->getUnitLevel($child->getCode()));
+                    }
+                }
+            }
         }
-        $this->oldmap = clone $this->map;
-        $this->map->freeze();
     }
 
     /**
@@ -178,6 +154,7 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
             $unit->setTmpFileName($this->getTmpFileName($unit));
             $unit->getFilesystem()->open($unit->getTmpFileName(), 'w');
         }
+        $this->bag->compileTree();
     }
 
     /**
@@ -235,7 +212,14 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
              * but each mapped part should be returned equal times
              */
             try {
-                $this->buffer[$unit->getCode()] = $this->normalize($row);
+                if (isset($this->buffer[$unit->getCode()]) && is_array($this->buffer[$unit->getCode()])) {
+                    $this->buffer[$unit->getCode()] = array_merge(
+                        $this->buffer[$unit->getCode()],
+                        $this->normalize($row)
+                    );
+                } else {
+                    $this->buffer[$unit->getCode()] = $this->normalize($row);
+                }
             } catch (NormalizationException $e) {
                 $this->result->addActionException($this->getCode(), $e);
             }

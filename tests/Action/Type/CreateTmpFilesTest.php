@@ -186,12 +186,45 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
     public function testProcess2()
     {
         $inputs = [
-            ['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr_city' => 'Chicago',
-                'addr_street' => '4100 Marine dr. App. 54'],
-            ['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr_city' => 'New York',
-                'addr_street' => '3300 St. George, Suite 300'],
-            ['email' => 'pete111@eol.com', 'name' => 'Peter Ostridge', 'age' => 33, 'addr_city' => 'Chicago',
-                'addr_street' => '111 W Jackson'],
+            [
+                'email' => 'tst1@example.com',
+                'name' => 'Olaf Stone',
+                'age' => 30,
+                'addr_city' => 'Chicago',
+                'addr_street' => '4100 Marine dr. App. 54',
+                'address' => [
+                    [
+                        'email' => 'tst1@example.com',
+                        'name' => 'Olaf Stone',
+                        'age' => 30,
+                        'addr_city' => 'Chicago',
+                        'addr_street' => '4100 Marine dr. App. 54',
+                    ],
+                    [
+                        'email' => 'tst1@example.com',
+                        'name' => 'Olaf Stone',
+                        'age' => 30,
+                        'addr_city' => 'New York',
+                        'addr_street' => '3300 St. George, Suite 300',
+                    ],
+                ]
+            ],
+            [
+                'email' => 'pete111@eol.com',
+                'name' => 'Peter Ostridge',
+                'age' => 33,
+                'addr_city' => 'Chicago',
+                'addr_street' => '111 W Jackson',
+                'address' => [
+                    [
+                        'email' => 'pete111@eol.com',
+                        'name' => 'Peter Ostridge',
+                        'age' => 33,
+                        'addr_city' => 'Chicago',
+                        'addr_street' => '111 W Jackson',
+                    ]
+                ]
+            ],
             false
         ];
         $unit1 = $this->getUnit('customer');
@@ -240,6 +273,7 @@ class CreateTmpFilesTest extends \PHPUnit_Framework_TestCase
                 [[3, '111 W Jackson', 'Chicago', 2]],
             ]
         ));
+        $unit2->setParent($unit1);
 
         $action = new CreateTmpFiles(
             $this->getUnitBag([$unit1, $unit2]),
