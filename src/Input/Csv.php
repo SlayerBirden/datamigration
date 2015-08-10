@@ -80,7 +80,7 @@ class Csv extends AbstractFile
             $rows = [$entity];
         }
         if (!isset($this->header) && count($rows)) {
-            $currentRow = current($row);
+            $currentRow = current($rows);
             $this->header = array_keys($currentRow);
             $this->descriptor->fputcsv($this->header);
         }

@@ -39,7 +39,7 @@ CSV;
 
     /**
      * @expectedException \Maketok\DataMigration\Storage\Exception\ParsingException
-     * @expectedExceptionMessage Row contains wrong number of rows compared to header
+     * @expectedExceptionMessage Row contains wrong number of columns compared to header
      */
     public function testWrongRead()
     {
