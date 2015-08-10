@@ -150,11 +150,11 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
     private function start()
     {
         $this->result->setActionStartTime($this->getCode(), new \DateTime());
+        $this->bag->compileTree();
         foreach ($this->bag as $unit) {
             $unit->setTmpFileName($this->getTmpFileName($unit));
             $unit->getFilesystem()->open($unit->getTmpFileName(), 'w');
         }
-        $this->bag->compileTree();
     }
 
     /**

@@ -22,6 +22,7 @@ use Maketok\DataMigration\Expression\HelperExpressionsProvider;
 use Maketok\DataMigration\Expression\LanguageAdapter;
 use Maketok\DataMigration\Hashmap\ArrayHashmap;
 use Maketok\DataMigration\Input\Csv;
+use Maketok\DataMigration\Input\Shaper\Processor\Duplicates;
 use Maketok\DataMigration\QueueWorkflow;
 use Maketok\DataMigration\Storage\Db\DBALMysqlResource;
 use Maketok\DataMigration\Storage\Db\DBALMysqlResourceHelper;
@@ -196,15 +197,24 @@ CONTRIBUTION;
      */
     public function testSimpleImport()
     {
+        // SET THESE TO TRUE TO DEBUG
+        $this->config['db_debug'] = false;
+        $this->config['file_debug'] = false;
+        //=====================================================================
         $customerUnit = $this->prepareCustomerImportUnit();
         $addressUnit = $this->prepareAddressImportUnit();
+        $addressUnit->setParent($customerUnit);
         //=====================================================================
         $bag = new SimpleBag();
         // order matters ;)
         $bag->add($customerUnit);
         $bag->add($addressUnit);
         //=====================================================================
-        $input = new Csv(__DIR__ . '/assets/customers_1.csv', 'r');
+        $input = new Csv(__DIR__ . '/assets/customers_1.csv', 'r', new Duplicates(
+            $bag,
+            new ArrayMap(),
+            $this->getLanguageAdapter())
+        );
         $createTmpFiles = new CreateTmpFiles($bag, $this->config, $this->getLanguageAdapter(),
             $input, new ArrayMap(), new DBALMysqlResourceHelper($this->resource));
         $load = new Load($bag, $this->config, $this->resource);
@@ -242,7 +252,11 @@ CONTRIBUTION;
         $bag->add($customerUnit);
         $bag->add($addressUnit);
         //=====================================================================
-        $input = new Csv(__DIR__ . '/assets/customers_2.csv', 'r');
+        $input = new Csv(__DIR__ . '/assets/customers_2.csv', 'r', new Duplicates(
+            $bag,
+            new ArrayMap(),
+            $this->getLanguageAdapter())
+        );
         $createTmpFiles = new CreateTmpFiles($bag, $this->config, $this->getLanguageAdapter(),
             $input, new ArrayMap(), new DBALMysqlResourceHelper($this->resource));
         $load = new Load($bag, $this->config, $this->resource);
@@ -280,7 +294,11 @@ CONTRIBUTION;
         $bag->add($customerUnit);
         $bag->add($addressUnit);
         //=====================================================================
-        $input = new Csv(__DIR__ . '/assets/customers_2.csv', 'r');
+        $input = new Csv(__DIR__ . '/assets/customers_2.csv', 'r', new Duplicates(
+            $bag,
+            new ArrayMap(),
+            $this->getLanguageAdapter())
+        );
         $createTmpFiles = new CreateTmpFiles($bag, $this->config, $this->getLanguageAdapter(),
             $input, new ArrayMap(), new DBALMysqlResourceHelper($this->resource));
         $load = new Load($bag, $this->config, $this->resource);
@@ -484,7 +502,7 @@ MYSQL;
         $this->resource->getConnection()->executeUpdate("DELETE FROM customers");
 
         $fname = __DIR__ . '/assets/results/customers_generated.csv';
-        $input = new Csv($fname, 'w');
+        $input = new Csv($fname, 'w', new Duplicates($bag, new ArrayMap(), $this->getLanguageAdapter()));
 
         $generate = new Generate($bag, $this->config, $this->getLanguageAdapter(),
             $generator, 100, new ArrayMap(), new DBALMysqlResourceHelper($this->resource));
@@ -561,7 +579,7 @@ MYSQL;
         $this->resource->getConnection()->executeUpdate("DELETE FROM customers");
 
         $fname = __DIR__ . '/assets/results/customers_data_generated.csv';
-        $input = new Csv($fname, 'w');
+        $input = new Csv($fname, 'w', new Duplicates($bag, new ArrayMap(), $this->getLanguageAdapter()));
 
         $generate = new Generate($bag, $this->config, $this->getLanguageAdapter(),
             $generator, 100, new ArrayMap(), new DBALMysqlResourceHelper($this->resource));
@@ -635,7 +653,7 @@ MYSQL;
         $bag->addSet([$cUnit, $aUnit]);
 
         $fname = __DIR__ . '/assets/results/customers_data_exported.csv';
-        $input = new Csv($fname, 'w');
+        $input = new Csv($fname, 'w', new Duplicates($bag, new ArrayMap(), $this->getLanguageAdapter()));
 
         $reverseMove = new ReverseMove($bag, $this->config, $this->resource);
         $dump = new Dump($bag, $this->config, $this->resource);
@@ -699,7 +717,7 @@ MYSQL;
         ]);
 
         $fname = __DIR__ . '/assets/results/customers_data_exported_with_nulls.csv';
-        $input = new Csv($fname, 'w');
+        $input = new Csv($fname, 'w', new Duplicates($bag, new ArrayMap(), $this->getLanguageAdapter()));
 
         $reverseMove = new ReverseMove($bag, $this->config, $this->resource);
         $dump = new Dump($bag, $this->config, $this->resource);

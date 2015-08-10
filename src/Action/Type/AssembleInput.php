@@ -107,8 +107,10 @@ class AssembleInput extends AbstractAction implements ActionInterface
         while (true) {
             try {
                 $this->processUnitRowData();
+                if ($this->bag->getLowestLevel() == 1) {
+                    $this->dumpWriteBuffer();
+                }
                 $this->addData();
-                $result->incrementActionProcessed($this->getCode());
             } catch (FlowRegulationException $e) {
                 if ($e->getCode() === self::FLOW_ABORT) {
                     break 1; // exit point
@@ -133,9 +135,9 @@ class AssembleInput extends AbstractAction implements ActionInterface
     }
 
     /**
-     * @return array
+     * read data
      */
-    private function processUnitRowData()
+    private function processRead()
     {
         foreach ($this->bag as $unit) {
             $code = $unit->getCode();
@@ -159,8 +161,15 @@ class AssembleInput extends AbstractAction implements ActionInterface
                 }
             }, $unit->getReversedConnection());
         }
+    }
 
-        $this->analyzeRow();
+    /**
+     * try to assemble
+     * @throws ConflictException
+     * @throws FlowRegulationException
+     */
+    private function processAssemble()
+    {
         foreach ($this->bag->getRelations() as $rel) {
             $code = key($rel);
             $set = current($rel);
@@ -180,6 +189,16 @@ class AssembleInput extends AbstractAction implements ActionInterface
                     $this->assemble($codes);
             }
         }
+    }
+
+    /**
+     * @return array
+     */
+    private function processUnitRowData()
+    {
+        $this->processRead();
+        $this->analyzeRow();
+        $this->processAssemble();
     }
 
     /**
@@ -241,6 +260,7 @@ class AssembleInput extends AbstractAction implements ActionInterface
     {
         if (!empty($this->writeBuffer)) {
             $this->input->add($this->writeBuffer);
+            $this->result->incrementActionProcessed($this->getCode());
         }
         $this->writeBuffer = [];
     }
