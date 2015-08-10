@@ -45,10 +45,15 @@ class AssembleInput extends AbstractAction implements ActionInterface
      */
     private $processed = [];
     /**
-     * Buffered row
+     * read buffer
      * @var array
      */
     private $buffer = [];
+    /**
+     * write buffer
+     * @var array
+     */
+    private $writeBuffer = [];
     /**
      * Entries that specify connection between units
      * @var array
@@ -114,6 +119,7 @@ class AssembleInput extends AbstractAction implements ActionInterface
             }
             $this->clear();
         }
+        $this->dumpWriteBuffer();
         $this->close();
     }
 
@@ -224,7 +230,19 @@ class AssembleInput extends AbstractAction implements ActionInterface
             }
             $this->fillBuffer($code);
         }
+        $this->dumpWriteBuffer();
         throw new FlowRegulationException("", self::FLOW_CONTINUE);
+    }
+
+    /**
+     * dupm existing write buffer
+     */
+    private function dumpWriteBuffer()
+    {
+        if (!empty($this->writeBuffer)) {
+            $this->input->add($this->writeBuffer);
+        }
+        $this->writeBuffer = [];
     }
 
     /**
@@ -292,9 +310,40 @@ class AssembleInput extends AbstractAction implements ActionInterface
                 unset($this->buffer[$unit->getCode()]);
             }
         }
-        $this->input->add(
-            $this->assemble($toAdd)
-        );
+        $this->writeBuffer = $this->assembleHierarchy($toAdd);
+    }
+
+    /**
+     * @param array $toAdd
+     * @param int $level
+     * @return array
+     */
+    private function assembleHierarchy(array $toAdd, $level = 1)
+    {
+        $topUnits = $this->bag->getUnitsFromLevel($level);
+        $return = $this->assemble(array_intersect_key($toAdd, array_flip($topUnits)));
+        if ($level == 1) {
+            $return = array_replace_recursive($this->writeBuffer, $return);
+        }
+        foreach ($topUnits as $code) {
+            $children = $this->bag->getChildren($code);
+            foreach ($children as $child) {
+                if (isset($return[$child->getCode()]) && is_array($return[$child->getCode()])) {
+                    $return[$child->getCode()][] = $this->assembleHierarchy(
+                        $toAdd,
+                        $this->bag->getUnitLevel($child->getCode())
+                    );
+                } else {
+                    $return[$child->getCode()] = [
+                        $this->assembleHierarchy(
+                            $toAdd,
+                            $this->bag->getUnitLevel($child->getCode())
+                        )
+                    ];
+                }
+            }
+        }
+        return $return;
     }
 
     /**

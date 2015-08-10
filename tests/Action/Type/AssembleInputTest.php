@@ -176,22 +176,66 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         $unit3->setParent($unit1);
 
         $expected = [
-            [['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr_city' => 'Chicago',
-                'addr_street' => '4100 Marine dr. App. 54']],
-            [['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr_city' => 'New York',
-                'addr_street' => '3300 St. George, Suite 300']],
-            [['email' => 'pete111@eol.com', 'name' => 'Peter Ostridge', 'age' => 33, 'addr_city' => 'Chicago',
-                'addr_street' => '111 W Jackson']],
-            [['email' => 'bm@gmail.com', 'name' => 'Bill Murray', 'age' => 55, 'addr_city' => 'Chicago',
-                'addr_street' => '111 W Jackson-2']],
-            [['email' => 'bm@gmail.com', 'name' => 'Bill Murray', 'age' => 55, 'addr_city' => 'Chicago',
-                'addr_street' => '111 W Jackson-3']],
-            [['email' => 'bm@gmail.com', 'name' => 'Bill Murray', 'age' => 55, 'addr_city' => 'LA',
-                'addr_street' => 'Hollywood']],
-            [['email' => 'bm@gmail.com', 'name' => 'Bill Murray', 'age' => 55, 'addr_city' => 'LA',
-                'addr_street' => 'fake']],
-            [['email' => 'pp@gmail.com', 'name' => 'Peter Pan', 'age' => 11, 'addr_city' => 'NY',
-                'addr_street' => 'Fairy Tale']],
+            [[
+                'email' => 'tst1@example.com',
+                'name' => 'Olaf Stone',
+                'age' => 30,
+                'address' => [
+                    [
+                        'addr_city' => 'Chicago',
+                        'addr_street' => '4100 Marine dr. App. 54',
+                    ],
+                    [
+                        'addr_city' => 'New York',
+                        'addr_street' => '3300 St. George, Suite 300',
+                    ],
+                ]
+            ]],
+            [[
+                'email' => 'pete111@eol.com',
+                'name' => 'Peter Ostridge',
+                'age' => 33,
+                'address' => [
+                    [
+                        'addr_city' => 'Chicago',
+                        'addr_street' => '111 W Jackson',
+                    ]
+                ]
+            ]],
+            [[
+                'email' => 'bm@gmail.com',
+                'name' => 'Bill Murray',
+                'age' => 55,
+                'address' => [
+                    [
+                        'addr_city' => 'Chicago',
+                        'addr_street' => '111 W Jackson-2',
+                    ],
+                    [
+                        'addr_city' => 'Chicago',
+                        'addr_street' => '111 W Jackson-3',
+                    ],
+                    [
+                        'addr_city' => 'LA',
+                        'addr_street' => 'Hollywood',
+                    ],
+                    [
+                        'addr_city' => 'LA',
+                        'addr_street' => 'fake',
+                    ]
+                ]
+            ]],
+            [[
+                'email' => 'pp@gmail.com',
+                'name' => 'Peter Pan',
+                'age' => 11,
+                'address' => [
+                    [
+                        'addr_city' => 'NY',
+                        'addr_street' => 'Fairy Tale',
+                    ]
+                ]
+            ]],
         ];
 
         $action = $this->getAction([$unit1, $unit2, $unit3], $expected);
@@ -306,22 +350,66 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         $unit2->addSibling($unit3);
 
         $expected = [
-            [['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr_city' => 'Chicago',
-                'addr_street' => '4100 Marine dr. App. 54']],
-            [['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr_city' => 'New York',
-                'addr_street' => '3300 St. George, Suite 300']],
-            [['email' => 'pete111@eol.com', 'name' => 'Peter Ostridge', 'age' => 33, 'addr_city' => 'Chicago',
-                'addr_street' => '111 W Jackson']],
-            [['email' => 'bm@gmail.com', 'name' => 'Bill Murray', 'age' => 55, 'addr_city' => 'Chicago',
-                'addr_street' => '111 W Jackson-2']],
-            [['email' => 'bm@gmail.com', 'name' => 'Bill Murray', 'age' => 55, 'addr_city' => 'Chicago',
-                'addr_street' => '111 W Jackson-3']],
-            [['email' => 'bm@gmail.com', 'name' => 'Bill Murray', 'age' => 55, 'addr_city' => 'LA',
-                'addr_street' => 'Hollywood']],
-            [['email' => 'bm@gmail.com', 'name' => 'Bill Murray', 'age' => 55, 'addr_city' => 'LA',
-                'addr_street' => 'fake']],
-            [['email' => 'pp@gmail.com', 'name' => 'Peter Pan', 'age' => 11, 'addr_city' => 'NY',
-                'addr_street' => 'Fairy Tale']],
+            [[
+                'email' => 'tst1@example.com',
+                'name' => 'Olaf Stone',
+                'age' => 30,
+                'address' => [
+                    [
+                        'addr_city' => 'Chicago',
+                        'addr_street' => '4100 Marine dr. App. 54',
+                    ],
+                    [
+                        'addr_city' => 'New York',
+                        'addr_street' => '3300 St. George, Suite 300',
+                    ],
+                ]
+            ]],
+            [[
+                'email' => 'pete111@eol.com',
+                'name' => 'Peter Ostridge',
+                'age' => 33,
+                'address' => [
+                    [
+                        'addr_city' => 'Chicago',
+                        'addr_street' => '111 W Jackson',
+                    ]
+                ]
+            ]],
+            [[
+                'email' => 'bm@gmail.com',
+                'name' => 'Bill Murray',
+                'age' => 55,
+                'address' => [
+                    [
+                        'addr_city' => 'Chicago',
+                        'addr_street' => '111 W Jackson-2',
+                    ],
+                    [
+                        'addr_city' => 'Chicago',
+                        'addr_street' => '111 W Jackson-3',
+                    ],
+                    [
+                        'addr_city' => 'LA',
+                        'addr_street' => 'Hollywood',
+                    ],
+                    [
+                        'addr_city' => 'LA',
+                        'addr_street' => 'fake',
+                    ]
+                ]
+            ]],
+            [[
+                'email' => 'pp@gmail.com',
+                'name' => 'Peter Pan',
+                'age' => 11,
+                'address' => [
+                    [
+                        'addr_city' => 'NY',
+                        'addr_street' => 'Fairy Tale',
+                    ]
+                ]
+            ]],
         ];
 
         $action = $this->getAction([$unit1, $unit2, $unit3], $expected);
@@ -400,10 +488,21 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         $unit2->setParent($unit1);
 
         $expected = [
-            [['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr_city' => 'Chicago',
-                'addr_street' => '4100 Marine dr. App. 54']],
-            [['email' => 'tst1@example.com', 'name' => 'Olaf Stone', 'age' => 30, 'addr_city' => 'New York',
-                'addr_street' => '3300 St. George, Suite 300']],
+            [[
+                'email' => 'tst1@example.com',
+                'name' => 'Olaf Stone',
+                'age' => 30,
+                'address' => [
+                    [
+                        'addr_city' => 'Chicago',
+                        'addr_street' => '4100 Marine dr. App. 54',
+                    ],
+                    [
+                        'addr_city' => 'New York',
+                        'addr_street' => '3300 St. George, Suite 300',
+                    ]
+                ]
+            ]],
         ];
 
         $action = $this->getAction([$unit1, $unit2], $expected);
