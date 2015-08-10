@@ -10,6 +10,7 @@ class SimpleBagTest extends \PHPUnit_Framework_TestCase
      * @var SimpleBag
      */
     protected $bag;
+
     /**
      * set up
      *       1 - 5

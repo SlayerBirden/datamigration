@@ -69,6 +69,9 @@ class Processor implements ShaperInterface
         // forcing dump if empty ros is coming
         $res = $this->dumpBuffer(empty($row));
         $this->writeBuffered($row);
+        if ($res) {
+            $this->map->clear();
+        }
         return $res;
     }
 
@@ -77,7 +80,24 @@ class Processor implements ShaperInterface
      */
     public function parse(array $entity)
     {
-        // TODO: Implement parse() method.
+        $iterator = new \RecursiveIteratorIterator(new \RecursiveArrayIterator($entity));
+        $toReturn = [];
+        $maxDepth = 0;
+        foreach ($iterator as $key => $value) {
+            if ($iterator->getDepth() > $maxDepth) {
+                $previousDepth = $maxDepth;
+                $maxDepth = $iterator->getDepth();
+                $toReturn = $iterator->getSubIterator($previousDepth)->current();
+            } elseif (($iterator->getDepth() == $maxDepth) && isset($previousDepth)) {
+                $toReturn = array_merge($toReturn, $iterator->getSubIterator($previousDepth)->current());
+                $toReturn = array_unique(array_map('serialize', $toReturn));
+                $toReturn = array_map('unserialize', $toReturn);
+            }
+        }
+        if (empty($toReturn)) {
+            $toReturn = [$entity];
+        }
+        return $toReturn;
     }
 
     /**
@@ -92,19 +112,7 @@ class Processor implements ShaperInterface
             foreach ($this->bag->getUnitsFromLevel(1) as $code) {
                 /** @var ImportFileUnitInterface $unit */
                 $unit = $this->bag->getUnitByCode($code);
-                $isEntity = $unit->getIsEntityCondition();
-                if (!isset($this->oldmap) || empty($isEntity)) {
-                    $shouldDump = true;
-                } elseif (is_callable($isEntity) || is_string($isEntity)) {
-                    $shouldDump = $this->language->evaluate($isEntity, [
-                        'map' => $this->map,
-                        'oldmap' => $this->oldmap,
-                    ]);
-                } else {
-                    throw new \LogicException(
-                        sprintf("Can not understand is Entity Condition for %s unit.", $unit->getCode())
-                    );
-                }
+                $shouldDump = $this->resolveIsEntity($unit);
                 $globalShouldDump &= $shouldDump;
             }
         }
@@ -121,6 +129,27 @@ class Processor implements ShaperInterface
     }
 
     /**
+     * @param ImportFileUnitInterface $unit
+     * @return bool|mixed
+     */
+    private function resolveIsEntity(ImportFileUnitInterface $unit)
+    {
+        $isEntity = $unit->getIsEntityCondition();
+        if (!isset($this->oldmap) || empty($isEntity)) {
+            return true;
+        } elseif (is_callable($isEntity) || is_string($isEntity)) {
+            return $this->language->evaluate($isEntity, [
+                'map' => $this->map,
+                'oldmap' => $this->oldmap,
+            ]);
+        } else {
+            throw new \LogicException(
+                sprintf("Can not understand is Entity Condition for %s unit.", $unit->getCode())
+            );
+        }
+    }
+
+    /**
      * @param $row
      * @throws ConflictException
      */
@@ -129,31 +158,45 @@ class Processor implements ShaperInterface
         if (empty($row)) {
             return;
         }
-        $level = $this->bag->getLowestLevel();
+        $level = 1;
         $remembered = [];
-        while ($level > 0) {
+        while ($level <= $this->bag->getLowestLevel()) {
             $codes = $this->bag->getUnitsFromLevel($level);
             foreach ($codes as $code) {
-                $children = $this->bag->getChildren($code);
-                foreach ($children as $unit) {
-                    $childCode = $unit->getCode();
-                    if (isset($remembered[$level+1][$childCode])) {
-                        if (isset($row[$childCode]) && !is_array($row[$childCode])) {
+                if (isset($this->buffer[$code])) {
+                    $remembered[$level][$code] = array_replace_recursive($this->buffer[$code], $row);
+                } else {
+                    $remembered[$level][$code] = $row;
+                }
+                /** @var ImportFileUnitInterface $unit */
+                $unit = $this->bag->getUnitByCode($code);
+                $parent = $unit->getParent();
+                if ($parent) {
+                    $parentCode = $parent->getCode();
+                    if (isset($remembered[$level-1][$parentCode])) {
+                        if (isset($row[$code]) && !is_array($row[$code])) {
                             throw new ConflictException("Key to assign children to already exists.");
                         }
                         if (
-                            isset($this->buffer[$code][$childCode]) &&
-                            is_array($this->buffer[$code][$childCode])
+                            isset($remembered[$level-1][$parentCode][$code]) &&
+                            is_array($remembered[$level-1][$parentCode][$code])
                         ) {
-                            $this->buffer[$code][$childCode][] = $remembered[$level+1][$childCode];
+                            if ($this->resolveIsEntity($unit)) {
+                                $remembered[$level-1][$parentCode][$code][] = &$remembered[$level][$code];
+                            } else {
+                                $remembered[$level][$code] = array_replace_recursive(
+                                    $remembered[$level-1][$parentCode][$code][0],
+                                    $remembered[$level][$code]
+                                );
+                                $remembered[$level-1][$parentCode][$code] = [&$remembered[$level][$code]];
+                            }
                         } else {
-                            $this->buffer[$code][$childCode] = [$remembered[$level+1][$childCode]];
+                            $remembered[$level-1][$parentCode][$code] = [&$remembered[$level][$code]];
                         }
                     }
                 }
-                $remembered[$level][$code] = $row;
             }
-            $level--;
+            $level++;
         }
         $this->buffer = array_replace_recursive($remembered[1], $this->buffer);
         $this->oldmap = clone $this->map;
@@ -165,6 +208,5 @@ class Processor implements ShaperInterface
     public function clear()
     {
         $this->buffer = [];
-        $this->map->clear();
     }
 }

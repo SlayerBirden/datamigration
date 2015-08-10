@@ -16,7 +16,7 @@ interface UnitInterface
     public function setParent(UnitInterface $parent);
 
     /**
-     * @return UnitInterface
+     * @return UnitInterface|null
      */
     public function getParent();
 

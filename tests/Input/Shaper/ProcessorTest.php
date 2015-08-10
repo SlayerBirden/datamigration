@@ -20,7 +20,7 @@ class ProcessorTest extends \PHPUnit_Framework_TestCase
         return new Processor($bag, new ArrayMap(), new LanguageAdapter(new ExpressionLanguage()));
     }
 
-    public function testSimpleBag()
+    public function testSimpleBagFeed()
     {
         $unit = new Unit('test');
         $bag = new SimpleBag();
@@ -39,7 +39,7 @@ class ProcessorTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse($shaper->feed([]));
     }
 
-    public function testTwoLevelBag()
+    public function testTwoLevelFeed()
     {
         $unit1 = new Unit('customer');
         $unit1->setIsEntityCondition(function ($map) {
@@ -93,5 +93,284 @@ class ProcessorTest extends \PHPUnit_Framework_TestCase
             ]
         ], $shaper->feed([]));
         $this->assertFalse($shaper->feed([]));
+    }
+
+    public function testThreeLevelFeed()
+    {
+        $unit1 = new Unit('customer');
+        $unit1->setIsEntityCondition(function ($map) {
+            return !empty($map['email']);
+        });
+        $unit2 = new Unit('address');
+        $unit2->setParent($unit1);
+        $unit2->setIsEntityCondition(function ($map, $oldmap) {
+            return $map['street'] != $oldmap['street'];
+        });
+
+        $unit3 = new Unit('address_data');
+        $unit3->setParent($unit2);
+
+        $bag = new SimpleBag();
+        $bag->addSet([$unit1, $unit2, $unit3]);
+
+        $shaper = $this->getShaper($bag);
+
+        $rows = [
+            ['email' => 'bob@example.com', 'name' => 'bob', 'street' => 'charity str.', 'phone' => '123'],
+            ['email' => null, 'name' => null, 'street' => 'charity str.', 'phone' => '432'],
+            ['email' => 'paul@example.com', 'name' => 'paul', 'street' => 'buckingham ave.', 'phone' => '222'],
+            ['email' => null, 'name' => null, 'street' => 'mirabelle str.', 'phone' => '323'],
+        ];
+        $this->assertFalse($shaper->feed($rows[0]));
+        $this->assertFalse($shaper->feed($rows[1]));
+        $this->assertSame([
+            'email' => 'bob@example.com',
+            'name' => 'bob',
+            'street' => 'charity str.',
+            'phone' => '123',
+            'address' => [
+                [
+                    'email' => 'bob@example.com',
+                    'name' => 'bob',
+                    'street' => 'charity str.',
+                    'phone' => '123',
+                    'address_data' => [
+                        [
+                            'email' => 'bob@example.com',
+                            'name' => 'bob',
+                            'street' => 'charity str.',
+                            'phone' => '123',
+                        ],
+                        [
+                            'email' => null,
+                            'name' => null,
+                            'street' => 'charity str.',
+                            'phone' => '432',
+                        ]
+                    ],
+                ],
+            ]
+        ], $shaper->feed($rows[2]));
+        $this->assertFalse($shaper->feed($rows[3]));
+        $this->assertSame([
+            'email' => 'paul@example.com',
+            'name' => 'paul',
+            'street' => 'buckingham ave.',
+            'phone' => '222',
+            'address' => [
+                [
+                    'email' => 'paul@example.com',
+                    'name' => 'paul',
+                    'street' => 'buckingham ave.',
+                    'phone' => '222',
+                    'address_data' => [
+                        [
+                            'email' => 'paul@example.com',
+                            'name' => 'paul',
+                            'street' => 'buckingham ave.',
+                            'phone' => '222',
+                        ]
+                    ],
+                ],
+                [
+                    'email' => null,
+                    'name' => null,
+                    'street' => 'mirabelle str.',
+                    'phone' => '323',
+                    'address_data' => [
+                        [
+                            'email' => null,
+                            'name' => null,
+                            'street' => 'mirabelle str.',
+                            'phone' => '323',
+                        ]
+                    ],
+                ],
+            ]
+        ], $shaper->feed([]));
+        $this->assertFalse($shaper->feed([]));
+    }
+
+    public function testOneLevelParse()
+    {
+        $unit = new Unit('test');
+        $bag = new SimpleBag();
+        $bag->add($unit);
+
+        $rows = [
+            ['code' => 'test', 'id' => 1, 'name' => 'bar'],
+            ['code' => 'test2', 'id' => 11, 'name' => 'baz'],
+        ];
+
+        $shaper = $this->getShaper($bag);
+
+        foreach ($rows as $row) {
+            $this->assertSame([$row], $shaper->parse($row));
+        }
+    }
+
+    public function testTwoLevelParse()
+    {
+        $unit1 = new Unit('customer');
+        $unit1->setIsEntityCondition(function ($map) {
+            return !empty($map['email']);
+        });
+        $unit2 = new Unit('address');
+        $unit2->setParent($unit1);
+
+        $unit3 = new Unit('address_data');
+        $unit3->addSibling($unit2);
+
+        $bag = new SimpleBag();
+        $bag->addSet([$unit1, $unit2, $unit3]);
+
+        $entities = [
+            [
+                'email' => 'bob@example.com',
+                'name' => 'bob',
+                'street' => 'charity str.',
+                'address' => [
+                    [
+                        'email' => 'bob@example.com',
+                        'name' => 'bob',
+                        'street' => 'charity str.',
+                    ],
+                ]
+            ],
+            [
+                'email' => 'paul@example.com',
+                'name' => 'paul',
+                'street' => 'buckingham ave.',
+                'address' => [
+                    [
+                        'email' => 'paul@example.com',
+                        'name' => 'paul',
+                        'street' => 'buckingham ave.',
+                    ],
+                    [
+                        'email' => null,
+                        'name' => null,
+                        'street' => 'mirabelle str.',
+                    ],
+                ]
+            ],
+        ];
+        $expected = [
+            [
+                ['email' => 'bob@example.com', 'name' => 'bob', 'street' => 'charity str.'],
+            ],
+            [
+                ['email' => 'paul@example.com', 'name' => 'paul', 'street' => 'buckingham ave.'],
+                ['email' => null, 'name' => null, 'street' => 'mirabelle str.'],
+            ]
+        ];
+
+        $shaper = $this->getShaper($bag);
+
+        for ($i = 0; $i<count($entities); $i++) {
+            $this->assertSame($expected[$i], $shaper->parse($entities[$i]));
+        }
+    }
+
+    public function testThreeLevelParse()
+    {
+        $unit1 = new Unit('customer');
+        $unit1->setIsEntityCondition(function ($map) {
+            return !empty($map['email']);
+        });
+        $unit2 = new Unit('address');
+        $unit2->setParent($unit1);
+        $unit2->setIsEntityCondition(function ($map, $oldmap) {
+            return $map['street'] != $oldmap['street'];
+        });
+
+        $unit3 = new Unit('address_data');
+        $unit3->setParent($unit2);
+
+        $bag = new SimpleBag();
+        $bag->addSet([$unit1, $unit2, $unit3]);
+
+        $entities = [
+            [
+                'email' => 'bob@example.com',
+                'name' => 'bob',
+                'street' => 'charity str.',
+                'phone' => '123',
+                'address' => [
+                    [
+                        'email' => 'bob@example.com',
+                        'name' => 'bob',
+                        'street' => 'charity str.',
+                        'phone' => '123',
+                        'address_data' => [
+                            [
+                                'email' => 'bob@example.com',
+                                'name' => 'bob',
+                                'street' => 'charity str.',
+                                'phone' => '123',
+                            ],
+                            [
+                                'email' => null,
+                                'name' => null,
+                                'street' => 'charity str.',
+                                'phone' => '432',
+                            ]
+                        ],
+                    ],
+                ]
+            ],
+            [
+                'email' => 'paul@example.com',
+                'name' => 'paul',
+                'street' => 'buckingham ave.',
+                'phone' => '222',
+                'address' => [
+                    [
+                        'email' => 'paul@example.com',
+                        'name' => 'paul',
+                        'street' => 'buckingham ave.',
+                        'phone' => '222',
+                        'address_data' => [
+                            [
+                                'email' => 'paul@example.com',
+                                'name' => 'paul',
+                                'street' => 'buckingham ave.',
+                                'phone' => '222',
+                            ]
+                        ],
+                    ],
+                    [
+                        'email' => null,
+                        'name' => null,
+                        'street' => 'mirabelle str.',
+                        'phone' => '323',
+                        'address_data' => [
+                            [
+                                'email' => null,
+                                'name' => null,
+                                'street' => 'mirabelle str.',
+                                'phone' => '323',
+                            ]
+                        ],
+                    ],
+                ]
+            ],
+        ];
+        $expected = [
+            [
+                ['email' => 'bob@example.com', 'name' => 'bob', 'street' => 'charity str.', 'phone' => '123'],
+                ['email' => null, 'name' => null, 'street' => 'charity str.', 'phone' => '432'],
+            ],
+            [
+                ['email' => 'paul@example.com', 'name' => 'paul', 'street' => 'buckingham ave.', 'phone' => '222'],
+                ['email' => null, 'name' => null, 'street' => 'mirabelle str.', 'phone' => '323'],
+            ]
+        ];
+
+        $shaper = $this->getShaper($bag);
+
+        for ($i = 0; $i<count($entities); $i++) {
+            $this->assertSame($expected[$i], $shaper->parse($entities[$i]));
+        }
     }
 }
