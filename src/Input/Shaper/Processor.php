@@ -10,7 +10,7 @@ use Maketok\DataMigration\MapInterface;
 use Maketok\DataMigration\Unit\ImportFileUnitInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
 
-class Processor implements ShaperInterface
+abstract class Processor implements ShaperInterface
 {
     use ArrayUtilsTrait;
 
@@ -73,31 +73,6 @@ class Processor implements ShaperInterface
             $this->map->clear();
         }
         return $res;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function parse(array $entity)
-    {
-        $iterator = new \RecursiveIteratorIterator(new \RecursiveArrayIterator($entity));
-        $toReturn = [];
-        $maxDepth = 0;
-        foreach ($iterator as $key => $value) {
-            if ($iterator->getDepth() > $maxDepth) {
-                $previousDepth = $maxDepth;
-                $maxDepth = $iterator->getDepth();
-                $toReturn = $iterator->getSubIterator($previousDepth)->current();
-            } elseif (($iterator->getDepth() == $maxDepth) && isset($previousDepth)) {
-                $toReturn = array_merge($toReturn, $iterator->getSubIterator($previousDepth)->current());
-                $toReturn = array_unique(array_map('serialize', $toReturn));
-                $toReturn = array_map('unserialize', $toReturn);
-            }
-        }
-        if (empty($toReturn)) {
-            $toReturn = [$entity];
-        }
-        return $toReturn;
     }
 
     /**
