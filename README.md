@@ -131,21 +131,21 @@ We have 3 DB tables for customers and their addresses.
 customer
 
 | id | email | age |
-| -- | ----- | --- |
+| --- | ----- | --- |
 | 1 | bart22@example.com | 32 |
 | 2 | vilkron@aim.at.com | 15 |
 
 customer_data
 
-| id | parent_id | firstname | lastname | 
-| -- | --------- | --------- | -------- |
+| id | parent_id | firstname | lastname |
+| --- | --------- | --------- | -------- |
 | 1 | 1 | Bart | Robinson |
 | 2 | 2 | Kale | Dager |
 
 address
 
-| id | customer_id | street | city | zip | 
-| -- | ---------- | ------- | ---- | --- |
+| id | customer_id | street | city | zip |
+| --- | ---------- | ------- | ---- | --- |
 | 1 | 1 | 20 Chestnut Terrace | New York | 07003 |
 | 2 | 1 | 123 Manson | LA | 90023 |
 | 3 | 2 | 111 Dale str. | Chicago | 60333 |
