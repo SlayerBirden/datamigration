@@ -103,6 +103,13 @@ class Generate extends AbstractAction implements ActionInterface
                                 $this->map->feed($assembledBuffer);
                             }
                         }
+                        foreach ($unit->getContributions() as $contribution) {
+                            $this->language->evaluate($contribution, [
+                                'map' => $this->map,
+                                'resource' => $this->helperResource,
+                                'hashmaps' => $unit->getHashmaps(),
+                            ]);
+                        }
                         $row = array_map(function ($el) {
                             return $this->language->evaluate($el, [
                                 'generator' => $this->generator,
