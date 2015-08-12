@@ -61,6 +61,15 @@ class HelperExpressionsProvider implements ExpressionFunctionProviderInterface
 
                 return count($array);
             }),
+            new ExpressionFunction('array_search', function ($needle, $haystack) {
+                return sprintf('array_search(%1$s, %2$s)', $needle, $haystack);
+            }, function ($arguments, $needle, $haystack) {
+                if (!is_array($haystack)) {
+                    return false;
+                }
+
+                return array_search($needle, $haystack);
+            }),
         );
     }
 }
