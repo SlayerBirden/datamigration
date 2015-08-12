@@ -76,4 +76,30 @@ trait ArrayUtilsTrait
         }
         return call_user_func_array('array_replace', $data);
     }
+
+    /**
+     * Same as assemble, but will not raise exception when values don't match
+     * instead will adjust keys by pre-pending unit code
+     * @param array $data
+     * @return array
+     */
+    public function assembleResolve(array $data)
+    {
+        if (count($data) > 1) {
+            $byKeys = call_user_func_array('array_intersect_key', $data);
+            $byKeysAndValues = call_user_func_array('array_intersect_assoc', $data);
+            if ($byKeys != $byKeysAndValues) {
+                $diff = array_diff($byKeys, $byKeysAndValues);
+                array_walk($data, function (&$unitData, $code) use ($diff) {
+                    foreach ($unitData as $key => $val) {
+                        if (isset($diff[$key])) {
+                            unset($unitData[$key]);
+                            $unitData[$code . '_' . $key] = $val;
+                        }
+                    }
+                });
+            }
+        }
+        return call_user_func_array('array_replace', $data);
+    }
 }

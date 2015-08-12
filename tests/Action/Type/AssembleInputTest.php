@@ -648,4 +648,64 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         $action = $this->getAction([$this->getUnit('test121312')]);
         $action->process($this->getResultMock());
     }
+
+    /**
+     * Test that units which have same keys for data (field1)
+     * append unit code as prefix for it
+     * @throws \Exception
+     * @test
+     */
+    public function testSameCodes()
+    {
+        $unit1 = $this->getUnit('test');
+        $unit1->setReversedMapping([
+            'name' => 'map.test_field1',
+        ]);
+        $unit1->setReversedConnection([
+            'tid' => 'id',
+        ]);
+        $unit1->setMapping([
+            'field1' => 'name',
+            'field2' => 'code',
+            'id' => 'id',
+        ]);
+        $unit1->setFilesystem($this->getFS(
+            [
+                ['Pete', 'tst1', '1'],
+                false,
+            ]
+        ));
+        $unit1->setTmpFileName('test_tmp.csv');
+
+        $unit2 = $this->getUnit('test2');
+        $unit2->setReversedMapping([
+            'secondName' => 'map.test2_field1',
+        ]);
+        $unit2->setReversedConnection([
+            'tid' => 'parent_id',
+        ]);
+        $unit2->setMapping([
+            'field1' => 'name',
+            'field2' => 'code',
+            'parent_id' => 'id',
+        ]);
+        $unit2->setFilesystem($this->getFS(
+            [
+                ['George', 'tst2', '1'],
+                false,
+            ]
+        ));
+        $unit2->setTmpFileName('test2_tmp.csv');
+        $unit2->addSibling($unit1);
+
+        $expected = [
+            [[
+                'name' => 'Pete',
+                'secondName' => 'George',
+            ]],
+        ];
+
+        $action = $this->getAction([$unit1, $unit2], $expected);
+        $action->process($this->getResultMock());
+    }
 }

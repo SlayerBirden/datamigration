@@ -313,7 +313,7 @@ class AssembleInput extends AbstractAction implements ActionInterface
     private function addData()
     {
         $toAdd = [];
-        $tmpRow = $this->assemble($this->processed, true);
+        $tmpRow = $this->assembleResolve($this->processed);
         $this->map->feed($tmpRow);
         foreach ($this->processed as $unitCode => $unitData) {
             /** @var ExportFileUnitInterface|ImportFileUnitInterface $unit */

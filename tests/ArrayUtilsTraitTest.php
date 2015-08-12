@@ -211,4 +211,57 @@ class ArrayUtilsTraitTest extends \PHPUnit_Framework_TestCase
             ],
         ];
     }
+
+    /**
+     * @param array $data
+     * @param array $expected
+     * @dataProvider tmpUnitConflictProvider
+     */
+    public function testAssembleResolve($data, $expected)
+    {
+        $this->assertEquals($expected, $this->trait->assembleResolve($data));
+    }
+
+    /**
+     * @return array
+     */
+    public function tmpUnitConflictProvider()
+    {
+        $res = [
+            [
+                [
+                    'unit1' => [
+                        'id' => 1,
+                        'name' => 'u1',
+                    ],
+                    'unit2' => [
+                        'id' => 1,
+                        'name' => 'u2',
+                    ],
+                ],
+                [
+                    'id' => 1,
+                    'unit1_name' => 'u1',
+                    'unit2_name' => 'u2',
+                ],
+            ],
+            [
+                [
+                    'unit2' => [
+                        'id' => 1,
+                        'name' => 'u2',
+                    ],
+                    'unit3' => [
+                        'id' => 2,
+                    ],
+                ],
+                [
+                    'unit2_id' => 1,
+                    'unit3_id' => 2,
+                    'name' => 'u2',
+                ],
+            ],
+        ];
+        return array_merge($this->tmpUnitsProvider(), $res);
+    }
 }
