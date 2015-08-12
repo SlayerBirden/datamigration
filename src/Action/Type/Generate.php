@@ -110,6 +110,16 @@ class Generate extends AbstractAction implements ActionInterface
                                 'hashmaps' => $unit->getHashmaps(),
                             ]);
                         }
+                        foreach ($unit->getWriteConditions() as $condition) {
+                            $shouldAdd = $this->language->evaluate($condition, [
+                                'map' => $this->map,
+                                'resource' => $this->helperResource,
+                                'hashmaps' => $unit->getHashmaps(),
+                            ]);
+                            if (!$shouldAdd) {
+                                break 2;
+                            }
+                        }
                         $row = array_map(function ($el) {
                             return $this->language->evaluate($el, [
                                 'generator' => $this->generator,
