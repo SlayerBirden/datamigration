@@ -105,6 +105,73 @@ class GenerateTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * @throws \Exception
+     */
+    public function testComplexProcess()
+    {
+        $unit = $this->getUnit('test_table1');
+        $unit->setFilesystem($this->getFS(10));
+        $unit->setGeneratorMapping([
+            'id' => 'generator.randomDigit',
+            'code' => function (Generator $generator) {
+                return $generator->word;
+            }
+        ]);
+        $filesystem = $this->getMockBuilder('\Maketok\DataMigration\Storage\Filesystem\ResourceInterface')
+            ->getMock();
+        $counter1 = 0;
+        $filesystem->expects($this->any())
+            ->method('writeRow')->willReturnCallback(function () use (&$counter1) {
+                $counter1++;
+            });
+        /** @var ResourceInterface $filesystem */
+        $childUnit = $this->getUnit('test_table2');
+        $childUnit->setFilesystem($filesystem);
+        $childUnit->setGeneratorMapping([
+            'id' => 'generator.randomDigit',
+            'parent_id' => 'map.test_table1_id',
+            'field1' => '0'
+        ]);
+        $childUnit->setParent($unit);
+        $seed = new \SplFixedArray(2);
+        $seed[0] = 4;
+        $seed[1] = 1;
+        $childUnit->setGenerationSeed($seed);
+        $childDataUnit = $this->getUnit('test_table3');
+        $counter2 = 0;
+        $filesystem2 = $this->getMockBuilder('\Maketok\DataMigration\Storage\Filesystem\ResourceInterface')
+            ->getMock();
+        $filesystem2->expects($this->any())
+            ->method('writeRow')->willReturnCallback(function () use (&$counter2) {
+                $counter2++;
+            });
+        /** @var ResourceInterface $filesystem2 */
+        $childDataUnit->setFilesystem($filesystem2);
+        $childDataUnit->setGeneratorMapping([
+            'id' => 'generator.randomDigit',
+            'parent_id' => 'map.test_table2_id',
+            'field2' => '2'
+        ]);
+        $childDataUnit->setGenerationSeed($seed);
+        $childUnit->addSibling($childDataUnit);
+        $generator = new Generator();
+        $generator->addProvider(new Base($generator));
+        $generator->addProvider(new Lorem($generator));
+        $action = new Generate(
+            $this->getUnitBag([$unit, $childUnit, $childDataUnit]),
+            $this->getConfig(),
+            new LanguageAdapter(new ExpressionLanguage()),
+            $generator,
+            10,
+            new ArrayMap(),
+            $this->getResourceHelper()
+        );
+        $action->process($this->getResultMock());
+
+        $this->assertSame($counter1, $counter2);
+    }
+
+    /**
      * @expectedException \Maketok\DataMigration\Action\Exception\WrongContextException
      * @expectedExceptionMessage Can not use generation with unit test_table1
      */

@@ -55,6 +55,8 @@ class Generate extends AbstractAction implements ActionInterface
      */
     private $map;
 
+    private $randomNumbers = [];
+
     /**
      * @param UnitBagInterface $bag
      * @param ConfigInterface $config
@@ -93,11 +95,21 @@ class Generate extends AbstractAction implements ActionInterface
             $this->start();
             while ($this->count > 0) {
                 foreach ($this->bag as $unit) {
-                    list($max, $center) = $unit->getGenerationSeed();
-                    $rnd = $this->getRandom($max, $center);
+                    $rnd = 0;
+                    foreach ($unit->getSiblings() as $sibling) {
+                        if (isset($this->randomNumbers[$sibling->getCode()])) {
+                            $rnd = $this->randomNumbers[$sibling->getCode()];
+                            break 1;
+                        }
+                    }
+                    if ($rnd === 0) {
+                        list($max, $center) = $unit->getGenerationSeed();
+                        $rnd = $this->getRandom($max, $center);
+                        $this->randomNumbers[$unit->getCode()] = $rnd;
+                    }
                     while ($rnd > 0) {
                         if (!empty($this->buffer)) {
-                            $assembledBuffer = $this->assemble($this->buffer, true);
+                            $assembledBuffer = $this->assembleResolve($this->buffer);
                             if ($this->map->isFresh($assembledBuffer)) {
                                 $this->map->feed($assembledBuffer);
                             }
@@ -137,6 +149,7 @@ class Generate extends AbstractAction implements ActionInterface
                 }
                 $this->map->unFreeze();
                 $this->count--;
+                $this->randomNumbers = [];
             }
         } catch (\Exception $e) {
             $this->close();
