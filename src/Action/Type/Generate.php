@@ -92,7 +92,6 @@ class Generate extends AbstractAction implements ActionInterface
         try {
             $this->start();
             while ($this->count > 0) {
-                $this->map->freeze();
                 foreach ($this->bag as $unit) {
                     list($max, $center) = $unit->getGenerationSeed();
                     $rnd = $this->getRandom($max, $center);
@@ -128,6 +127,8 @@ class Generate extends AbstractAction implements ActionInterface
                                 'units' => $this->buffer,
                             ]);
                         }, $unit->getGeneratorMapping());
+                        // freeze map after 1st addition
+                        $this->map->freeze();
                         $this->buffer[$unit->getCode()] = $row;
                         $unit->getFilesystem()->writeRow($row);
                         $result->incrementActionProcessed($this->getCode());
