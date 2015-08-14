@@ -95,4 +95,10 @@ interface ResourceInterface
      * @return void
      */
     public function rollback();
+
+    /**
+     * Is connection active
+     * @return bool
+     */
+    public function isActive();
 }

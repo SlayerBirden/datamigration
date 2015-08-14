@@ -75,9 +75,17 @@ abstract class AbstractDBALResource implements ResourceInterface
      */
     public function __destruct()
     {
-        if ($this->connection->isConnected()) {
-            $this->connection->close();
+        if ($this->isActive()) {
+            $this->close();
         }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function isActive()
+    {
+        return $this->connection->isConnected();
     }
 
     /**
