@@ -43,7 +43,8 @@ class LanguageAdapterTest extends \PHPUnit_Framework_TestCase
             ['"somevar"', ['map' => $map], 'somevar'],
             ['map.somevar', ['map' => $map], 'Bingo!'],
             ['"Bingo!"', ['map' => $map], 'Bingo!'],
-            ['10', ['map' => $map], 10],
+            [10, ['map' => $map], 10],
+            ['false', ['map' => $map], false],
             [function ($map) {
                 return $map['somevar'];
             }, ['map' => $map], 'Bingo!'],
@@ -68,7 +69,6 @@ class LanguageAdapterTest extends \PHPUnit_Framework_TestCase
     {
         return [
             [false],
-            [2],
             [new \stdClass()],
             [[]],
         ];

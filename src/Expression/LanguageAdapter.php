@@ -28,7 +28,7 @@ class LanguageAdapter implements LanguageInterface
     {
         if (is_callable($expression)) {
             return call_user_func_array($expression, $values);
-        } elseif (is_scalar($expression) && $this->language) {
+        } elseif ((is_string($expression) || is_int($expression)) && $this->language) {
             return $this->language->evaluate($expression, $values);
         }
         throw new \InvalidArgumentException(
