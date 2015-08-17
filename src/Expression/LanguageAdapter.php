@@ -2,7 +2,6 @@
 
 namespace Maketok\DataMigration\Expression;
 
-use Maketok\DataMigration\MapInterface;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 class LanguageAdapter implements LanguageInterface
@@ -29,7 +28,7 @@ class LanguageAdapter implements LanguageInterface
     {
         if (is_callable($expression)) {
             return call_user_func_array($expression, $values);
-        } elseif (is_string($expression) && $this->language) {
+        } elseif (is_scalar($expression) && $this->language) {
             return $this->language->evaluate($expression, $values);
         }
         throw new \InvalidArgumentException(
