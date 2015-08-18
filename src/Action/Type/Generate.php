@@ -116,6 +116,7 @@ class Generate extends AbstractAction implements ActionInterface
                         }
                         foreach ($unit->getGenerationContributions() as $contribution) {
                             $this->language->evaluate($contribution, [
+                                'generator' => $this->generator,
                                 'map' => $this->map,
                                 'resource' => $this->helperResource,
                                 'hashmaps' => $unit->getHashmaps(),
@@ -123,6 +124,7 @@ class Generate extends AbstractAction implements ActionInterface
                         }
                         foreach ($unit->getWriteConditions() as $condition) {
                             $shouldAdd = $this->language->evaluate($condition, [
+                                'generator' => $this->generator,
                                 'map' => $this->map,
                                 'resource' => $this->helperResource,
                                 'hashmaps' => $unit->getHashmaps(),
