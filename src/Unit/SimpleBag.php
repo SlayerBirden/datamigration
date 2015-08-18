@@ -30,7 +30,25 @@ class SimpleBag implements UnitBagInterface
      */
     public function getIterator()
     {
-        return new \ArrayIterator(array_values($this->units));
+        $units = array_values($this->units);
+        // parent units should go first
+        usort($units, function (UnitInterface $unit1, UnitInterface $unit2) {
+            $parent1 = $unit1->getParent();
+            $parent2 = $unit2->getParent();
+            if ($parent1 && !$parent2) {
+                return 1;
+            } elseif(!$parent1 && $parent2) {
+                return -1;
+            } else {
+                if ($parent1 == $unit2) {
+                    return 1;
+                } elseif ($parent2 == $unit1) {
+                    return -1;
+                }
+            }
+            return 0;
+        });
+        return new \ArrayIterator($units);
     }
 
     /**

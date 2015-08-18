@@ -72,4 +72,48 @@ class SimpleBagTest extends \PHPUnit_Framework_TestCase
         $bag->compileTree();
         $this->assertSame(['test1', 'test2'], $bag->getUnitsFromLevel(1));
     }
+
+    public function testIteratorSort()
+    {
+        $unit1 = new Unit('A');
+        $unit2 = new Unit('B');
+        $unit2->setParent($unit1);
+
+        $bag = new SimpleBag();
+        $bag->addSet([$unit2, $unit1]);
+
+        $i = 0;
+        foreach ($bag as $unit) {
+            if ($i == 0) {
+                $this->assertSame($unit1, $unit);
+            } elseif ($i == 1) {
+                $this->assertSame($unit2, $unit);
+            }
+            ++$i;
+        }
+    }
+
+    public function testIteratorSort2()
+    {
+        $unit1 = new Unit('A');
+        $unit2 = new Unit('B');
+        $unit3 = new Unit('C');
+        $unit2->setParent($unit1);
+        $unit3->setParent($unit2);
+
+        $bag = new SimpleBag();
+        $bag->addSet([$unit2, $unit3, $unit1]);
+
+        $i = 0;
+        foreach ($bag as $unit) {
+            if ($i == 0) {
+                $this->assertSame($unit1, $unit);
+            } elseif ($i == 1) {
+                $this->assertSame($unit2, $unit);
+            } elseif ($i == 2) {
+                $this->assertSame($unit3, $unit);
+            }
+            ++$i;
+        }
+    }
 }
