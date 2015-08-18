@@ -114,7 +114,7 @@ class Generate extends AbstractAction implements ActionInterface
                                 $this->map->feed($assembledBuffer);
                             }
                         }
-                        foreach ($unit->getContributions() as $contribution) {
+                        foreach ($unit->getGenerationContributions() as $contribution) {
                             $this->language->evaluate($contribution, [
                                 'map' => $this->map,
                                 'resource' => $this->helperResource,

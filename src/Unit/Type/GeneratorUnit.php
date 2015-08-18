@@ -11,6 +11,10 @@ abstract class GeneratorUnit extends ExportFileUnit implements GenerateUnitInter
      */
     protected $generatorMapping;
     /**
+     * @var array
+     */
+    protected $generationContributions = [];
+    /**
      * Max number and center of dispersion
      * @var \SplFixedArray
      */
@@ -57,5 +61,21 @@ abstract class GeneratorUnit extends ExportFileUnit implements GenerateUnitInter
     public function setGenerationSeed(\SplFixedArray $generationSeed)
     {
         $this->generationSeed = $generationSeed;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getGenerationContributions()
+    {
+        return $this->generationContributions;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setGenerationContributions(array $generationContributions)
+    {
+        $this->generationContributions = $generationContributions;
     }
 }

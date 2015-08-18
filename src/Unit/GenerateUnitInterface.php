@@ -25,4 +25,17 @@ interface GenerateUnitInterface extends UnitInterface
      * @param \SplFixedArray $generationSeed
      */
     public function setGenerationSeed(\SplFixedArray $generationSeed);
+
+    /**
+     * get contributions for generation process
+     * @return array
+     */
+    public function getGenerationContributions();
+
+    /**
+     * set generation contributions
+     * @param array $generationContributions
+     * @return void
+     */
+    public function setGenerationContributions(array $generationContributions);
 }
