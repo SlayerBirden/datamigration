@@ -150,6 +150,7 @@ class Generate extends AbstractAction implements ActionInterface
                                     'hashmaps' => $parent->getHashmaps(),
                                 ]);
                             }, $parent->getGeneratorMapping());
+                            $this->buffer[$parent->getCode()] = $row;
                             $this->writeBuffered($parent->getCode(), $parentRow);
                         }
                         // freeze map after 1st addition
@@ -164,6 +165,7 @@ class Generate extends AbstractAction implements ActionInterface
                 $this->map->unFreeze();
                 $this->count--;
                 $this->randomNumbers = [];
+                $this->buffer = [];
             }
         } catch (\Exception $e) {
             $this->close();
