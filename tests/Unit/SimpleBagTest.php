@@ -116,4 +116,26 @@ class SimpleBagTest extends \PHPUnit_Framework_TestCase
             ++$i;
         }
     }
+
+    public function testIteratorSortEqual()
+    {
+        $unit1 = new Unit('A');
+        $unit2 = new Unit('B');
+        $unit3 = new Unit('C');
+
+        $bag = new SimpleBag();
+        $bag->addSet([$unit2, $unit3, $unit1]);
+
+        $i = 0;
+        foreach ($bag as $unit) {
+            if ($i == 0) {
+                $this->assertSame($unit2, $unit);
+            } elseif ($i == 1) {
+                $this->assertSame($unit3, $unit);
+            } elseif ($i == 2) {
+                $this->assertSame($unit1, $unit);
+            }
+            ++$i;
+        }
+    }
 }

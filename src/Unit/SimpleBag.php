@@ -32,7 +32,7 @@ class SimpleBag implements UnitBagInterface
     {
         $units = array_values($this->units);
         // parent units should go first
-        usort($units, function (UnitInterface $unit1, UnitInterface $unit2) {
+        usort($units, function (UnitInterface $unit1, UnitInterface $unit2) use ($units) {
             $parent1 = $unit1->getParent();
             $parent2 = $unit2->getParent();
             if ($parent1 && !$parent2) {
@@ -45,6 +45,13 @@ class SimpleBag implements UnitBagInterface
                 } elseif ($parent2 == $unit1) {
                     return -1;
                 }
+            }
+            $ind1 = array_search($unit1, $units);
+            $ind2 = array_search($unit2, $units);
+            if ($ind1 > $ind2) {
+                return 1;
+            } elseif ($ind1 < $ind2) {
+                return -1;
             }
             return 0;
         });

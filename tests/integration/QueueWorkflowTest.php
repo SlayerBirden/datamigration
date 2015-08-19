@@ -246,6 +246,7 @@ CONTRIBUTION;
         //=====================================================================
         $customerUnit = $this->prepareCustomerImportUnit();
         $addressUnit = $this->prepareAddressImportUnit();
+        $addressUnit->setParent($customerUnit);
         //=====================================================================
         // order matters ;)
         $bag = new SimpleBag();
@@ -288,6 +289,7 @@ CONTRIBUTION;
         //=====================================================================
         $customerUnit = $this->prepareCustomerImportUnit();
         $addressUnit = $this->prepareAddressImportUnit();
+        $addressUnit->setParent($customerUnit);
         //=====================================================================
         // order matters ;)
         $bag = new SimpleBag();
@@ -377,8 +379,11 @@ MYSQL;
         $this->config['file_debug'] = false;
         //=====================================================================
         $bag = new SimpleBag();
-        $bag->add($this->getGenerateCustomerUnit());
-        $bag->add($this->getGenerateAddressUnit());
+        $cu = $this->getGenerateCustomerUnit();
+        $au = $this->getGenerateAddressUnit();
+        $au->setParent($cu);
+        $bag->add($cu);
+        $bag->add($au);
 
         $generator = new Generator();
         $generator->addProvider(new Base($generator));
@@ -419,7 +424,7 @@ MYSQL;
     {
         $customerUnit = new Unit('customers');
         $customerUnit->setGeneratorMapping([
-            'id' => 'map.incr("customer_id", resource.getLastIncrement("customers"))',
+            'id' => 'map.frozenIncr("customer_id", resource.getLastIncrement("customers"))',
             'firstname' => 'generator.firstName',
             'lastname' => 'generator.lastName',
             'age' => 'generator.numberBetween(10, 60)',

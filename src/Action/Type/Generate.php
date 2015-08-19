@@ -39,6 +39,10 @@ class Generate extends AbstractAction implements ActionInterface
      */
     private $buffer = [];
     /**
+     * @var array
+     */
+    private $writeBuffer = [];
+    /**
      * @var LanguageInterface
      */
     private $language;
@@ -54,7 +58,9 @@ class Generate extends AbstractAction implements ActionInterface
      * @var MapInterface
      */
     private $map;
-
+    /**
+     * @var array
+     */
     private $randomNumbers = [];
 
     /**
@@ -94,19 +100,9 @@ class Generate extends AbstractAction implements ActionInterface
         try {
             $this->start();
             while ($this->count > 0) {
+                $this->prepareUnitRandoms();
                 foreach ($this->bag as $unit) {
-                    $rnd = 0;
-                    foreach ($unit->getSiblings() as $sibling) {
-                        if (isset($this->randomNumbers[$sibling->getCode()])) {
-                            $rnd = $this->randomNumbers[$sibling->getCode()];
-                            break 1;
-                        }
-                    }
-                    if ($rnd === 0) {
-                        list($max, $center) = $unit->getGenerationSeed();
-                        $rnd = $this->getRandom($max, $center);
-                        $this->randomNumbers[$unit->getCode()] = $rnd;
-                    }
+                    $rnd = $this->randomNumbers[$unit->getCode()];
                     while ($rnd > 0) {
                         if (!empty($this->buffer)) {
                             $assembledBuffer = $this->assembleResolve($this->buffer);
@@ -142,14 +138,29 @@ class Generate extends AbstractAction implements ActionInterface
                                 'hashmaps' => $unit->getHashmaps(),
                             ]);
                         }, $unit->getGeneratorMapping());
+                        // we care about parent ;)
+                        /** @var ImportFileUnitInterface|GenerateUnitInterface $parent */
+                        if ($parent = $unit->getParent()) {
+                            $parentRow = array_map(function ($el) use ($parent) {
+                                return $this->language->evaluate($el, [
+                                    'generator' => $this->generator,
+                                    'resource' => $this->helperResource,
+                                    'map' => $this->map,
+                                    'units' => $this->buffer,
+                                    'hashmaps' => $parent->getHashmaps(),
+                                ]);
+                            }, $parent->getGeneratorMapping());
+                            $this->writeBuffered($parent->getCode(), $parentRow);
+                        }
                         // freeze map after 1st addition
                         $this->map->freeze();
                         $this->buffer[$unit->getCode()] = $row;
-                        $unit->getFilesystem()->writeRow($row);
+                        $this->writeBuffered($unit->getCode(), $row);
                         $result->incrementActionProcessed($this->getCode());
                         $rnd--;
                     }
                 }
+                $this->writeRows();
                 $this->map->unFreeze();
                 $this->count--;
                 $this->randomNumbers = [];
@@ -159,6 +170,57 @@ class Generate extends AbstractAction implements ActionInterface
             throw $e;
         }
         $this->close();
+    }
+
+    /**
+     * @param string $unitCode
+     * @param array $row
+     */
+    protected function writeBuffered($unitCode, $row)
+    {
+        $rnd = $this->randomNumbers[$unitCode];
+        if (isset($this->writeBuffer[$unitCode]) && is_array($this->writeBuffer[$unitCode]) && ($rnd > 1)) {
+            $this->writeBuffer[$unitCode][] = $row;
+        } else {
+            $this->writeBuffer[$unitCode] = [$row];
+        }
+    }
+
+    /**
+     * write buffered rows
+     */
+    protected function writeRows()
+    {
+        foreach ($this->bag as $unit) {
+            if (isset($this->buffer[$unit->getCode()])) {
+                $buffered = $this->writeBuffer[$unit->getCode()];
+                foreach ($buffered as $row) {
+                    $unit->getFilesystem()->writeRow($row);
+                }
+            }
+        }
+        $this->writeBuffer = [];
+    }
+
+    /**
+     * prepare randoms
+     */
+    protected function prepareUnitRandoms()
+    {
+        foreach ($this->bag as $unit) {
+            $rnd = 0;
+            foreach ($unit->getSiblings() as $sibling) {
+                if (isset($this->randomNumbers[$sibling->getCode()])) {
+                    $rnd = $this->randomNumbers[$sibling->getCode()];
+                    break 1;
+                }
+            }
+            if ($rnd === 0) {
+                list($max, $center) = $unit->getGenerationSeed();
+                $rnd = $this->getRandom($max, $center);
+            }
+            $this->randomNumbers[$unit->getCode()] = $rnd;
+        }
     }
 
     /**
