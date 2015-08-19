@@ -185,8 +185,9 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
 
     /**
      * @param ImportFileUnitInterface $unit
+     * @param bool $replace
      */
-    private function writeRowBuffered(ImportFileUnitInterface $unit)
+    private function writeRowBuffered(ImportFileUnitInterface $unit, $replace = false)
     {
         $shouldAdd = true;
         foreach ($unit->getWriteConditions() as $condition) {
@@ -213,6 +214,10 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
              */
             try {
                 if (isset($this->buffer[$unit->getCode()]) && is_array($this->buffer[$unit->getCode()])) {
+                    if ($replace) {
+                        // replace last row in the buffer
+                        array_pop($this->buffer[$unit->getCode()]);
+                    }
                     $this->buffer[$unit->getCode()] = array_merge(
                         $this->buffer[$unit->getCode()],
                         $this->normalize($row)
@@ -222,6 +227,10 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
                 }
             } catch (NormalizationException $e) {
                 $this->result->addActionException($this->getCode(), $e);
+            }
+            /** @var ImportFileUnitInterface $parent */
+            if ($parent = $unit->getParent()) {
+                $this->writeRowBuffered($parent, true);
             }
         }
     }
