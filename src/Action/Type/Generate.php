@@ -150,7 +150,7 @@ class Generate extends AbstractAction implements ActionInterface
                                     'hashmaps' => $parent->getHashmaps(),
                                 ]);
                             }, $parent->getGeneratorMapping());
-                            $this->buffer[$parent->getCode()] = $row;
+                            $this->buffer[$parent->getCode()] = $parentRow;
                             $this->writeBuffered($parent->getCode(), $parentRow);
                         }
                         // freeze map after 1st addition
