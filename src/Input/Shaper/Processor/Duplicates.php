@@ -25,6 +25,7 @@ class Duplicates extends Processor
             if (isset($depthMap[$depth]) && in_array($key, $depthMap[$depth])) {
                 $res[] = $current;
                 $depthMap = [];
+                $depthMap[$depth][] = $key;
             } else {
                 $depthMap[$depth][] = $key;
             }

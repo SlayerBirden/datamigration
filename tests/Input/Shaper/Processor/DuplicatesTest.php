@@ -97,6 +97,66 @@ class DuplicatesTest extends \PHPUnit_Framework_TestCase
         }
     }
 
+    public function testTwoLevelParse2()
+    {
+        $unit1 = new Unit('customer');
+        $unit1->setIsEntityCondition(function ($map) {
+            return !empty($map['email']);
+        });
+        $unit2 = new Unit('address');
+        $unit2->setParent($unit1);
+
+        $bag = new SimpleBag();
+        $bag->addSet([$unit1, $unit2]);
+
+        $entities = [
+            [
+                'email' => 'bob@example.com',
+                'name' => 'bob',
+                'address' => [
+                    [
+                        'addr_name' => 'billy',
+                        'street' => 'charity str.',
+                    ],
+                ]
+            ],
+            [
+                'email' => 'paul@example.com',
+                'name' => 'paul',
+                'address' => [
+                    [
+                        'addr_name' => 'paul',
+                        'street' => 'buckingham ave.',
+                    ],
+                    [
+                        'addr_name' => 'megan',
+                        'street' => 'mirabelle str.',
+                    ],
+                    [
+                        'addr_name' => 'tiffany',
+                        'street' => 'mirabelle str.',
+                    ],
+                ]
+            ],
+        ];
+        $expected = [
+            [
+                ['email' => 'bob@example.com', 'name' => 'bob', 'addr_name' => 'billy', 'street' => 'charity str.'],
+            ],
+            [
+                ['email' => 'paul@example.com', 'name' => 'paul', 'addr_name' => 'paul', 'street' => 'buckingham ave.'],
+                ['email' => 'paul@example.com', 'name' => 'paul', 'addr_name' => 'megan', 'street' => 'mirabelle str.'],
+                ['email' => 'paul@example.com', 'name' => 'paul', 'addr_name' => 'tiffany', 'street' => 'mirabelle str.'],
+            ]
+        ];
+
+        $shaper = $this->getShaper($bag);
+
+        for ($i = 0; $i<count($entities); $i++) {
+            $this->assertSame($expected[$i], $shaper->parse($entities[$i]));
+        }
+    }
+
     public function testThreeLevelParse()
     {
         $unit1 = new Unit('customer');
