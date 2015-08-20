@@ -97,6 +97,7 @@ class Generate extends AbstractAction implements ActionInterface
     public function process(ResultInterface $result)
     {
         $this->result = $result;
+        $processedCounterContainer = [];
         try {
             $this->start();
             while ($this->count > 0) {
@@ -157,10 +158,17 @@ class Generate extends AbstractAction implements ActionInterface
                         $this->map->freeze();
                         $this->buffer[$unit->getCode()] = $row;
                         $this->writeBuffered($unit->getCode(), $row);
-                        $result->incrementActionProcessed($this->getCode());
+                        if (!$parent && !in_array($unit->getCode(), $processedCounterContainer)) {
+                            $result->incrementActionProcessed($this->getCode());
+                            $processedCounterContainer[] = $unit->getCode();
+                            foreach ($unit->getSiblings() as $sibling) {
+                                $processedCounterContainer[] = $sibling->getCode();
+                            }
+                        }
                         $rnd--;
                     }
                 }
+                $processedCounterContainer = [];
                 $this->writeRows();
                 $this->map->unFreeze();
                 $this->count--;

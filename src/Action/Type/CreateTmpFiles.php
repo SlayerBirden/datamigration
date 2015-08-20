@@ -271,11 +271,13 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
         if (!$this->isValid && !$this->config['ignore_validation']) {
             return;
         }
+        $processedCounterContainer = [];
         foreach ($this->buffer as $key => $dataArray) {
             if ($unit && $key != $unit->getCode()) {
                 continue;
             }
             $handler = false;
+            $tmpUnit = false;
             if ($unit) {
                 $handler = $unit->getFilesystem();
             } elseif (($tmpUnit = $this->bag->getUnitByCode($key)) !== false) {
@@ -290,8 +292,12 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
                             $this->getCode(),
                             sprintf("Could not write row %s to file.", json_encode($row))
                         );
-                    } else {
+                    } elseif ($tmpUnit && !$tmpUnit->getParent() && !in_array($tmpUnit->getCode(), $processedCounterContainer)) {
                         $this->result->incrementActionProcessed($this->getCode());
+                        $processedCounterContainer[] = $tmpUnit->getCode();
+                        foreach ($tmpUnit->getSiblings() as $sibling) {
+                            $processedCounterContainer[] = $sibling->getCode();
+                        }
                     }
                 }
             }
