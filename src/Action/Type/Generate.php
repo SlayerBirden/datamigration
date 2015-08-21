@@ -152,7 +152,22 @@ class Generate extends AbstractAction implements ActionInterface
                                 ]);
                             }, $parent->getGeneratorMapping());
                             $this->buffer[$parent->getCode()] = $parentRow;
-                            $this->writeBuffered($parent->getCode(), $parentRow);
+                            $this->writeBuffered($parent->getCode(), $parentRow, true);
+                            // account for parent siblings :)
+                            /** @var GenerateUnitInterface|ImportFileUnitInterface $sibling */
+                            foreach ($parent->getSiblings() as $sibling) {
+                                $siblingRow = array_map(function ($el) use ($sibling) {
+                                    return $this->language->evaluate($el, [
+                                        'generator' => $this->generator,
+                                        'resource' => $this->helperResource,
+                                        'map' => $this->map,
+                                        'units' => $this->buffer,
+                                        'hashmaps' => $sibling->getHashmaps(),
+                                    ]);
+                                }, $sibling->getGeneratorMapping());
+                                $this->buffer[$sibling->getCode()] = $siblingRow;
+                                $this->writeBuffered($sibling->getCode(), $siblingRow, true);
+                            }
                         }
                         // freeze map after 1st addition
                         $this->map->freeze();
@@ -185,11 +200,15 @@ class Generate extends AbstractAction implements ActionInterface
     /**
      * @param string $unitCode
      * @param array $row
+     * @param bool $replace
      */
-    protected function writeBuffered($unitCode, $row)
+    protected function writeBuffered($unitCode, $row, $replace = false)
     {
-        $rnd = $this->randomNumbers[$unitCode];
-        if (isset($this->writeBuffer[$unitCode]) && is_array($this->writeBuffer[$unitCode]) && ($rnd > 1)) {
+        if (isset($this->writeBuffer[$unitCode]) && is_array($this->writeBuffer[$unitCode])) {
+            if ($replace) {
+                // pop last element into void
+                array_pop($this->writeBuffer[$unitCode]);
+            }
             $this->writeBuffer[$unitCode][] = $row;
         } else {
             $this->writeBuffer[$unitCode] = [$row];

@@ -231,6 +231,11 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
             /** @var ImportFileUnitInterface $parent */
             if ($parent = $unit->getParent()) {
                 $this->writeRowBuffered($parent, true);
+                $siblings = $parent->getSiblings();
+                /** @var ImportFileUnitInterface $sibling */
+                foreach ($siblings as $sibling) {
+                    $this->writeRowBuffered($sibling, true);
+                }
             }
         }
     }
