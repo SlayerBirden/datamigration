@@ -13,6 +13,7 @@ use Maketok\DataMigration\Storage\Db\ResourceHelperInterface;
 use Maketok\DataMigration\Unit\GenerateUnitInterface;
 use Maketok\DataMigration\Unit\ImportFileUnitInterface;
 use Maketok\DataMigration\Unit\UnitBagInterface;
+use Maketok\DataMigration\Unit\UnitInterface;
 use Maketok\DataMigration\Workflow\ResultInterface;
 
 /**
@@ -62,6 +63,14 @@ class Generate extends AbstractAction implements ActionInterface
      * @var array
      */
     private $randomNumbers = [];
+    /**
+     * @var array
+     */
+    private $processedCounterContainer = [];
+    /**
+     * @var array
+     */
+    private $contributionBuffer = [];
 
     /**
      * @param UnitBagInterface $bag
@@ -97,93 +106,36 @@ class Generate extends AbstractAction implements ActionInterface
     public function process(ResultInterface $result)
     {
         $this->result = $result;
-        $processedCounterContainer = [];
         try {
             $this->start();
             while ($this->count > 0) {
                 $this->prepareUnitRandoms();
                 foreach ($this->bag as $unit) {
                     $rnd = $this->randomNumbers[$unit->getCode()];
+                    $i = 0;
                     while ($rnd > 0) {
-                        if (!empty($this->buffer)) {
-                            $assembledBuffer = $this->assembleResolve($this->buffer);
-                            if ($this->map->isFresh($assembledBuffer)) {
-                                $this->map->feed($assembledBuffer);
-                            }
+                        $this->prepareMap();
+                        $this->processAdditions($unit, $i);
+                        if (!$this->shouldWrite($unit)) {
+                            break 2;
                         }
-                        foreach ($unit->getGenerationContributions() as $contribution) {
-                            $this->language->evaluate($contribution, [
-                                'generator' => $this->generator,
-                                'map' => $this->map,
-                                'resource' => $this->helperResource,
-                                'hashmaps' => $unit->getHashmaps(),
-                            ]);
-                        }
-                        foreach ($unit->getWriteConditions() as $condition) {
-                            $shouldAdd = $this->language->evaluate($condition, [
-                                'generator' => $this->generator,
-                                'map' => $this->map,
-                                'resource' => $this->helperResource,
-                                'hashmaps' => $unit->getHashmaps(),
-                            ]);
-                            if (!$shouldAdd) {
-                                break 2;
-                            }
-                        }
-                        $row = array_map(function ($el) use ($unit) {
-                            return $this->language->evaluate($el, [
-                                'generator' => $this->generator,
-                                'resource' => $this->helperResource,
-                                'map' => $this->map,
-                                'units' => $this->buffer,
-                                'hashmaps' => $unit->getHashmaps(),
-                            ]);
-                        }, $unit->getGeneratorMapping());
+                        $row = $this->getMappedRow($unit);
                         // we care about parent ;)
                         /** @var ImportFileUnitInterface|GenerateUnitInterface $parent */
                         if ($parent = $unit->getParent()) {
-                            $parentRow = array_map(function ($el) use ($parent) {
-                                return $this->language->evaluate($el, [
-                                    'generator' => $this->generator,
-                                    'resource' => $this->helperResource,
-                                    'map' => $this->map,
-                                    'units' => $this->buffer,
-                                    'hashmaps' => $parent->getHashmaps(),
-                                ]);
-                            }, $parent->getGeneratorMapping());
-                            $this->buffer[$parent->getCode()] = $parentRow;
-                            $this->writeBuffered($parent->getCode(), $parentRow, true);
-                            // account for parent siblings :)
-                            /** @var GenerateUnitInterface|ImportFileUnitInterface $sibling */
-                            foreach ($parent->getSiblings() as $sibling) {
-                                $siblingRow = array_map(function ($el) use ($sibling) {
-                                    return $this->language->evaluate($el, [
-                                        'generator' => $this->generator,
-                                        'resource' => $this->helperResource,
-                                        'map' => $this->map,
-                                        'units' => $this->buffer,
-                                        'hashmaps' => $sibling->getHashmaps(),
-                                    ]);
-                                }, $sibling->getGeneratorMapping());
-                                $this->buffer[$sibling->getCode()] = $siblingRow;
-                                $this->writeBuffered($sibling->getCode(), $siblingRow, true);
-                            }
+                            $this->updateParents($parent);
                         }
                         // freeze map after 1st addition
                         $this->map->freeze();
                         $this->buffer[$unit->getCode()] = $row;
                         $this->writeBuffered($unit->getCode(), $row);
-                        if (!$parent && !in_array($unit->getCode(), $processedCounterContainer)) {
-                            $result->incrementActionProcessed($this->getCode());
-                            $processedCounterContainer[] = $unit->getCode();
-                            foreach ($unit->getSiblings() as $sibling) {
-                                $processedCounterContainer[] = $sibling->getCode();
-                            }
-                        }
+                        $this->count($unit);
                         $rnd--;
+                        $i++;
                     }
                 }
-                $processedCounterContainer = [];
+                $this->contributionBuffer = [];
+                $this->processedCounterContainer = [];
                 $this->writeRows();
                 $this->map->unFreeze();
                 $this->count--;
@@ -195,6 +147,142 @@ class Generate extends AbstractAction implements ActionInterface
             throw $e;
         }
         $this->close();
+    }
+
+    /**
+     * @param GenerateUnitInterface|ImportFileUnitInterface $unit
+     */
+    protected function processAdditions(GenerateUnitInterface $unit, $idx = 0)
+    {
+        if (isset($this->contributionBuffer[$idx])) {
+            $cBuffer = $this->contributionBuffer[$idx];
+        } else {
+            $this->contributionBuffer[$idx] = [];
+            $cBuffer = [];
+        }
+        if (!in_array($unit->getCode(), $cBuffer)) {
+            foreach ($unit->getGenerationContributions() as $contribution) {
+                $this->language->evaluate($contribution, [
+                    'generator' => $this->generator,
+                    'map' => $this->map,
+                    'resource' => $this->helperResource,
+                    'hashmaps' => $unit->getHashmaps(),
+                ]);
+            }
+            $this->contributionBuffer[$idx][] = $unit->getCode();
+        }
+
+        /** @var GenerateUnitInterface|ImportFileUnitInterface $sibling */
+        foreach ($unit->getSiblings() as $sibling) {
+            if (!in_array($sibling->getCode(), $cBuffer)) {
+                foreach ($sibling->getGenerationContributions() as $contribution) {
+                    $this->language->evaluate($contribution, [
+                        'generator' => $this->generator,
+                        'map' => $this->map,
+                        'resource' => $this->helperResource,
+                        'hashmaps' => $sibling->getHashmaps(),
+                    ]);
+                }
+                $this->contributionBuffer[$idx][] = $sibling->getCode();
+            }
+        }
+    }
+
+    /**
+     * @param ImportFileUnitInterface $unit
+     * @return bool
+     */
+    protected function shouldWrite(ImportFileUnitInterface $unit)
+    {
+        foreach ($unit->getWriteConditions() as $condition) {
+            $shouldAdd = $this->language->evaluate($condition, [
+                'generator' => $this->generator,
+                'map' => $this->map,
+                'resource' => $this->helperResource,
+                'hashmaps' => $unit->getHashmaps(),
+            ]);
+            if (!$shouldAdd) {
+               return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * @param UnitInterface $unit
+     */
+    protected function count(UnitInterface $unit)
+    {
+        if (!$unit->getParent() && !in_array($unit->getCode(), $this->processedCounterContainer)) {
+            $this->result->incrementActionProcessed($this->getCode());
+            $this->processedCounterContainer[] = $unit->getCode();
+            foreach ($unit->getSiblings() as $sibling) {
+                $this->processedCounterContainer[] = $sibling->getCode();
+            }
+        }
+    }
+
+    /**
+     * @param GenerateUnitInterface|ImportFileUnitInterface $unit
+     * @return array
+     */
+    protected function getMappedRow(GenerateUnitInterface $unit)
+    {
+        return array_map(function ($el) use ($unit) {
+            return $this->language->evaluate($el, [
+                'generator' => $this->generator,
+                'resource' => $this->helperResource,
+                'map' => $this->map,
+                'units' => $this->buffer,
+                'hashmaps' => $unit->getHashmaps(),
+            ]);
+        }, $unit->getGeneratorMapping());
+    }
+
+    /**
+     * prepare map
+     */
+    protected function prepareMap()
+    {
+        if (!empty($this->buffer)) {
+            $assembledBuffer = $this->assembleResolve($this->buffer);
+            if ($this->map->isFresh($assembledBuffer)) {
+                $this->map->feed($assembledBuffer);
+            }
+        }
+    }
+
+    /**
+     * @param GenerateUnitInterface|ImportFileUnitInterface $parent
+     */
+    protected function updateParents(GenerateUnitInterface $parent)
+    {
+        $parentRow = array_map(function ($el) use ($parent) {
+            return $this->language->evaluate($el, [
+                'generator' => $this->generator,
+                'resource' => $this->helperResource,
+                'map' => $this->map,
+                'units' => $this->buffer,
+                'hashmaps' => $parent->getHashmaps(),
+            ]);
+        }, $parent->getGeneratorMapping());
+        $this->buffer[$parent->getCode()] = $parentRow;
+        $this->writeBuffered($parent->getCode(), $parentRow, true);
+        // account for parent siblings :)
+        /** @var GenerateUnitInterface|ImportFileUnitInterface $sibling */
+        foreach ($parent->getSiblings() as $sibling) {
+            $siblingRow = array_map(function ($el) use ($sibling) {
+                return $this->language->evaluate($el, [
+                    'generator' => $this->generator,
+                    'resource' => $this->helperResource,
+                    'map' => $this->map,
+                    'units' => $this->buffer,
+                    'hashmaps' => $sibling->getHashmaps(),
+                ]);
+            }, $sibling->getGeneratorMapping());
+            $this->buffer[$sibling->getCode()] = $siblingRow;
+            $this->writeBuffered($sibling->getCode(), $siblingRow, true);
+        }
     }
 
     /**

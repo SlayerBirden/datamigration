@@ -43,6 +43,10 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
      */
     private $buffer = [];
     /**
+     * @var array
+     */
+    private $contributionBuffer = [];
+    /**
      * is last processed entity valid
      * @var bool
      */
@@ -94,6 +98,7 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
                     break 1;
                 }
                 $this->processWrite($entity);
+                $this->contributionBuffer = [];
                 $this->dumpBuffer();
             } catch (ParsingException $e) {
                 if ($this->config['continue_on_error']) {
@@ -115,19 +120,23 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
      * write row to buffer
      * @param array $entity
      * @param int $level
+     * @param int $idx
      */
-    private function processWrite(array $entity, $level = 1)
+    private function processWrite(array $entity, $level = 1, $idx = 0)
     {
         $this->isValid = true;
         // parsing entity according to the relation tree
         $topUnits = $this->bag->getUnitsFromLevel($level);
+        if (!isset($this->contributionBuffer[$level][$idx])) {
+            $this->contributionBuffer[$level] = [$idx => []];
+        }
         foreach ($topUnits as $code) {
             if ($this->map->isFresh($entity)) {
                 $this->map->feed($entity);
             }
             /** @var ImportFileUnitInterface $unit */
             $unit = $this->bag->getUnitByCode($code);
-            $this->processAdditions($unit);
+            $this->processAdditions($unit, $idx);
             if (!$this->validate($unit)) {
                 $this->isValid = false;
             }
@@ -136,8 +145,10 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
             foreach ($children as $child) {
                 if (isset($entity[$child->getCode()])) {
                     $childData = $entity[$child->getCode()];
+                    $i = 0;
                     foreach ($childData as $childEntity) {
-                        $this->processWrite($childEntity, $this->bag->getUnitLevel($child->getCode()));
+                        $this->processWrite($childEntity, $this->bag->getUnitLevel($child->getCode()), $i);
+                        $i++;
                     }
                 }
             }
@@ -171,15 +182,40 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
 
     /**
      * @param ImportFileUnitInterface $unit
+     * @param int $idx
      */
-    private function processAdditions(ImportFileUnitInterface $unit)
+    private function processAdditions(ImportFileUnitInterface $unit, $idx = 0)
     {
-        foreach ($unit->getContributions() as $contribution) {
-            $this->language->evaluate($contribution, [
-                'map' => $this->map,
-                'resource' => $this->helperResource,
-                'hashmaps' => $unit->getHashmaps(),
-            ]);
+        $level = $this->bag->getUnitLevel($unit->getCode());
+        if (isset($this->contributionBuffer[$level][$idx])) {
+            $contributionBuffer = $this->contributionBuffer[$level][$idx];
+        } else {
+            $this->contributionBuffer[$level] = [$idx => []];
+            $contributionBuffer = [];
+        }
+        if (!in_array($unit->getCode(), $contributionBuffer)) {
+            foreach ($unit->getContributions() as $contribution) {
+                $this->language->evaluate($contribution, [
+                    'map' => $this->map,
+                    'resource' => $this->helperResource,
+                    'hashmaps' => $unit->getHashmaps(),
+                ]);
+            }
+            $this->contributionBuffer[$level][$idx][] = $unit->getCode();
+        }
+
+        /** @var ImportFileUnitInterface $sibling */
+        foreach ($unit->getSiblings() as $sibling) {
+            if (!in_array($sibling->getCode(), $contributionBuffer)) {
+                foreach ($sibling->getContributions() as $contribution) {
+                    $this->language->evaluate($contribution, [
+                        'map' => $this->map,
+                        'resource' => $this->helperResource,
+                        'hashmaps' => $sibling->getHashmaps(),
+                    ]);
+                }
+                $this->contributionBuffer[$level][$idx][] = $sibling->getCode();
+            }
         }
     }
 

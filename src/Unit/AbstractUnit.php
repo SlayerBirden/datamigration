@@ -51,12 +51,19 @@ abstract class AbstractUnit implements UnitInterface
 
     /**
      * {@inheritdoc}
+     * @var bool $addSiblingBack
      */
-    public function addSibling(UnitInterface $sibling, $addBack = true)
+    public function addSibling(UnitInterface $sibling, $addBack = true, $addSiblingBack = true)
     {
+        if ($addSiblingBack) {
+            /** @var AbstractUnit $oldSib */
+            foreach ($this->siblings as $oldSib) {
+                $oldSib->addSibling($sibling, true, false);
+            }
+        }
         $this->siblings[$sibling->getCode()] = $sibling;
         if ($addBack) {
-            $sibling->addSibling($this, false);
+            $sibling->addSibling($this, false, false);
         }
     }
 
