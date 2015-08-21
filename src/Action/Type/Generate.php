@@ -151,6 +151,7 @@ class Generate extends AbstractAction implements ActionInterface
 
     /**
      * @param GenerateUnitInterface|ImportFileUnitInterface $unit
+     * @param int $idx
      */
     protected function processAdditions(GenerateUnitInterface $unit, $idx = 0)
     {
