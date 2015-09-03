@@ -61,6 +61,7 @@ class Generate extends AbstractAction implements ActionInterface
     private $map;
     /**
      * @var array
+     * @deprecated do not use
      */
     private $randomNumbers = [];
     /**
@@ -71,6 +72,11 @@ class Generate extends AbstractAction implements ActionInterface
      * @var array
      */
     private $contributionBuffer = [];
+    /**
+     * Units that have been processed this iteration
+     * @var array
+     */
+    private $processedUnits = [];
 
     /**
      * @param UnitBagInterface $bag
@@ -109,27 +115,38 @@ class Generate extends AbstractAction implements ActionInterface
         try {
             $this->start();
             while ($this->count > 0) {
-                $this->prepareUnitRandoms();
+//                $this->prepareUnitRandoms();
                 foreach ($this->bag as $unit) {
-                    $rnd = $this->randomNumbers[$unit->getCode()];
+                    if (in_array($unit->getCode(), $this->processedUnits)) {
+                        continue;
+                    }
+                    list($max, $center) = $unit->getGenerationSeed();
+                    $rnd = $this->getRandom($max, $center);
+//                    $rnd = $this->randomNumbers[$unit->getCode()];
                     $i = 0;
                     while ($rnd > 0) {
-                        $this->prepareMap();
-                        $this->processAdditions($unit, $i);
-                        if (!$this->shouldWrite($unit)) {
-                            continue 2;
+                        $siblings = $unit->getSiblings();
+                        array_unshift($siblings, $unit);
+                        /** @var GenerateUnitInterface|ImportFileUnitInterface $innerUnit */
+                        foreach ($siblings as $innerUnit) {
+                            $this->prepareMap();
+                            $this->processAdditions($innerUnit, $i);
+                            if (!$this->shouldWrite($innerUnit)) {
+                                continue 2;
+                            }
+                            $row = $this->getMappedRow($innerUnit);
+                            // we care about parent ;)
+                            /** @var ImportFileUnitInterface|GenerateUnitInterface $parent */
+                            if ($parent = $innerUnit->getParent()) {
+                                $this->updateParents($parent);
+                            }
+                            // freeze map after 1st addition
+                            $this->map->freeze();
+                            $this->buffer[$innerUnit->getCode()] = $row;
+                            $this->processedUnits[] = $innerUnit->getCode();
+                            $this->writeBuffered($innerUnit->getCode(), $row);
+                            $this->count($innerUnit);
                         }
-                        $row = $this->getMappedRow($unit);
-                        // we care about parent ;)
-                        /** @var ImportFileUnitInterface|GenerateUnitInterface $parent */
-                        if ($parent = $unit->getParent()) {
-                            $this->updateParents($parent);
-                        }
-                        // freeze map after 1st addition
-                        $this->map->freeze();
-                        $this->buffer[$unit->getCode()] = $row;
-                        $this->writeBuffered($unit->getCode(), $row);
-                        $this->count($unit);
                         $rnd--;
                         $i++;
                     }
@@ -139,7 +156,7 @@ class Generate extends AbstractAction implements ActionInterface
                 $this->writeRows();
                 $this->map->unFreeze();
                 $this->count--;
-                $this->randomNumbers = [];
+                $this->processedUnits = [];
                 $this->buffer = [];
             }
         } catch (\Exception $e) {
@@ -322,6 +339,7 @@ class Generate extends AbstractAction implements ActionInterface
 
     /**
      * prepare randoms
+     * @deprecated
      */
     protected function prepareUnitRandoms()
     {
