@@ -115,14 +115,12 @@ class Generate extends AbstractAction implements ActionInterface
         try {
             $this->start();
             while ($this->count > 0) {
-//                $this->prepareUnitRandoms();
                 foreach ($this->bag as $unit) {
                     if (in_array($unit->getCode(), $this->processedUnits)) {
                         continue;
                     }
                     list($max, $center) = $unit->getGenerationSeed();
                     $rnd = $this->getRandom($max, $center);
-//                    $rnd = $this->randomNumbers[$unit->getCode()];
                     $i = 0;
                     while ($rnd > 0) {
                         $siblings = $unit->getSiblings();
