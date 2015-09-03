@@ -127,7 +127,6 @@ class Generate extends AbstractAction implements ActionInterface
                         array_unshift($siblings, $unit);
                         /** @var GenerateUnitInterface|ImportFileUnitInterface $innerUnit */
                         foreach ($siblings as $innerUnit) {
-                            $this->prepareMap();
                             $this->processAdditions($innerUnit, $i);
                             if (!$this->shouldWrite($innerUnit)) {
                                 $this->processedUnits[] = $innerUnit->getCode();
@@ -258,6 +257,7 @@ class Generate extends AbstractAction implements ActionInterface
 
     /**
      * prepare map
+     * @deprecated do not use
      */
     protected function prepareMap()
     {
