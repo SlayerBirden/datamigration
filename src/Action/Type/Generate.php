@@ -132,7 +132,8 @@ class Generate extends AbstractAction implements ActionInterface
                             $this->prepareMap();
                             $this->processAdditions($innerUnit, $i);
                             if (!$this->shouldWrite($innerUnit)) {
-                                continue 2;
+                                $this->processedUnits[] = $innerUnit->getCode();
+                                continue 1;
                             }
                             $row = $this->getMappedRow($innerUnit);
                             // we care about parent ;)
