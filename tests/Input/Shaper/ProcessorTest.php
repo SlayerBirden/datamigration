@@ -46,8 +46,8 @@ class ProcessorTest extends \PHPUnit_Framework_TestCase
     public function testTwoLevelFeed()
     {
         $unit1 = new Unit('customer');
-        $unit1->setIsEntityCondition(function ($map) {
-            return !empty($map['email']);
+        $unit1->setIsEntityCondition(function ($map, $odlmap) {
+            return ($odlmap['email'] != $map['email']) && !empty($map['email']);
         });
         $unit2 = new Unit('address');
         $unit2->setParent($unit1);
@@ -102,8 +102,8 @@ class ProcessorTest extends \PHPUnit_Framework_TestCase
     public function testThreeLevelFeed()
     {
         $unit1 = new Unit('customer');
-        $unit1->setIsEntityCondition(function ($map) {
-            return !empty($map['email']);
+        $unit1->setIsEntityCondition(function ($map, $odlmap) {
+            return ($odlmap['email'] != $map['email']) && !empty($map['email']);
         });
         $unit2 = new Unit('address');
         $unit2->setParent($unit1);

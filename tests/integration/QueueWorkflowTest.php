@@ -23,6 +23,7 @@ use Maketok\DataMigration\Expression\LanguageAdapter;
 use Maketok\DataMigration\Hashmap\ArrayHashmap;
 use Maketok\DataMigration\Input\Csv;
 use Maketok\DataMigration\Input\Shaper\Processor\Duplicates;
+use Maketok\DataMigration\Input\Shaper\Processor\Nulls;
 use Maketok\DataMigration\QueueWorkflow;
 use Maketok\DataMigration\Storage\Db\DBALMysqlResource;
 use Maketok\DataMigration\Storage\Db\DBALMysqlResourceHelper;
@@ -211,6 +212,50 @@ CONTRIBUTION;
         $bag->add($addressUnit);
         //=====================================================================
         $input = new Csv(__DIR__ . '/assets/customers_1.csv', 'r', new Duplicates(
+            $bag,
+            new ArrayMap(),
+            $this->getLanguageAdapter())
+        );
+        $createTmpFiles = new CreateTmpFiles($bag, $this->config, $this->getLanguageAdapter(),
+            $input, new ArrayMap(), new DBALMysqlResourceHelper($this->resource));
+        $load = new Load($bag, $this->config, $this->resource);
+        $move = new Move($bag, $this->config, $this->resource);
+        //=====================================================================
+        $result = new Result();
+        $workflow = new QueueWorkflow($this->config, $result);
+        $workflow->add($createTmpFiles);
+        $workflow->add($load);
+        $workflow->add($move);
+        $workflow->execute();
+        //=====================================================================
+        // time to assert things
+
+        // assert schema
+        $expected = $this->createXMLDataSet(__DIR__ . '/assets/afterSimpleImportStructure.xml');
+        $actual = $this->getConnection()->createDataSet(['customers', 'addresses']);
+        $this->assertDataSetsEqual($expected, $actual);
+    }
+
+    /**
+     * @test
+     * @throws \Doctrine\DBAL\DBALException
+     */
+    public function testSimpleImport2Nulls()
+    {
+        // SET THESE TO TRUE TO DEBUG
+        $this->config['db_debug'] = false;
+        $this->config['file_debug'] = false;
+        //=====================================================================
+        $customerUnit = $this->prepareCustomerImportUnit();
+        $addressUnit = $this->prepareAddressImportUnit();
+        $addressUnit->setParent($customerUnit);
+        //=====================================================================
+        $bag = new SimpleBag();
+        // order matters ;)
+        $bag->add($customerUnit);
+        $bag->add($addressUnit);
+        //=====================================================================
+        $input = new Csv(__DIR__ . '/assets/customers_2_nulls.csv', 'r', new Nulls(
             $bag,
             new ArrayMap(),
             $this->getLanguageAdapter())

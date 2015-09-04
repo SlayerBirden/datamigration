@@ -66,7 +66,7 @@ abstract class Processor implements ShaperInterface
         if ($this->map->isFresh($row)) {
             $this->map->feed($row);
         }
-        // forcing dump if empty ros is coming
+        // forcing dump if empty row is coming
         $res = $this->dumpBuffer(empty($row));
         $this->writeBuffered($row);
         if ($res) {
