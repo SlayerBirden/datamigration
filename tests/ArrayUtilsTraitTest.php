@@ -156,6 +156,15 @@ class ArrayUtilsTraitTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * @expectedException \Maketok\DataMigration\Action\Exception\ConflictException
+     * @dataProvider tmpUnitConflictProvider
+     */
+    public function testAssembleConflict4($units)
+    {
+        $this->trait->assemble($units);
+    }
+
+    /**
      * @return array
      */
     public function tmpUnitsProvider()
@@ -223,6 +232,16 @@ class ArrayUtilsTraitTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * @param array $data
+     * @param array $expected
+     * @dataProvider tmpUnitsProvider
+     */
+    public function testAssembleResolve2($data, $expected)
+    {
+        $this->assertEquals($expected, $this->trait->assembleResolve($data));
+    }
+
+    /**
      * @return array
      */
     public function tmpUnitConflictProvider()
@@ -261,7 +280,34 @@ class ArrayUtilsTraitTest extends \PHPUnit_Framework_TestCase
                     'name' => 'u2',
                 ],
             ],
+            [
+                [
+                    'u1' => [
+                        'key1' => 'Bob',
+                        'key2' => 'Rob',
+                        'id' => 123123,
+                        'code' => 'muse',
+                    ],
+                    'u2' => [
+                        'key3' => 'John',
+                        'key4' => 'Doe',
+                    ],
+                    'u3' => [
+                        'key3' => 'Bird',
+                        'key4' => 'Doe',
+                    ],
+                ],
+                [
+                    'key1' => 'Bob',
+                    'key2' => 'Rob',
+                    'id' => 123123,
+                    'code' => 'muse',
+                    'u2_key3' => 'John',
+                    'u3_key3' => 'Bird',
+                    'key4' => 'Doe',
+                ],
+            ],
         ];
-        return array_merge($this->tmpUnitsProvider(), $res);
+        return $res;
     }
 }

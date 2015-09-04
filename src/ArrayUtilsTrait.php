@@ -60,21 +60,74 @@ trait ArrayUtilsTrait
     /**
      * @param array $data
      * @param bool $force
+     * @param bool $resolve
      * @return array
      * @throws ConflictException
      */
-    public function assemble(array $data, $force = false)
+    public function assemble(array $data, $force = false, $resolve = false)
     {
         if (count($data) > 1) {
-            $byKeys = call_user_func_array('array_intersect_key', $data);
-            $byKeysAndValues = call_user_func_array('array_intersect_assoc', $data);
-            if ($byKeys != $byKeysAndValues && !$force) {
-                throw new ConflictException(
-                    sprintf("Conflict with data %s", json_encode($data))
-                );
+            $byKeys = $this->intersectKeyMultiple($data);
+            $byKeysAndValues = $this->intersectAssocMultiple($data);
+            if ($byKeys != $byKeysAndValues) {
+                if ($resolve) {
+                    $diff = array_diff($byKeys, $byKeysAndValues);
+                    array_walk($data, function (&$unitData, $code) use ($diff) {
+                        foreach ($unitData as $key => $val) {
+                            if (isset($diff[$key])) {
+                                unset($unitData[$key]);
+                                $unitData[$code . '_' . $key] = $val;
+                            }
+                        }
+                    });
+                } elseif (!$force) {
+                    throw new ConflictException(
+                        sprintf("Conflict with data %s", json_encode($data))
+                    );
+                }
             }
         }
         return call_user_func_array('array_replace', $data);
+    }
+
+    /**
+     * @param array $data
+     * @return mixed
+     */
+    protected function intersectKeyMultiple(array $data)
+    {
+        $res = [];
+        foreach ($data as $outerArray) {
+            foreach ($data as $innerArray) {
+                if ($innerArray !== $outerArray) {
+                    $res[] = array_intersect_key($outerArray, $innerArray);
+                }
+            }
+        }
+        if (!empty($res)) {
+            return call_user_func_array('array_replace', $res);
+        }
+        return [];
+    }
+
+    /**
+     * @param array $data
+     * @return mixed
+     */
+    protected function intersectAssocMultiple(array $data)
+    {
+        $res = [];
+        foreach ($data as $outerArray) {
+            foreach ($data as $innerArray) {
+                if ($innerArray !== $outerArray) {
+                    $res[] = array_intersect_assoc($outerArray, $innerArray);
+                }
+            }
+        }
+        if (!empty($res)) {
+            return call_user_func_array('array_replace', $res);
+        }
+        return [];
     }
 
     /**
@@ -85,21 +138,6 @@ trait ArrayUtilsTrait
      */
     public function assembleResolve(array $data)
     {
-        if (count($data) > 1) {
-            $byKeys = call_user_func_array('array_intersect_key', $data);
-            $byKeysAndValues = call_user_func_array('array_intersect_assoc', $data);
-            if ($byKeys != $byKeysAndValues) {
-                $diff = array_diff($byKeys, $byKeysAndValues);
-                array_walk($data, function (&$unitData, $code) use ($diff) {
-                    foreach ($unitData as $key => $val) {
-                        if (isset($diff[$key])) {
-                            unset($unitData[$key]);
-                            $unitData[$code . '_' . $key] = $val;
-                        }
-                    }
-                });
-            }
-        }
-        return call_user_func_array('array_replace', $data);
+        return $this->assemble($data, false, true);
     }
 }
