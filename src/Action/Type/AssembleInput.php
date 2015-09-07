@@ -179,14 +179,17 @@ class AssembleInput extends AbstractAction implements ActionInterface
             $codes = array_intersect_key($this->connectBuffer, array_flip($setCodes));
             switch ($code) {
                 case 'pc': //parent-child
+                    /*
+                     * we moved siblings to the same spot, because sibling
+                     * relations can be not consistent
+                     */
+                case 's': //siblings
                     try {
                         $this->assemble($codes);
                     } catch (ConflictException $e) {
                         $this->handleConflict(array_keys($codes));
                     }
                     break;
-                case 's'://siblings
-                    $this->assemble($codes);
             }
         }
     }
