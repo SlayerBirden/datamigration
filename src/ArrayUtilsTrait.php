@@ -94,7 +94,7 @@ trait ArrayUtilsTrait
      * @param array $data
      * @return mixed
      */
-    protected function intersectKeyMultiple(array $data)
+    public function intersectKeyMultiple(array $data)
     {
         $res = [];
         foreach ($data as $outerArray) {
@@ -114,7 +114,7 @@ trait ArrayUtilsTrait
      * @param array $data
      * @return mixed
      */
-    protected function intersectAssocMultiple(array $data)
+    public function intersectAssocMultiple(array $data)
     {
         $res = [];
         foreach ($data as $outerArray) {

@@ -708,4 +708,206 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         $action = $this->getAction([$unit1, $unit2], $expected);
         $action->process($this->getResultMock());
     }
+
+    /**
+     * test inconsistent siblings process
+     * when some of the sibling can be absent for current row
+     */
+    public function testInconsistentSiblings()
+    {
+        $unit1 = $this->getUnit('shipment');
+        $unit1->setReversedMapping([
+            'total' => 'map.total'
+        ]);
+        $unit1->setReversedConnection([
+            'shipment_id' => 'shipment_id',
+        ]);
+        $unit1->setMapping([
+            'shipment_id' => 'map.shipment_id',
+            'total' => 'map.total',
+        ]);
+        $unit1->setFilesystem($this->getFS(
+            [
+                [1, 30],
+                [2, 33],
+                [3, 55],
+                [4, 11],
+                false,
+            ]
+        ));
+        $unit1->setIsEntityCondition(function (MapInterface $map) {
+            return !empty($map['shipment_id']);
+        });
+        $unit1->setTmpFileName('shipment_tmp.csv');
+
+        $unit3 = $this->getUnit('tracking');
+        $unit3->setReversedMapping([
+            'tracking_number' => 'map.tracking_number',
+        ]);
+        $unit3->setReversedConnection([
+            'shipment_id' => 'shipment_id',
+        ]);
+        $unit3->setMapping([
+            'id' => 'map.incr("track_id", 1)',
+            'tracking_number' => 'map.tracking_number',
+            'shipment_id' => 'map.shipment_id',
+        ]);
+        $unit3->setFilesystem($this->getFS(
+            [
+                [1, '56465454', 1],
+                [2, '13122333', 3],
+                [3, '13343443', 4],
+                false,
+            ]
+        ));
+        $unit3->setTmpFileName('tracking_tmp.csv');
+        $unit3->addSibling($unit1);
+
+        $expected = [
+            [[
+                'total' => 30,
+                'tracking_number' => '56465454',
+            ]],
+            [[
+                'total' => 33,
+                'tracking_number' => null,
+            ]],
+            [[
+                'total' => 55,
+                'tracking_number' => '13122333',
+            ]],
+            [[
+                'total' => 11,
+                'tracking_number' => '13343443',
+            ]],
+        ];
+
+        $action = $this->getAction([$unit1, $unit3], $expected);
+        $action->process($this->getResultMock());
+    }
+
+    /**
+     * test inconsistent siblings process
+     * when some of the sibling can be absent for current row
+     */
+    public function testInconsistentSiblings2Levels()
+    {
+        $unit1 = $this->getUnit('shipment');
+        $unit1->setReversedMapping([
+            'total' => 'map.total'
+        ]);
+        $unit1->setReversedConnection([
+            'shipment_id' => 'shipment_id',
+        ]);
+        $unit1->setMapping([
+            'shipment_id' => 'map.shipment_id',
+            'total' => 'map.total',
+        ]);
+        $unit1->setFilesystem($this->getFS(
+            [
+                [1, 30],
+                [2, 33],
+                [3, 55],
+                [4, 11],
+                false,
+            ]
+        ));
+        $unit1->setIsEntityCondition(function (MapInterface $map) {
+            return !empty($map['shipment_id']);
+        });
+        $unit1->setTmpFileName('shipment_tmp.csv');
+
+        $unit2 = $this->getUnit('item');
+        $unit2->setReversedMapping([
+            'item_name' => 'map.name',
+        ]);
+        $unit2->setReversedConnection([
+            'shipment_id' => 'shipment_id',
+        ]);
+        $unit2->setMapping([
+            'id' => 'map.incr("item_id", 1)',
+            'name' => 'map.item_name',
+            'shipment_id' => 'map.shipment_id',
+        ]);
+        $unit2->setFilesystem($this->getFS(
+            [
+                [1, 'cool item', 1],
+                [2, 'another super item', 1],
+                [3, 'Coca Cola', 2],
+                [4, 'Pepsi', 3],
+                [5, 'pants', 4],
+                false,
+            ]
+        ));
+        $unit2->setTmpFileName('item_tmp.csv');
+        $unit2->setParent($unit1);
+
+        $unit3 = $this->getUnit('tracking');
+        $unit3->setReversedMapping([
+            'tracking_number' => 'map.tracking_number',
+        ]);
+        $unit3->setReversedConnection([
+            'shipment_id' => 'shipment_id',
+        ]);
+        $unit3->setMapping([
+            'id' => 'map.incr("track_id", 1)',
+            'tracking_number' => 'map.tracking_number',
+            'shipment_id' => 'map.shipment_id',
+        ]);
+        $unit3->setFilesystem($this->getFS(
+            [
+                [1, '56465454', 1],
+                [2, '13122333', 3],
+                [3, '13343443', 4],
+                false,
+            ]
+        ));
+        $unit3->setTmpFileName('tracking_tmp.csv');
+        $unit3->addSibling($unit1);
+
+        $expected = [
+            [[
+                'total' => 30,
+                'tracking_number' => '56465454',
+                'item' => [
+                    [
+                        'item_name' => 'cool item'
+                    ],
+                    [
+                        'item_name' => 'another super item'
+                    ],
+                ],
+            ]],
+            [[
+                'total' => 33,
+                'tracking_number' => null,
+                'item' => [
+                    [
+                        'item_name' => 'Coca Cola'
+                    ],
+                ],
+            ]],
+            [[
+                'total' => 55,
+                'tracking_number' => '13122333',
+                'item' => [
+                    [
+                        'item_name' => 'Pepsi'
+                    ],
+                ],
+            ]],
+            [[
+                'total' => 11,
+                'tracking_number' => '13343443',
+                'item' => [
+                    [
+                        'item_name' => 'pants'
+                    ],
+                ],
+            ]],
+        ];
+
+        $action = $this->getAction([$unit1, $unit2, $unit3], $expected);
+        $action->process($this->getResultMock());
+    }
 }
