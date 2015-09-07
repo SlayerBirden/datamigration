@@ -179,15 +179,17 @@ class AssembleInput extends AbstractAction implements ActionInterface
             $codes = array_intersect_key($this->connectBuffer, array_flip($setCodes));
             switch ($code) {
                 case 'pc': //parent-child
-                    /*
-                     * we moved siblings to the same spot, because sibling
-                     * relations can be not consistent
-                     */
-                case 's': //siblings
                     try {
                         $this->assemble($codes);
                     } catch (ConflictException $e) {
                         $this->handleConflict(array_keys($codes));
+                    }
+                    break;
+                case 's': //siblings
+                    try {
+                        $this->assemble($codes);
+                    } catch (ConflictException $e) {
+                        $this->handleConflict(array_keys($codes), false);
                     }
                     break;
             }
@@ -241,13 +243,14 @@ class AssembleInput extends AbstractAction implements ActionInterface
 
     /**
      * @param string[] $codes
+     * @param bool $cleanSiblings
      * @throws FlowRegulationException
      * @throws \LogicException
      */
-    private function handleConflict(array $codes)
+    private function handleConflict(array $codes, $cleanSiblings = true)
     {
         foreach ($codes as $code) {
-            if ($this->cleanBuffer($code)) {
+            if ($this->cleanBuffer($code, $cleanSiblings)) {
                 continue;
             }
             $this->fillBuffer($code);
@@ -271,12 +274,17 @@ class AssembleInput extends AbstractAction implements ActionInterface
     /**
      * clean buffer for code
      * @param string $code
+     * @param bool $withSiblings
      * @return bool
      */
-    protected function cleanBuffer($code)
+    protected function cleanBuffer($code, $withSiblings = true)
     {
         $unit = $this->bag->getUnitByCode($code);
-        $siblings = $unit->getSiblings();
+        if ($withSiblings) {
+            $siblings = $unit->getSiblings();
+        } else {
+            $siblings = [];
+        }
         $cleaned = false;
         while (isset($this->buffer[$code])) {
             unset($this->buffer[$code]);
