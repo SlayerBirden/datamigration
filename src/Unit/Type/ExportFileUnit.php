@@ -14,6 +14,10 @@ abstract class ExportFileUnit extends ExportDbUnit implements ExportFileUnitInte
      * @var array
      */
     protected $reversedConnection;
+    /**
+     * @var bool
+     */
+    protected $optional = false;
 
     /**
      * {@inheritdoc}
@@ -45,5 +49,21 @@ abstract class ExportFileUnit extends ExportDbUnit implements ExportFileUnitInte
     public function setReversedConnection($reversedConnection)
     {
         $this->reversedConnection = $reversedConnection;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function isOptional()
+    {
+        return $this->optional;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function setOptional($optional)
+    {
+        $this->optional = $optional;
     }
 }

@@ -61,11 +61,6 @@ class Generate extends AbstractAction implements ActionInterface
     private $map;
     /**
      * @var array
-     * @deprecated do not use
-     */
-    private $randomNumbers = [];
-    /**
-     * @var array
      */
     private $processedCounterContainer = [];
     /**
@@ -283,8 +278,10 @@ class Generate extends AbstractAction implements ActionInterface
                 'hashmaps' => $parent->getHashmaps(),
             ]);
         }, $parent->getGeneratorMapping());
-        $this->buffer[$parent->getCode()] = $parentRow;
-        $this->writeBuffered($parent->getCode(), $parentRow, true);
+        if ($this->shouldWrite($parent)) {
+            $this->buffer[$parent->getCode()] = $parentRow;
+            $this->writeBuffered($parent->getCode(), $parentRow, true);
+        }
         // account for parent siblings :)
         /** @var GenerateUnitInterface|ImportFileUnitInterface $sibling */
         foreach ($parent->getSiblings() as $sibling) {
@@ -297,8 +294,10 @@ class Generate extends AbstractAction implements ActionInterface
                     'hashmaps' => $sibling->getHashmaps(),
                 ]);
             }, $sibling->getGeneratorMapping());
-            $this->buffer[$sibling->getCode()] = $siblingRow;
-            $this->writeBuffered($sibling->getCode(), $siblingRow, true);
+            if ($this->shouldWrite($sibling)) {
+                $this->buffer[$sibling->getCode()] = $siblingRow;
+                $this->writeBuffered($sibling->getCode(), $siblingRow, true);
+            }
         }
     }
 
@@ -334,28 +333,6 @@ class Generate extends AbstractAction implements ActionInterface
             }
         }
         $this->writeBuffer = [];
-    }
-
-    /**
-     * prepare randoms
-     * @deprecated
-     */
-    protected function prepareUnitRandoms()
-    {
-        foreach ($this->bag as $unit) {
-            $rnd = 0;
-            foreach ($unit->getSiblings() as $sibling) {
-                if (isset($this->randomNumbers[$sibling->getCode()])) {
-                    $rnd = $this->randomNumbers[$sibling->getCode()];
-                    break 1;
-                }
-            }
-            if ($rnd === 0) {
-                list($max, $center) = $unit->getGenerationSeed();
-                $rnd = $this->getRandom($max, $center);
-            }
-            $this->randomNumbers[$unit->getCode()] = $rnd;
-        }
     }
 
     /**

@@ -762,6 +762,7 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         ));
         $unit3->setTmpFileName('tracking_tmp.csv');
         $unit3->addSibling($unit1);
+        $unit3->setOptional(true);
 
         $expected = [
             [[
@@ -864,6 +865,7 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         ));
         $unit3->setTmpFileName('tracking_tmp.csv');
         $unit3->addSibling($unit1);
+        $unit3->setOptional(true);
 
         $expected = [
             [[
@@ -908,6 +910,108 @@ class AssembleInputTest extends \PHPUnit_Framework_TestCase
         ];
 
         $action = $this->getAction([$unit1, $unit2, $unit3], $expected);
+        $action->process($this->getResultMock());
+    }
+
+    /**
+     * test inconsistent siblings process
+     * when some of the sibling can be absent for current row
+     */
+    public function testUnexistingChildren()
+    {
+        $unit1 = $this->getUnit('customer');
+        $unit1->setReversedMapping([
+            'email' => 'map.email'
+        ]);
+        $unit1->setReversedConnection([
+            'customer_id' => 'id',
+        ]);
+        $unit1->setMapping([
+            'id' => 'map.customer_id',
+            'email' => 'map.email',
+        ]);
+        $unit1->setFilesystem($this->getFS(
+            [
+                [1, 'test@example.com'],
+                [2, 'test2@example.com'],
+                [3, 'test3@example.com'],
+                [4, 'test4@example.com'],
+                false,
+            ]
+        ));
+        $unit1->setIsEntityCondition(function (MapInterface $map) {
+            return !empty($map['email']);
+        });
+        $unit1->setTmpFileName('customer_tmp.csv');
+
+        $unit2 = $this->getUnit('address');
+        $unit2->setReversedMapping([
+            'city' => 'map.city',
+        ]);
+        $unit2->setReversedConnection([
+            'customer_id' => 'customer_id',
+        ]);
+        $unit2->setMapping([
+            'id' => 'map.incr("address_id", 1)',
+            'city' => 'map.city',
+            'customer_id' => 'map.customer_id',
+        ]);
+        $unit2->setFilesystem($this->getFS(
+            [
+                [1, 'Kiev', 1],
+                [2, 'Chicago', 1],
+                [3, 'Wroclaw', 2],
+                [4, 'Warsaw', 4],
+                [5, 'Donetsk', 4],
+                false,
+            ]
+        ));
+        $unit2->setTmpFileName('address_tmp.csv');
+        $unit2->setParent($unit1);
+        $unit2->setOptional(true);
+
+        $expected = [
+            [[
+                'email' => 'test@example.com',
+                'address' => [
+                    [
+                        'city' => 'Kiev'
+                    ],
+                    [
+                        'city' => 'Chicago'
+                    ],
+                ],
+            ]],
+            [[
+                'email' => 'test2@example.com',
+                'address' => [
+                    [
+                        'city' => 'Wroclaw'
+                    ],
+                ],
+            ]],
+            [[
+                'email' => 'test3@example.com',
+                'address' => [
+                    [
+                        'city' => null,
+                    ],
+                ],
+            ]],
+            [[
+                'email' => 'test4@example.com',
+                'address' => [
+                    [
+                        'city' => 'Warsaw'
+                    ],
+                    [
+                        'city' => 'Donetsk'
+                    ],
+                ],
+            ]],
+        ];
+
+        $action = $this->getAction([$unit1, $unit2], $expected);
         $action->process($this->getResultMock());
     }
 }

@@ -24,4 +24,14 @@ interface ExportFileUnitInterface extends UnitInterface
      * @param array $reversedMapping
      */
     public function setReversedMapping($reversedMapping);
+
+    /**
+     * @return bool
+     */
+    public function isOptional();
+
+    /**
+     * @param bool $optional
+     */
+    public function setOptional($optional);
 }

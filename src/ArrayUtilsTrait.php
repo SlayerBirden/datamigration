@@ -140,4 +140,16 @@ trait ArrayUtilsTrait
     {
         return $this->assemble($data, false, true);
     }
+
+    /**
+     * Convert all values to nulls persisting keys
+     * @param array $data
+     * @return array
+     */
+    public function getNullsData(array $data)
+    {
+        return array_map(function () {
+            return null;
+        }, $data);
+    }
 }

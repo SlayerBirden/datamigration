@@ -45,20 +45,31 @@ class AssembleInput extends AbstractAction implements ActionInterface
      */
     private $processed = [];
     /**
+     * last processed row
+     * @var array
+     */
+    private $lastProcessed = [];
+    /**
      * read buffer
      * @var array
      */
     private $buffer = [];
     /**
-     * buffer with lifespan of 1 row
+     * persistent buffer serves as a deeper storage than orig buffer
+     * it will serve value into orig buffer once it's missing there
+     * @var array
+     */
+    private $persistentBuffer = [];
+    /**
+     * Storage that holds keys from pB that should be unset by the end of flow
+     * @var array
+     */
+    private $toUnset = [];
+    /**
+     * Temporary buffer that's cleared right after serving data
      * @var array
      */
     private $tmpBuffer = [];
-    /**
-     * second buffer level, will replace original buffer once it's cleaned
-     * @var array
-     */
-    private $deepBuffer = [];
     /**
      * write buffer
      * @var array
@@ -142,6 +153,7 @@ class AssembleInput extends AbstractAction implements ActionInterface
     {
         $this->connectBuffer = [];
         $this->processed = [];
+        $this->toUnset = [];
     }
 
     /**
@@ -151,10 +163,15 @@ class AssembleInput extends AbstractAction implements ActionInterface
     {
         foreach ($this->bag as $unit) {
             $code = $unit->getCode();
-            if (in_array($code, $this->finished)) {
-                continue;
-            } elseif (isset($this->tmpBuffer[$code])) {
+            $this->prepareRead($code);
+            if (isset($this->tmpBuffer[$code])) {
                 $this->processed[$code] = $tmpRow = $this->tmpBuffer[$code];
+                unset($this->tmpBuffer[$code]);
+                if (!$this->bag->isLowest($code)) {
+                    $this->buffer[$code] = $this->processed[$code];
+                }
+            } elseif (in_array($code, $this->finished)) {
+                continue;
             } elseif (isset($this->buffer[$code])) {
                 $this->processed[$code] = $tmpRow = $this->buffer[$code];
             } elseif (($tmpRow = $this->readRow($unit)) !== false) {
@@ -164,6 +181,9 @@ class AssembleInput extends AbstractAction implements ActionInterface
                 }
             } else {
                 continue;
+            }
+            if (isset($this->processed[$code])) {
+                $this->lastProcessed[$code] = $this->processed[$code];
             }
             // do not add all nulls to connectBuffer
             if ($this->isEmptyData($tmpRow)) {
@@ -177,6 +197,17 @@ class AssembleInput extends AbstractAction implements ActionInterface
                     return $tmpRow[$var];
                 }
             }, $unit->getReversedConnection());
+        }
+    }
+
+    /**
+     * @param string $code
+     */
+    private function prepareRead($code)
+    {
+        if (!isset($this->tmpBuffer[$code]) && isset($this->persistentBuffer[$code])) {
+            $this->tmpBuffer[$code] = $this->persistentBuffer[$code];
+            $this->toUnset[$code] = true;
         }
     }
 
@@ -203,88 +234,35 @@ class AssembleInput extends AbstractAction implements ActionInterface
                     }
                     break;
                 case 's': //siblings
-                    $i = 0;
-                    $lastExtracted = false;
-                    $workingCodes = $codes;
-                    while (true) {
-                        try {
-                            $this->assemble($workingCodes);
-                            if (is_array($lastExtracted)) {
-                                $this->handleConflictedSibling(key($lastExtracted), array_keys($workingCodes));
-                            }
-                            break 2;
-                        } catch (ConflictException $e) {
-                            $workingCodes = $codes;
-                            // try to determine unit to exclude based on numeric ids
-                            if ($i === 0) {
-                                $lastExtracted = $this->getUnitToExclude($workingCodes);
-                                if (is_array($lastExtracted)) {
-                                    $workingCodes = array_diff_key($workingCodes, $lastExtracted);
-                                    continue;
-                                }
-                            }
-                            // fall down to simple iteration
-                            if ($i < count($workingCodes)) {
-                                $lastExtracted = array_splice($workingCodes, $i, 1);
-                                $i++;
-                                continue;
-                            }
-                        }
-                        /*
-                         * todo: support multiple units not matching up
-                         */
+                    try {
+                        $this->assemble($codes);
+                    } catch (ConflictException $e) {
+                        $this->handleConflictedSibling(array_keys($codes));
                     }
+                    break;
             }
         }
     }
 
     /**
      * @param array $codes
-     * @return array|bool
-     */
-    private function getUnitToExclude(array $codes)
-    {
-        $keyPairs = $this->intersectKeyMultiple($codes);
-        $keys = array_keys($keyPairs);
-        $values = [];
-        foreach ($codes as $code => $data) {
-            foreach ($keys as $key) {
-                if (isset($data[$key]) && is_numeric($data[$key])) {
-                    if (isset($values[$key])) {
-                        $values[$key][] = (int) $data[$key];
-                    } else {
-                        $values[$key] = [(int) $data[$key]];
-                    }
-                }
-            }
-        }
-        $maximums = array_map('max', $values);
-        foreach ($maximums as $key => $max) {
-            foreach ($codes as $code => $data) {
-                if (isset($data[$key]) && $data[$key] == $max) {
-                    return [$code => $data];
-                }
-            }
-        }
-        return false;
-    }
-
-    /**
-     * @param string $code
-     * @param array $codesToBuffer
      * @throws FlowRegulationException
      */
-    private function handleConflictedSibling($code, array $codesToBuffer)
+    private function handleConflictedSibling(array $codes)
     {
-        if (isset($this->processed[$code])) {
-            $this->deepBuffer[$code] = $this->processed[$code];
-            $this->tmpBuffer[$code] = array_map(function () {
-                return null;
-            }, $this->processed[$code]);
-        }
-        foreach ($codesToBuffer as $code) {
-            if (isset($this->processed[$code])) {
-                $this->buffer[$code] = $this->processed[$code];
+        foreach ($codes as $code) {
+            /** @var ExportFileUnitInterface $unit */
+            $unit = $this->bag->getUnitByCode($code);
+            if ($unit->isOptional()) {
+                if (isset($this->processed[$code])) {
+                    $this->tmpBuffer[$code] = $this->getNullsData($this->processed[$code]);
+                    $this->persistentBuffer[$code] = $this->processed[$code];
+                    $this->unsetBuffer($code);
+                }
+            } else {
+                if (isset($this->processed[$code])) {
+                    $this->buffer[$code] = $this->processed[$code];
+                }
             }
         }
         throw new FlowRegulationException("", self::FLOW_CONTINUE);
@@ -313,13 +291,14 @@ class AssembleInput extends AbstractAction implements ActionInterface
         // check if we have some missing units
         if (count($this->connectBuffer) < $this->bag->count()) {
             foreach ($this->bag as $unit) {
-                if (!array_key_exists($unit->getCode(), $this->connectBuffer)) {
+                $code = $unit->getCode();
+                if (!array_key_exists($code, $this->connectBuffer)) {
                     $this->finished[] = $unit->getCode();
                 }
             }
             // checking if input has the correct # of mapped entries
-            $intersected = array_intersect_key($this->connectBuffer, $this->buffer);
-            foreach (array_keys($intersected) as $purgeKey) {
+            $intersect = array_intersect_key($this->connectBuffer, $this->buffer);
+            foreach (array_keys($intersect) as $purgeKey) {
                 $this->unsetBuffer($purgeKey);
                 unset($this->connectBuffer[$purgeKey]);
             }
@@ -342,13 +321,31 @@ class AssembleInput extends AbstractAction implements ActionInterface
      */
     private function handleConflict(array $codes)
     {
+        $optionalCodeEncounter = false;
         foreach ($codes as $code) {
-            if ($this->cleanBuffer($code)) {
+            /** @var ExportFileUnitInterface $unit */
+            $unit = $this->bag->getUnitByCode($code);
+            if (isset($this->buffer[$code]) && $unit->isOptional()) {
+                $this->persistentBuffer[$code] = $this->buffer[$code];
+                $this->tmpBuffer[$code] = $this->getNullsData($this->processed[$code]);
+                $this->unsetBuffer($code);
+                $optionalCodeEncounter = true;
                 continue;
             }
-            $this->fillBuffer($code);
+        }
+        // normal flow
+        if (!$optionalCodeEncounter) {
+            foreach ($codes as $code) {
+                if ($this->cleanBuffer($code)) {
+                    continue;
+                }
+                $this->fillBuffer($code);
+            }
         }
         $this->dumpWriteBuffer();
+        foreach ($this->bag as $unit) {
+            $this->cleanPersistentBuffer($unit->getCode());
+        }
         throw new FlowRegulationException("", self::FLOW_CONTINUE);
     }
 
@@ -374,12 +371,15 @@ class AssembleInput extends AbstractAction implements ActionInterface
         $unit = $this->bag->getUnitByCode($code);
         $siblings = $unit->getSiblings();
         $cleaned = false;
-        while (isset($this->buffer[$code])) {
-            $this->unsetBuffer($code);
-            $cleaned = true;
-            $sibling = array_shift($siblings);
-            if ($sibling) {
-                $code = $sibling->getCode();
+        /** @var UnitInterface $singleUnit */
+        foreach (array_merge($siblings, [$unit]) as $singleUnit) {
+            $code = $singleUnit->getCode();
+            $cleaned |= $this->unsetBuffer($code);
+            // now check if buffer came from PS
+            // in case it did, and we cleared because of conflict
+            // we need to bring it back
+            if (isset($this->toUnset[$code])) {
+                unset($this->toUnset[$code]);
             }
         }
         return $cleaned;
@@ -388,27 +388,15 @@ class AssembleInput extends AbstractAction implements ActionInterface
     /**
      * delete current buffer for given code
      * @param string $code
+     * @return bool
      */
     private function unsetBuffer($code)
     {
-        unset($this->buffer[$code]);
-    }
-
-    /**
-     * delete current tmp buffer for given code
-     * it will also add a buffered data from 2nd level if it exists
-     * @param string $code
-     */
-    private function unsetTmpBuffer($code)
-    {
-        if (!isset($this->tmpBuffer[$code])) {
-            return;
+        if (isset($this->buffer[$code])) {
+            unset($this->buffer[$code]);
+            return true;
         }
-        unset($this->tmpBuffer[$code]);
-        if (isset($this->deepBuffer[$code])) {
-            $this->tmpBuffer[$code] = $this->deepBuffer[$code];
-            unset($this->deepBuffer[$code]);
-        }
+        return false;
     }
 
     /**
@@ -452,12 +440,23 @@ class AssembleInput extends AbstractAction implements ActionInterface
             }, $unit->getReversedMapping());
         }
         foreach ($this->bag as $unit) {
-            if ($this->bag->isLowest($unit->getCode())) {
-                $this->unsetBuffer($unit->getCode());
+            $code = $unit->getCode();
+            if ($this->bag->isLowest($code)) {
+                $this->unsetBuffer($code);
             }
-            $this->unsetTmpBuffer($unit->getCode());
+            $this->cleanPersistentBuffer($code);
         }
         $this->writeBuffer = $this->assembleHierarchy($toAdd);
+    }
+
+    /**
+     * @param string $code
+     */
+    private function cleanPersistentBuffer($code)
+    {
+        if (isset($this->toUnset[$code]) && isset($this->persistentBuffer[$code])) {
+            unset($this->persistentBuffer[$code]);
+        }
     }
 
     /**
