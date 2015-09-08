@@ -45,11 +45,6 @@ class AssembleInput extends AbstractAction implements ActionInterface
      */
     private $processed = [];
     /**
-     * last processed row
-     * @var array
-     */
-    private $lastProcessed = [];
-    /**
      * read buffer
      * @var array
      */
@@ -181,9 +176,6 @@ class AssembleInput extends AbstractAction implements ActionInterface
                 }
             } else {
                 continue;
-            }
-            if (isset($this->processed[$code])) {
-                $this->lastProcessed[$code] = $this->processed[$code];
             }
             // do not add all nulls to connectBuffer
             if ($this->isEmptyData($tmpRow)) {
