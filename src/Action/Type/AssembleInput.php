@@ -45,6 +45,11 @@ class AssembleInput extends AbstractAction implements ActionInterface
      */
     private $processed = [];
     /**
+     * Last processed data for unit
+     * @var array
+     */
+    private $lastProcessed = [];
+    /**
      * read buffer
      * @var array
      */
@@ -70,6 +75,12 @@ class AssembleInput extends AbstractAction implements ActionInterface
      * @var array
      */
     private $writeBuffer = [];
+    /**
+     * small storage to hold info about the lasting buffer records
+     * (if current processed was served from buffer)
+     * @var array
+     */
+    private $lastingBuffer = [];
     /**
      * Entries that specify connection between units
      * @var array
@@ -149,6 +160,7 @@ class AssembleInput extends AbstractAction implements ActionInterface
         $this->connectBuffer = [];
         $this->processed = [];
         $this->toUnset = [];
+        $this->lastingBuffer = [];
     }
 
     /**
@@ -162,6 +174,7 @@ class AssembleInput extends AbstractAction implements ActionInterface
             if (isset($this->tmpBuffer[$code])) {
                 $this->processed[$code] = $tmpRow = $this->tmpBuffer[$code];
                 unset($this->tmpBuffer[$code]);
+                $this->lastingBuffer[$code] = false;
                 if (!$this->bag->isLowest($code)) {
                     $this->buffer[$code] = $this->processed[$code];
                 }
@@ -169,13 +182,18 @@ class AssembleInput extends AbstractAction implements ActionInterface
                 continue;
             } elseif (isset($this->buffer[$code])) {
                 $this->processed[$code] = $tmpRow = $this->buffer[$code];
+                $this->lastingBuffer[$code] = true;
             } elseif (($tmpRow = $this->readRow($unit)) !== false) {
                 $this->processed[$code] = $tmpRow;
+                $this->lastingBuffer[$code] = false;
                 if (!$this->bag->isLowest($code)) {
                     $this->buffer[$code] = $this->processed[$code];
                 }
             } else {
                 continue;
+            }
+            if (isset($this->processed[$code])) {
+                $this->lastProcessed[$code] = $this->processed[$code];
             }
             // do not add all nulls to connectBuffer
             if ($this->isEmptyData($tmpRow)) {
@@ -256,8 +274,32 @@ class AssembleInput extends AbstractAction implements ActionInterface
                     $this->buffer[$code] = $this->processed[$code];
                 }
             }
+            $this->bufferChildren($code);
         }
         throw new FlowRegulationException("", self::FLOW_CONTINUE);
+    }
+
+    /**
+     * Buffer all child items
+     * @param string $code
+     */
+    private function bufferChildren($code)
+    {
+        $unit = $this->bag->getUnitByCode($code);
+        $siblings = $unit->getSiblings();
+        while ($children = $this->bag->getChildren($code)) {
+            foreach ($children as $child) {
+                $childCode = $child->getCode();
+                if (!isset($this->buffer[$childCode]) && isset($this->processed[$childCode])) {
+                    $this->buffer[$childCode] = $this->processed[$childCode];
+                }
+            }
+            /** @var UnitInterface $sibling */
+            $sibling = array_shift($siblings);
+            if ($sibling) {
+                $code = $sibling->getCode();
+            }
+        }
     }
 
     /**
@@ -285,7 +327,8 @@ class AssembleInput extends AbstractAction implements ActionInterface
             foreach ($this->bag as $unit) {
                 $code = $unit->getCode();
                 if (!array_key_exists($code, $this->connectBuffer)) {
-                    $this->finished[] = $unit->getCode();
+                    $this->analyzeOptionalItems($code);
+                    $this->finished[] = $code;
                 }
             }
             // checking if input has the correct # of mapped entries
@@ -301,6 +344,37 @@ class AssembleInput extends AbstractAction implements ActionInterface
                         json_encode(array_keys($this->connectBuffer))
                     )
                 );
+            }
+            throw new FlowRegulationException("", self::FLOW_CONTINUE);
+        }
+    }
+
+    /**
+     * Check the optional items missing
+     * @param string $code
+     * @throws FlowRegulationException
+     */
+    private function analyzeOptionalItems($code)
+    {
+        /** @var ExportFileUnitInterface $unit */
+        $unit = $this->bag->getUnitByCode($code);
+        if ($unit->isOptional()) {
+            $allLasting = true;
+            foreach ($this->buffer as $bufferedCode => $data) {
+                $lasting = isset($this->lastingBuffer[$bufferedCode]) && $this->lastingBuffer[$bufferedCode];
+                $allLasting &= $lasting;
+                if ($lasting) {
+                    $this->unsetBuffer($bufferedCode);
+                }
+            }
+            if (!$allLasting && isset($this->lastProcessed[$code])) {
+                $this->tmpBuffer[$code] = $this->getNullsData($this->lastProcessed[$code]);
+                foreach ($this->buffer as $bufferedCode => $data) {
+                    $this->tmpBuffer[$bufferedCode] = $this->buffer[$bufferedCode];
+                    $this->unsetBuffer($bufferedCode);
+                }
+            } elseif ($allLasting) {
+                $this->dumpWriteBuffer();
             }
             throw new FlowRegulationException("", self::FLOW_CONTINUE);
         }
