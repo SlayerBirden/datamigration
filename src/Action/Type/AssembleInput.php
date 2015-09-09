@@ -285,20 +285,17 @@ class AssembleInput extends AbstractAction implements ActionInterface
      */
     private function bufferChildren($code)
     {
-        $unit = $this->bag->getUnitByCode($code);
-        $siblings = $unit->getSiblings();
-        while ($children = $this->bag->getChildren($code)) {
-            foreach ($children as $child) {
-                $childCode = $child->getCode();
+        $lvl = $this->bag->getUnitLevel($code);
+        $maxLvl = $this->bag->getLowestLevel();
+        $lvl += 1;
+        while ($lvl <= $maxLvl) {
+            $codes = $this->bag->getUnitsFromLevel($lvl);
+            foreach ($codes as $childCode) {
                 if (!isset($this->buffer[$childCode]) && isset($this->processed[$childCode])) {
                     $this->buffer[$childCode] = $this->processed[$childCode];
                 }
             }
-            /** @var UnitInterface $sibling */
-            $sibling = array_shift($siblings);
-            if ($sibling) {
-                $code = $sibling->getCode();
-            }
+            $lvl += 1;
         }
     }
 
