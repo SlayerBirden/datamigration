@@ -260,6 +260,7 @@ class AssembleInput extends AbstractAction implements ActionInterface
      */
     private function handleConflictedSibling(array $codes)
     {
+        $optional = false;
         foreach ($codes as $code) {
             /** @var ExportFileUnitInterface $unit */
             $unit = $this->bag->getUnitByCode($code);
@@ -269,12 +270,16 @@ class AssembleInput extends AbstractAction implements ActionInterface
                     $this->persistentBuffer[$code] = $this->processed[$code];
                     $this->unsetBuffer($code);
                 }
+                $optional = true;
             } else {
                 if (isset($this->processed[$code])) {
                     $this->buffer[$code] = $this->processed[$code];
                 }
             }
             $this->bufferChildren($code);
+        }
+        if (!$optional) {
+            throw new \LogicException(sprintf("Conflict for units: %s", json_encode($codes)));
         }
         throw new FlowRegulationException("", self::FLOW_CONTINUE);
     }
