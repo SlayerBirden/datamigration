@@ -224,7 +224,7 @@ class Generate extends AbstractAction implements ActionInterface
      */
     protected function count(UnitInterface $unit)
     {
-        if (!$unit->getParent() && !in_array($unit->getCode(), $this->processedCounterContainer)) {
+        if (($this->bag->getUnitLevel($unit->getCode()) == 1) && !in_array($unit->getCode(), $this->processedCounterContainer)) {
             $this->result->incrementActionProcessed($this->getCode());
             $this->processedCounterContainer[] = $unit->getCode();
             foreach ($unit->getSiblings() as $sibling) {
