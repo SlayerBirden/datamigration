@@ -361,22 +361,29 @@ class AssembleInput extends AbstractAction implements ActionInterface
         /** @var ExportFileUnitInterface $unit */
         $unit = $this->bag->getUnitByCode($code);
         if ($unit->isOptional()) {
+            $lvl = $this->bag->getUnitLevel($code);
+            $lvl--;
             $allLasting = true;
-            foreach ($this->buffer as $bufferedCode => $data) {
-                $lasting = isset($this->lastingBuffer[$bufferedCode]) && $this->lastingBuffer[$bufferedCode];
-                $allLasting &= $lasting;
-                if ($lasting) {
-                    $this->unsetBuffer($bufferedCode);
+            // clear buffers of lasting ancestors
+            while ($lvl >= 1) {
+                $parents = $this->bag->getUnitsFromLevel($lvl);
+                foreach ($parents as $parentCode) {
+                    $lasting = isset($this->lastingBuffer[$parentCode]) && $this->lastingBuffer[$parentCode];
+                    $allLasting &= $lasting;
+                    if ($lasting) {
+                        $this->unsetBuffer($parentCode);
+                    }
                 }
+                $lvl--;
             }
-            if (!$allLasting && isset($this->lastProcessed[$code])) {
-                $this->tmpBuffer[$code] = $this->getNullsData($this->lastProcessed[$code]);
-                foreach ($this->buffer as $bufferedCode => $data) {
-                    $this->tmpBuffer[$bufferedCode] = $this->buffer[$bufferedCode];
-                    $this->unsetBuffer($bufferedCode);
-                }
-            } elseif ($allLasting) {
+            if ($allLasting) {
                 $this->dumpWriteBuffer();
+            }
+            // add buffer for current optional unit
+            if ($this->lastProcessed[$code]) {
+                $this->buffer[$code] = $this->getNullsData($this->lastProcessed[$code]);
+            } else {
+                throw new \LogicException(sprintf("Can't add optional item to buffer, since none existed."));
             }
             throw new FlowRegulationException("", self::FLOW_CONTINUE);
         }
