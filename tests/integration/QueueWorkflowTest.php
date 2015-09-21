@@ -50,7 +50,7 @@ class QueueWorkflowTest extends \PHPUnit_Extensions_Database_TestCase
     /**
      * {@inheritdoc}
      */
-    public function setUp()
+    protected function setUp()
     {
         $config = include __DIR__ . '/Storage/Db/assets/config.php';
         if (isset($config) && $config instanceof ConfigInterface) {
@@ -76,10 +76,18 @@ class QueueWorkflowTest extends \PHPUnit_Extensions_Database_TestCase
         $this->assertSame($pdo1, $pdo2);
     }
 
-    public function tearDown()
+    protected function tearDown()
     {
         parent::tearDown();
         $this->resource->close();
+    }
+
+    /**
+     * Set Up Schema
+     */
+    public static function setUpBeforeClass()
+    {
+        require_once __DIR__ . '/bootstrap.php';
     }
 
     /**

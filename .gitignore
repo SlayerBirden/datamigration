@@ -1,3 +1,4 @@
 /vendor
 /tests/integration/Storage/Db/assets/config.php
 /tests/integration/assets/results/
+/tests/integration/ComplexStructure/assets/results/
