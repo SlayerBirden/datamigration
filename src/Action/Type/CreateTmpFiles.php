@@ -132,7 +132,7 @@ class CreateTmpFiles extends AbstractAction implements ActionInterface
         }
         foreach ($topUnits as $code) {
             if ($this->map->isFresh($entity)) {
-                $this->map->feed($entity);
+                $this->map->setState($entity);
             }
             /** @var ImportFileUnitInterface $unit */
             $unit = $this->bag->getUnitByCode($code);
