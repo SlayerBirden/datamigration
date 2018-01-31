@@ -67,7 +67,7 @@ class ArrayMap implements MapInterface
      */
     public function feed(array $row)
     {
-        $this->state = array_replace($this->state, array_filter($row));
+        $this->state = array_replace($this->state, $row);
     }
 
     /**
