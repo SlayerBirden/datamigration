@@ -50,6 +50,7 @@ MYSQL;
         $expected = <<<MYSQL
 LOAD DATA LOCAL INFILE '/tmp/file1'
 INTO TABLE `test_table1`
+CHARACTER SET UTF8
 FIELDS
     TERMINATED BY ','
     OPTIONALLY ENCLOSED BY '"'

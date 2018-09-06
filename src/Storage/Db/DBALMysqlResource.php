@@ -20,7 +20,8 @@ class DBALMysqlResource extends AbstractDBALResource
     protected function getDriverOptions()
     {
         return [
-            \PDO::MYSQL_ATTR_LOCAL_INFILE => true
+            \PDO::MYSQL_ATTR_LOCAL_INFILE => true,
+            \PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8'
         ];
     }
 
@@ -129,6 +130,7 @@ MYSQL;
         return <<<MYSQL
 LOAD DATA $localKey INFILE '$file'
 INTO TABLE $table
+CHARACTER SET UTF8
 FIELDS
     TERMINATED BY '$delimiter'
     $optionalKey ENCLOSED BY '$enclosure'
